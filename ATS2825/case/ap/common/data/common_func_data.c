@@ -61,12 +61,13 @@ bool g_need_auto_connect_timeout;  //用于重启controller后继续超时回连
 restore_breakpoint_t g_ota_restore_data;//OTA记录在VRAM的数据
 
 uint32 g_APKsend_pakg_num;
-
-
+#ifdef __ESD_MODE_
+uint8 g_end_autoconnt = 0;
+#endif
 bool g_need_reset_controller_timeout; //用于超时回连连接不上时重启controller
 bool g_neednot_tts_play_timeout; //用于超时断开不播报TTS
 bool g_neednot_tts_play_reset; //用于重启controller后不播报TTS
 
 
-uint8 __section__(".bss.rcode") g_prev_next_ch_start=0;
-uint8 __section__(".bss.rcode") prev_next_ch_timer_id=0;
+uint8  g_prev_next_ch_start=0;
+int8  prev_next_ch_timer_id=0;

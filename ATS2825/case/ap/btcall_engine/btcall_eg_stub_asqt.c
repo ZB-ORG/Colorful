@@ -466,33 +466,39 @@ void asqt_get_result_and_send(uint32 *stub_buf)
     {
         while(g_asqt_parm.out_frame_cnt[0] < frame_tmp[0])
         {
-            #if CASE_TYPE_2825
-            push_to_fifo(&g_asqt_parm.ppv_fifo, 0);
-            while(g_asqt_parm.ppv_fifo.data_size >= 160)//打电话，放电话音数据
+            if(g_app_info_state_all.stub_phy_type == STUB_PHY_USB)
             {
-                asqt_read_fifo(&g_asqt_parm.ppv_fifo, (uint8*)&stub_buf[2], 160);
-                stub_asqt_send_remote_phone_volce((uint32*)stub_buf);
+                push_to_fifo(&g_asqt_parm.ppv_fifo, 0);
+                while(g_asqt_parm.ppv_fifo.data_size >= 160)//打电话，放电话音数据
+                {
+                    asqt_read_fifo(&g_asqt_parm.ppv_fifo, (uint8*)&stub_buf[2], 160);
+                    stub_asqt_send_remote_phone_volce((uint32*)stub_buf);
+                }
             }
-            #else
-            if(push_to_fifo(&g_asqt_parm.ppv_fifo, 0) == FALSE)//写满
+            else
             {
-                break;
+                if(push_to_fifo(&g_asqt_parm.ppv_fifo, 0) == FALSE)//写满
+                {
+                    break;
+                }
             }
-            #endif
         }
     }
 
-    #if CASE_TYPE_2825
-    stub_asqt_send_result_ext(stub_buf ,0x0A00, frame_tmp[1]);//plc
-    #else
-    while(g_asqt_parm.out_frame_cnt[1] < frame_tmp[1])//plc
+    if(g_app_info_state_all.stub_phy_type == STUB_PHY_USB)
     {
-        if(push_to_fifo(&g_asqt_parm.plc_fifo, 1) == FALSE)//写满
+        stub_asqt_send_result_ext(stub_buf ,0x0A00, frame_tmp[1]);//plc
+    }
+    else
+    {
+        while(g_asqt_parm.out_frame_cnt[1] < frame_tmp[1])//plc
         {
-            break;
+            if(push_to_fifo(&g_asqt_parm.plc_fifo, 1) == FALSE)//写满
+            {
+                break;
+            }
         }
     }
-    #endif
 
     while(g_asqt_parm.out_frame_cnt[2] < frame_tmp[2])//agc(speaker)
     {
@@ -509,11 +515,15 @@ void asqt_get_result_and_send(uint32 *stub_buf)
         }
     }
 
-    #if CASE_TYPE_2825
-    stub_asqt_send_result_ext(stub_buf ,0x0B00, frame_tmp[4]);//aec
-    #else
-    stub_asqt_send_result_merger(stub_buf,frame_tmp[4]);//合并tel plc aec
-    #endif
+    
+    if(g_app_info_state_all.stub_phy_type == STUB_PHY_USB)
+    {    
+        stub_asqt_send_result_ext(stub_buf ,0x0B00, frame_tmp[4]);//aec
+    }
+    else
+    {
+        stub_asqt_send_result_merger(stub_buf,frame_tmp[4]);//合并tel plc aec
+    }
     
     while(g_asqt_parm.out_frame_cnt[5] < frame_tmp[5])
     {
@@ -642,7 +652,7 @@ void simu_call_mode_deal(PC_curStatus_e pc_tool_status)
  * \  <author>       <time>        <opt>
  * \   Wekan       2015-4-1      creat
  *******************************************************************************/
-void task_timer10ms(void)
+void __section__(".rcode") task_timer10ms(void)
 {
     static  uint16 task_timer_dly = 0;
     static PC_curStatus_e last_pc_tool_status = sNotReady;
@@ -686,7 +696,7 @@ void task_timer10ms(void)
  * \  <author>       <time>        <opt>
  * \   Wekan       2015-4-1      creat
  *******************************************************************************/
-PC_curStatus_e stub_asqt_tools_status(void)
+PC_curStatus_e __section__(".rcode") stub_asqt_tools_status(void)
 {
 
     static uint32 get_sta_timer_ab = 0;//获取两时间点，读pc-tool状态

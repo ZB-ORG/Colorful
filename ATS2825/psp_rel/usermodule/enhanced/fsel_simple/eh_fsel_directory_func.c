@@ -19,6 +19,10 @@ uint16 fsel_total_file_cur(uint8* dir_info, uint8 check_flag)
         if (0 != vfs_dir(eh_vfs_mount, dir_type, NULL, fsel_init_val.file_type_bit))
         {
             total++;
+            if(total > 5000)//超过文件支持数
+            {
+                break;
+            }
             if (check_flag == 1)
             {
                 //比较8字节offset
@@ -442,7 +446,7 @@ bool fsel_dir_set_location(file_location_t *location)
     bool ret_val;
 
     //如果输入的location为无效值
-    if ((location == NULL) || (*(uint32*) &location->filename == 0))
+    if ((location == NULL) || (*(uint32*) &location->file_info.file_extend_info.file_ext == 0))
     {
         //当前目录下的文件总数
         eh_file_total = fsel_total_file_cur(NULL, 0);
@@ -451,19 +455,20 @@ bool fsel_dir_set_location(file_location_t *location)
         return FALSE;
     }
     //定位文件
-    ret_val = vfs_file_dir_offset(eh_vfs_mount, &location->dir_layer_info, &location->cluster_no, 1);
+    ret_val = vfs_file_dir_offset(eh_vfs_mount, &location->dir_layer_info, \
+    &location->file_info.file_extend_info.cluster_no, 1);
 
     if (ret_val != FALSE)
     {
         vfs_get_name(eh_vfs_mount, &eh_cur_ext_name, 0);
-        if (*(uint32*) &location->filename != eh_cur_ext_name)
+        if (*(uint32*) &location->file_info.file_extend_info.file_ext != eh_cur_ext_name)
         {
             ret_val = FALSE;
         }
         else
         {
             //eh_file_no 在total_file_cur里赋值
-            eh_file_total = fsel_total_file_cur((uint8*) &location->cluster_no, 1);
+            eh_file_total = fsel_total_file_cur((uint8*) &location->file_info.file_extend_info.cluster_no, 1);
             eh_file_no_all = location->file_num;
             //eh_file_total_all = location->file_total;
 
@@ -483,7 +488,7 @@ bool fsel_dir_set_location(file_location_t *location)
     eh_dir_layer = location->dir_layer;
 
     //赋值更新eh_cur_ext_name
-    libc_memcpy(&eh_cur_ext_name, location->filename, 4);
+    libc_memcpy(&eh_cur_ext_name, location->file_info.file_extend_info.file_ext, 4);
 
     return TRUE;
 }

@@ -57,10 +57,10 @@ typedef struct storage_io_s {
     /*open函数的参数*/
     void* open_arg;
     
-	/* 文件类型 0: VFS文件，1：SD文件 */
-	int file_type;
-	/* 文件句柄 */
-	void *handel;
+    /* 文件类型 0: VFS文件，1：SD文件 */
+    int file_type;
+    /* 文件句柄 */
+    void *handel;
 
     sdd_loop_play_t loop_play;
     

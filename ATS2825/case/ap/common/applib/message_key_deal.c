@@ -11,6 +11,7 @@
 
 key_infor_t __section__(".gl_key_data") g_key_infor;
 
+uint8 __section__(".gl_key_data") g_key_hold;
 const uint8 IrcKeyValueTab[IR_CODE_MAX][IR_KEY_MAX] =
 {
     {
@@ -232,6 +233,7 @@ bool com_phy_key_fsm(input_gui_msg_t *input_msg)
             }
             else
             {
+                g_key_hold=0;        
                 g_key_infor.status = KEY_STATUS_HOLD;
                 key_type = KEY_TYPE_LONG;
                 need_ret_gui = TRUE;
@@ -252,6 +254,14 @@ bool com_phy_key_fsm(input_gui_msg_t *input_msg)
         {
             key_type = KEY_TYPE_HOLD;
             need_ret_gui = TRUE;
+            g_key_hold++;
+            libc_print("long hold",g_key_hold,2);
+            if (g_key_hold>46)
+            {
+                g_key_hold=0;
+                key_type = KEY_TYPE_LONG_10S;
+                need_ret_gui = TRUE;
+            }
         }
         need_recv_phy = TRUE;
         break;

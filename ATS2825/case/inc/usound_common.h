@@ -19,7 +19,9 @@ typedef struct
 
     uint32 change_vol_val;
 
-    uint32 line_status;
+    uint16 line_status;
+    
+    uint16 switch_flag;
 
 } uengine_status_t;
 

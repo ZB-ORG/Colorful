@@ -100,16 +100,17 @@ SECTIONS
     BANK_CONTROL_1_0    : 
     {
         ctor.o(.text .rodata)
-        udisk_main.o(.text .rodata)                    
+        udisk_sysmsg.o(.text .rodata) 
+        udisk_paint_deal.o(.text .rodata) 
+        udisk_create_label.o(.text .rodata) 
+                           
     } 
     
     /*bank control 1*/
     . = ((. + AP_BANK_SPACE) & (~(AP_BANK_SPACE - 1)))  + OFFSET;
      BANK_CONTROL_1_1   : 
     { 
-        udisk_sysmsg.o(.text .rodata) 
-        udisk_paint_deal.o(.text .rodata) 
-        udisk_create_label.o(.text .rodata)  
+        udisk_main.o(.text .rodata) 
     }   
      
 }

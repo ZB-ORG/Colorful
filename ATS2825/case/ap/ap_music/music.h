@@ -31,8 +31,8 @@
 #define TTS_INVALID         (0xff)
 
 //如果感觉看map不方便，请如下定义
-//#define MUS_STATIC
-#define MUS_STATIC          static
+#define MUS_STATIC
+//#define MUS_STATIC          static
 
 #define MIN(a, b)           (((a) > (b)) ? (b) : (a))
 #define MAX(a, b)           (((a) < (b)) ? (b) : (a))
@@ -58,6 +58,8 @@ typedef struct
     fsel_mode_e repeat_mode;
     /*! shuffle 开关 取高4bit*/
     uint8 shuffle_flag;
+   /*! 当前歌曲总时间*/
+    int total_time;
 } music_config_t;
 
 //进入music的方式
@@ -81,6 +83,9 @@ extern comval_t g_comval;
 //保存扫描线程句柄
 extern void *g_scan_handle;
 
+//扫描标记
+extern uint8 g_scan_flag;
+
 //rcp save some file switch info
 extern rcp_file_status_t g_rcp_file_status;
 
@@ -92,5 +97,12 @@ extern uint8 g_seq_tts_sec_ids[10];
 
 //rcp通讯中得到播放列表时的定时器
 extern int8 g_timer_id_rcp_getplist;
+
+extern app_result_e music_get_dir_list_status(uint32 data1, uint32 data2) __FAR__;
+extern app_result_e music_get_music_dir_list(uint32 data1, uint32 data2) __FAR__;
+extern bool get_dir_by_dirno(uint16 dir_no, list_dir_info_t *p_dir) __FAR__;
+extern void update_dir_list_random(void) __FAR__;
+
+extern bool g_music_restore_from_s3bt;
 
 #endif //__MUSIC_H__

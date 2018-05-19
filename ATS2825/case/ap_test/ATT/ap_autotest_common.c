@@ -188,8 +188,7 @@ int32 act_test_report_result(uint8 *write_data, uint16 payload_len)
                 if (cmd_data[1] == 0x04 && cmd_data[2] == 0xfe)
                 {
                     break;
-                }
-                break;        
+                }       
             }
         }
     }

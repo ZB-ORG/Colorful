@@ -13,6 +13,10 @@
 #include "fmengine.h"
 #include "audio_device.h"
 
+#ifdef WAVES_ASET_TOOLS
+extern waves_t g_waves;
+#endif
+
 extern Engine_Status_t g_fmengine_status;
 extern FMEngine_cfg_t g_fmengine_cfg;
 extern Module_Status_e g_module_status;

@@ -40,6 +40,21 @@ uint8 g_bat_adc_val[BAT_ADC_DATA_NUM] =
 uint8 g_bat_adc_val_index = 0;
 uint8 cur_battery_val = 0;
 
+uint32 g_chg_ctl = 0;
+uint32 g_spd_ctl = 0;
+//保存默认充电配置
+uint32 g_def_chg_ctl = 0;
+//保存前台应用id
+uint8 g_app_id = 0;
+
+uint16 g_check_end_cnt = 0;
+//区分bat check的模式
+uint8 g_bat_ext_check = 0;
+//5分钟开关充电标志
+uint8 g_charge_switch = 0;
+
+uint8 g_no_ext_chg = 0;
+
 //用大电池和稳压源为准结果1-30
 //低电电压
 #define BATLOW_VEL      BAT_ADC_3_40_V
@@ -122,9 +137,9 @@ uint8 g_charge_MV = 0;
  * \ingroup      misc_func
  * \note
  *******************************************************************************/
-static uint8 __section__(".bank1") key_get_battery_grade(uint8 batadc)
+static uint32 __section__(".bank1") key_get_battery_grade(uint8 batadc)
 {
-    int8 i;
+    int32 i;
 
 #if (SUPPORT_OUTER_CHARGE == 1)
     if (g_key_bat_charge_mode == BAT_CHARGE_MODE_OUTER)
@@ -255,33 +270,38 @@ void ker_battery_charge_deal(void)
     else
 #endif
     {
+        if((g_bat_charge_status == BAT_CHECKING) || (g_app_id == 1) || (g_charge_switch == 1))
+        {
+            return;
+        }
+        
         //充电保持DC5V存在
         if ((act_readl(CHG_DET) & (1 << CHG_DET_UVLO)) != 0)//电源接入
         {
-            if ((g_bat_charge_status == BAT_FULL) || (bat_charge_full() != 0))//充满
-
+            if(g_bat_charge_status != BAT_FULL)
             {
-                g_bat_charge_status = BAT_FULL;
+                if(g_bat_charge_status != BAT_CHARGING)     //开充电，默认配置
+                {
+                    g_chg_ctl |= (1 << CHG_CTL_CHGEN); 
+                    act_writel(g_spd_ctl,SPD_CTL);
+                    act_writel(g_chg_ctl,CHG_CTL);
+                }
+                //bat_charge_open();
+            }
+            else                                            //关充电
+            {
+                g_chg_ctl &= (~(1 << CHG_CTL_CHGEN)); 
                 bat_charge_close();
-                return;
-            }
-            if (get_bat_charge_open() != 0)//正在充电
-
-            {
-                return;
-            }
-
-            if (g_bat_charge_status != BAT_CHECKING)//充电肯定是关的
-
-            {
-                bat_check_open();
-                g_bat_charge_status = BAT_CHECKING;
             }
         }
-        else
+        else                                                //关充电
         {
-            g_bat_charge_status = BAT_NORMAL;
-            bat_charge_close();
+            if(g_bat_charge_status == BAT_CHARGING)
+            {
+                g_chg_ctl &= (~(1 << CHG_CTL_CHGEN)); 
+                g_bat_charge_status = BAT_NORMAL;
+                bat_charge_close();
+            }
         }
     }
 }
@@ -330,11 +350,12 @@ void __section__(".bank0") key_inner_battery_charge_stop(void* null0, void* null
 #endif
     {
         bat_charge_close();
-        g_bat_charge_status = BAT_FULL;
-        PRINT_INFO_INT("charge-stop(adc=):", battery_samp_filter());
+        //g_bat_charge_status = BAT_FULL;
+        //PRINT_INFO_INT("charge-stop(adc=):", battery_samp_filter());
     }
 }
 
+#if 0
 //电池采样滤波，过滤掉最小的10个值
 static uint8  __section__(".bank1") battery_samp_filter(void)
 {
@@ -368,6 +389,7 @@ static uint8  __section__(".bank1") battery_samp_filter(void)
 
     return (uint8)((bat_val / (BAT_ADC_DATA_NUM - 10)) & 0x7f);//本次ADC的值的计算结果     
 }
+#endif
 
 /******************************************************************************
  * \par  Description:   获取电池充电状态
@@ -379,27 +401,56 @@ static uint8  __section__(".bank1") battery_samp_filter(void)
  *   <author>    <time>           <version >             <desc>
  *    Wekan   2015-3-26am         1.0             review this
  *******************************************************************************/
-battery_status_e __section__(".bank1") key_inner_battery_get_status(uint8 *ad_val, int8* vol_limit, void* null2)
+battery_status_e __section__(".bank1") key_inner_battery_get_status(uint32 *ad_val, int8* vol_limit, uint8* app_id)
 { 
     bool bat_val_full = FALSE;
-    uint32 temp_flag;
+    uint32 bat_val = 0;
+    uint8 i = 0;
     
     //libc_print("retadc",bat_val,2);
-    temp_flag = sys_local_irq_save();
-    cur_battery_val = battery_samp_filter();
-    sys_local_irq_restore(temp_flag);
+    for (i = 0; i < BAT_ADC_DATA_NUM; i++)
+    {
+        bat_val += g_bat_adc_val[i];
+    }
+    cur_battery_val = (uint8)((bat_val / BAT_ADC_DATA_NUM) & 0x7f);
 
     //*ad_val = cur_battery_val;
     *ad_val = key_get_battery_grade(cur_battery_val);
     *vol_limit = key_get_volume_limit(cur_battery_val);
 
     //libc_print("tempadc",(act_readb(TEMPADC_DATA)),2);
-
     if (*ad_val > BATTERY_GRADE_MAX)
     { //仅对判断是否充电满有意义，判断OK后，即可改为 BATTERY_GRADE_MAX
         bat_val_full = TRUE;
         //*ad_val = BATTERY_GRADE_MAX;放到common去做
     }
+    
+#if 1    
+    if (g_bat_charge_status == BAT_CHARGING)    //20ms定时器只有在status != CHARGING的时候才会修改充电配置
+    {
+        if (cur_battery_val < BAT_ADC_3_50_V)   //小于3.50V,开100mA充电
+        {
+            act_writel((act_readl(CHG_CTL) & (~0x3800)) | 0x1000,CHG_CTL);
+        }
+        if (cur_battery_val > BAT_ADC_3_55_V)    //大于3.55V,开默认电流充电
+        {
+            act_writel(g_chg_ctl,CHG_CTL);
+        }
+    }
+    if(g_no_ext_chg == 1)
+    {
+        if (g_bat_charge_status == BAT_NO_EXIST)    //NO EXIST状态时20ms定时器会开充电
+        {
+            g_chg_ctl = ((g_chg_ctl & (~0x3800)) | (0x1000));
+        }
+        else
+        {
+            g_chg_ctl = (g_def_chg_ctl | (g_chg_ctl & (1 << CHG_CTL_CHGEN)));
+        }
+        g_no_ext_chg = 0;
+    }
+#endif    
+
 #if (SUPPORT_OUTER_CHARGE == 1)
     if (g_key_bat_charge_mode == BAT_CHARGE_MODE_OUTER)
     {
@@ -408,15 +459,131 @@ battery_status_e __section__(".bank1") key_inner_battery_get_status(uint8 *ad_va
     else
 #endif
     {
-        if (g_bat_charge_status == BAT_CHARGING)
+        if(*app_id == 1)        //line in 充电特殊处理
+        {
+            if(g_app_id == 0)                                                   //进入line in
+            {
+                act_writel((act_readl(SPD_CTL) & (~0x180)),SPD_CTL);            //设置SYS_POWER为3.3
+            }
+            
+            if(cur_battery_val <= BAT_ADC_3_70_V)
+            {
+                act_writel(g_def_chg_ctl,CHG_CTL);  //默认配置充电
+                act_writel(act_readl(CHG_CTL) | 0x8000,CHG_CTL);                //开充电
+                //libc_print("line in chg",cur_battery_val,2);
+            }
+            else if(cur_battery_val >= BAT_ADC_4_10_V)
+            {
+                act_writel(act_readl(CHG_CTL) & (~0x8000),CHG_CTL);             //关充电
+                //libc_print("line in no chg",cur_battery_val,2);
+            }
+            else
+            {
+                ;//nothing
+            }
+        }
+        else if(g_app_id == 1)                                                  //退出line in，恢复
+        {
+            act_writel(g_spd_ctl,SPD_CTL);
+            act_writel(g_chg_ctl,CHG_CTL);
+        }
+        else
+        {
+            ;//nothing
+        }
+        
+        g_app_id = *app_id;
+        
+        if (g_bat_charge_status == BAT_CHECKING)
+        {
+            if (g_bat_ext_check != 0)                //battery check
+            {
+                switch(g_check_end_cnt)
+                {
+                    case 0:
+                    act_writel((act_readl(SPD_CTL) | 0x180),SPD_CTL);//SYSpower:4.4V
+                    act_writel((act_readl(CHG_CTL) & 0xffffc7ff) | 0x9400,CHG_CTL);//开100mA充电
+                    g_check_end_cnt ++;
+                    break;
+                    
+                    case 3:
+                    if((cur_battery_val > BAT_ADC_4_05_V) || (cur_battery_val < 0x03))
+                    {
+                        act_writel((act_readl(CHG_CTL) & (~0x8000)),CHG_CTL);//关充电
+                        act_writel(act_readl(SPD_CTL) & (~0x180),SPD_CTL);//SYSpower:3.3V
+                        g_check_end_cnt ++;
+                    }
+                    else
+                    {
+                        g_bat_charge_status = BAT_NORMAL;
+                        act_writel(g_spd_ctl,SPD_CTL);
+                        act_writel(g_chg_ctl,CHG_CTL);
+                        g_bat_ext_check = 0;
+                        g_check_end_cnt = 0;
+                        g_charge_switch = 0;
+                        g_no_ext_chg = 1;
+                    }
+                    break;
+
+                    case 4:
+                    if(cur_battery_val > BAT_ADC_3_50_V)
+                    {
+                        g_bat_charge_status = BAT_NORMAL;
+                        g_charge_switch = 0;
+                        g_no_ext_chg = 1;
+                    }
+                    else
+                    {
+                        g_bat_charge_status = BAT_NO_EXIST;
+                    }
+                    act_writel(g_spd_ctl,SPD_CTL);
+                    act_writel(g_chg_ctl,CHG_CTL);
+                    g_bat_ext_check = 0;
+                    g_check_end_cnt = 0;
+                    g_no_ext_chg = 1;
+                    if(g_charge_switch == 1)
+                    {
+                        act_writel((act_readl(CHG_CTL) & (~0x8000)),CHG_CTL);//关充电
+                    }
+                    break;
+
+                    default:
+                    g_check_end_cnt ++;
+                    break;
+                }
+            }
+            else                                //charge check
+            {
+                if (g_check_end_cnt >= 10)      //关充电5s后认为确实充满
+                {
+                    g_bat_charge_status = BAT_FULL;
+                    g_check_end_cnt = 0;
+                }
+                else if (bat_val_full == FALSE)
+                {
+                    g_bat_charge_status = BAT_NORMAL;
+                    g_check_end_cnt = 0;
+                }
+                else
+                {
+                    g_check_end_cnt ++;
+                }
+            }
+            //libc_print("g_bat_charge_status",g_bat_charge_status,2);
+            return g_bat_charge_status;
+        }
+        
+        if (g_bat_charge_status == BAT_CHARGING)    //检测到电池电压满则关闭充电再检测
         {
             if (bat_val_full == TRUE)
             {
                 g_charge_tri_time_cnt++;
-                if (g_charge_tri_time_cnt > 120*15) //15min
+                if (g_charge_tri_time_cnt > (120 * 15)) //15min
                 {
-                    key_inner_battery_charge_stop(0, 0, 0);
+                    g_bat_charge_status = BAT_CHECKING;
+                    bat_charge_close();
                     g_charge_tri_time_cnt = 0;
+                    return g_bat_charge_status;
                 }
             }
             else
@@ -424,25 +591,54 @@ battery_status_e __section__(".bank1") key_inner_battery_get_status(uint8 *ad_va
                 g_charge_tri_time_cnt = 0;
             }
         }
-
-        if (g_bat_charge_status == BAT_CHECKING)
+        
+        if (g_bat_charge_status == BAT_NO_EXIST)
         {
-            if (bat_check_end() != 0)
+            g_check_end_cnt ++;
+            if(g_check_end_cnt >= (60 * 2 * 5))             //充5分钟复查一次，再停5分钟
             {
-                if (bat_check_status() != 0)
+                g_bat_ext_check = 1;                    //检测电池存在与否,硬件方法不可用
+                g_check_end_cnt = 0;
+                g_bat_charge_status = BAT_CHECKING;
+                if(g_charge_switch == 0)
                 {
-                    bat_check_close();
-                    bat_charge_open();//有电池，开启充电
-                    g_bat_charge_status = BAT_CHARGING;
+                    g_charge_switch = 1;
                 }
                 else
                 {
-                    g_bat_charge_status = BAT_NO_EXIST;//没电池
+                    g_charge_switch = 0;
                 }
             }
+            return g_bat_charge_status;
+        }
+        
+        if (g_bat_charge_status == BAT_FULL)
+        {
+            if(bat_val_full == FALSE)
+            {
+                g_bat_charge_status = BAT_NORMAL;
+            }
+            else
+            {
+                return g_bat_charge_status;
+            }
+        }
+        else if ((act_readl(CHG_DET) & (1 << CHG_DET_UVLO)) != 0)//电源接入
+        {
+            if(get_bat_charge_open() != 0)
+            {
+                g_bat_charge_status = BAT_CHARGING;
+            }
+            else
+            {
+                g_bat_charge_status = BAT_NORMAL;
+            }
+        }
+        else        //DC5V未接入，电池供电
+        {
+            g_bat_charge_status = BAT_NORMAL;
         }
     }
-
     return g_bat_charge_status;
 }
 
@@ -475,10 +671,9 @@ void __section__(".bank0") key_bat_charge_init(chg_current_e CurrentMA, chg_volt
         {
             g_bat_charge_status = BAT_NO_EXIST;
         }
-
         //for adc charge value use
         act_writel((act_readl(AD_Select) & EXTERN_CHARGE_VAL_MSK)|EXTERN_CHARGE_VAL_SEL, AD_Select);
-		act_writel(((act_readl(MFP_CTL0) & (~MFP_CTL0_GPIOA21_MASK)) | (0x7 << MFP_CTL0_GPIOA21_SHIFT)),MFP_CTL0);
+		//act_writel(((act_readl(MFP_CTL0) & (~MFP_CTL0_GPIOA21_MASK)) | (0x7 << MFP_CTL0_GPIOA21_SHIFT)),MFP_CTL0);
         //wait for analog function stable
         sys_mdelay(10);
     }
@@ -503,31 +698,35 @@ void __section__(".bank0") key_bat_charge_init(chg_current_e CurrentMA, chg_volt
         {
             VoltageMV = Chg_voltage_4410mV;
         }
-        bat_charge_close();//关充电
         ;//延时
         tmp = act_readl(CHG_CTL);
-        tmp &= (~CHG_CTL_CHG_CURRENT_MASK) & (~CHG_CTL_STOPV_MASK) & (~CHG_CTL_ENFASTCHG_MASK);
+        tmp &= (~CHG_CTL_CHG_CURRENT_MASK)&(~CHG_CTL_STOPV_MASK)&(~CHG_CTL_ENFASTCHG_MASK)&(~(1 << CHG_CTL_ENTKLE));
 
-        tmp |= (uint32) ((1 << CHG_CTL_ENTKLE) //涓流(使能涓流时为充电电流0.1)
+        tmp |= (uint32) ((0 << CHG_CTL_ENTKLE) //不开涓流(使能涓流时为充电电流0.1)
                 | (CurrentMA << CHG_CTL_CHG_CURRENT_SHIFT)//设置充电电流
                 | (VoltageMV << CHG_CTL_STOPV_SHIFT) //设置充满电压4.16  4.18  4.32 4.34
-                | (set_chg_full_vol_tab[(uint8)VoltageMV] << CHG_CTL_ENFASTCHG_SHIFT));//设置恒压充电电压
+                | (set_chg_full_vol_tab[(uint8)VoltageMV] << CHG_CTL_ENFASTCHG_SHIFT)//设置恒压充电电压
+                | (1 << CHG_CTL_CHGOP_SEL));//新方法充电
+
         act_writel(tmp, CHG_CTL);
-        //注：这里不使能充电
-        if ((act_readl(CHG_DET) & (1 << CHG_DET_UVLO)) != 0)//电源接入
+        
+        g_chg_ctl = act_readl(CHG_CTL);
+        g_spd_ctl = act_readl(SPD_CTL);
+        g_def_chg_ctl = g_chg_ctl;
+        
+        if ((act_readl(CHG_DET) & (1 << CHG_DET_UVLO)) != 0)
         {
-            bat_charge_close();//关充电
-            bat_check_open();
+            g_bat_ext_check = 1;                    //检测电池存在与否,硬件方法不可用
+            g_check_end_cnt = 0;
             g_bat_charge_status = BAT_CHECKING;
         }
         else
         {
-            g_bat_charge_status = BAT_NORMAL;
+            g_bat_charge_status = BAT_NORMAL;       //无DC5V接入则为电池供电
         }
     }
 
     g_charge_tri_time_cnt = 0;
-    PRINT_INFO_INT("charge-mA&mV&adc:", (CurrentMA << 24) + (VoltageMV << 16) + battery_samp_filter());
 }
 
 /******************************************************************************

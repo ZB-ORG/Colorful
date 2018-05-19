@@ -28,6 +28,11 @@ typedef struct
 }test_share_info_t;
 
 extern test_share_info_t *g_p_test_share_info;
+extern uint8 prev_back_ap_id;
+extern uint8 prev_front_ap_id;
+extern uint8 *pa_thread_task_addr;
+extern mem_use_info_t *g_mem_use_info;
+extern uint8 support_dev_num;
 extern void manager_msg_callback(private_msg_t *pri_msg) __FAR__;
 extern void _get_app_name(char *namebuf, uint8 ap_id, uint8 app_type) __FAR__;
 
@@ -42,6 +47,10 @@ extern void ft_test_mode(void);
 extern void manager_config_hosc_freq(void) __FAR__;
 
 extern void install_key_drv(void);
+
+extern void manager_mem_manager(uint32 app_id, uint32 exec_ap) __FAR__;
+
+extern void manager_cache_memory_init(void) __FAR__;
 
 #endif
 

@@ -36,7 +36,7 @@ typedef struct
 } linein_eg_info_t;
 
 #ifdef WAVES_ASET_TOOLS
-extern  uint8 g_support_waves_pc_tools;
+extern  waves_t g_waves;
 #endif
 
 //globle variable
@@ -68,18 +68,9 @@ extern uint8 g_linein_channel_sel;
 //for dae adjust freq
 extern dae_config_t *g_dae_cfg_shm;
 
-//for chage current save
-extern uint32 g_cha_need_restore;
-
 //if need open play
 extern uint32 g_need_play;
 
-//for count 
-extern uint32 g_check_count;
-
-extern uint32 g_cha_current;
-
-extern uint8 g_cha_sta;
 //functions
 bool play(void) __FAR__;
 bool stop(void) __FAR__;

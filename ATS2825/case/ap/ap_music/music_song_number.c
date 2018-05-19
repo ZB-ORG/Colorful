@@ -19,10 +19,10 @@ MUS_STATIC const key_event_map_t __section__(".rodata.ke_maplist")
 music_song_number_key_map_list[] =
 {
     { { KEY_NEXT, 0, KEY_TYPE_SHORT_UP | KEY_TYPE_LONG_UP, KEY_DEAL_NULL }, _song_tts },
-    { { KEY_NEXT, 0, KEY_TYPE_DOWN | KEY_TYPE_LONG | KEY_TYPE_HOLD, KEY_DEAL_NULL }, _song_key_next },
+    { { KEY_NEXT, 0, KEY_TYPE_DOWN | KEY_TYPE_LONG | KEY_TYPE_HOLD | KEY_TYPE_LONG_10S, KEY_DEAL_NULL }, _song_key_next },
 
     { { KEY_PREV, 0, KEY_TYPE_SHORT_UP | KEY_TYPE_LONG_UP, KEY_DEAL_NULL }, _song_tts },
-    { { KEY_PREV, 0, KEY_TYPE_DOWN | KEY_TYPE_LONG | KEY_TYPE_HOLD, KEY_DEAL_NULL }, _song_key_prev },
+    { { KEY_PREV, 0, KEY_TYPE_DOWN | KEY_TYPE_LONG | KEY_TYPE_HOLD |KEY_TYPE_LONG_10S, KEY_DEAL_NULL }, _song_key_prev },
 
     /*! 结束标志 */
     { { KEY_NULL, 0, KEY_TYPE_NULL, KEY_DEAL_NULL }, NULL },
@@ -116,8 +116,8 @@ app_result_e create_view_song_num(view_type_e view_type, bool tts, play_mode_e p
     create_view_param_t param;
     bool bExists;
 
-    if(g_view_infor[g_view_manager_infor.top].id == VIEW_ID_SONG_NUMBER
-        && g_view_infor[g_view_manager_infor.top].type == view_type)
+    if( (g_view_infor[g_view_manager_infor.top].id == VIEW_ID_SONG_NUMBER)
+        && (g_view_infor[g_view_manager_infor.top].type == view_type) )
     {
         //前面已经生成了一个本view
         bExists = TRUE;

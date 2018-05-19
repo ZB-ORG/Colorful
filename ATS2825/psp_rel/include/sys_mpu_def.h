@@ -34,6 +34,10 @@ typedef struct
     void *irq_handle; //中断服务程序,为0默认进入系统死循环
 }sys_mpu_param_t;
 
+int32 set_mpu_irq(sys_mpu_param_t *sys_mpu_param) __FAR__;
+
+void del_mpu_irq(uint32 mpu_irq_index) __FAR__;
+
 #endif //#ifndef __SYS_MPU_DEF_H__
 
 

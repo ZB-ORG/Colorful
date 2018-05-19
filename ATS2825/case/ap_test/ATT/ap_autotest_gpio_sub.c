@@ -20,10 +20,11 @@
 
 void led_flash_ok(void)
 {
-#if 0
     uint8 i;
     uint8 led_num = 8;
     uint32 loop_cnt = 8;
+
+    DISABLE_WATCH_DOG;
 
     //A0默认输出高电平，IO口接下拉电阻
     act_writel(act_readl(GPIOAOUTEN) | (1 << 0), GPIOAOUTEN);
@@ -38,7 +39,11 @@ void led_flash_ok(void)
 
     led_num = 8;
 
-    while(loop_cnt > 0)
+    // 2823 芯片使用 A21 / VRO_S
+    act_writel(act_readl(GPIOAOUTEN) | (1 << 21), GPIOAOUTEN);
+    act_writel(act_readl(SIO_OUTEN) | (1 << 9), SIO_OUTEN);    
+
+    while(1)
     {
         for(i = 0; i < 8; i++)
         {
@@ -48,6 +53,9 @@ void led_flash_ok(void)
 
             led_num++;
         }
+
+        act_writel(act_readl(GPIOADAT) | (1 << 21), GPIOADAT);
+        act_writel(act_readl(SIO_DAT) | (1 << 9), SIO_DAT);        
 
         sys_mdelay(20);
 
@@ -60,17 +68,20 @@ void led_flash_ok(void)
             sys_mdelay(20);
         }
 
+        act_writel(act_readl(GPIOADAT) & (~(1 << 21)), GPIOADAT);
+        act_writel(act_readl(SIO_DAT) & (~(1 << 9)), SIO_DAT);        
+
         loop_cnt--;
     }
-#endif
 }
 
 void led_flash_fail(void)
 {
-#if 0
     uint8 i;
     uint8 led_num = 8;
     uint32 loop_cnt = 8;
+
+    DISABLE_WATCH_DOG;
 
     //A0默认输出高电平，IO口接下拉电阻
     act_writel(act_readl(GPIOAOUTEN) | (1 << 0), GPIOAOUTEN);
@@ -89,7 +100,7 @@ void led_flash_fail(void)
 
     led_num = 8;
 
-    while(loop_cnt > 0)
+    while(1)
     {
         for(i = 0; i < 8; i++)
         {
@@ -114,10 +125,9 @@ void led_flash_fail(void)
 
         sys_mdelay(100);
     }
-#endif
 }
 
-void act_test_report_gpio_result(gpio_test_arg_t *gpio_test_arg, test_result_e result)
+void act_test_report_gpio_result(gpio_test_arg_t *gpio_test_arg, test_result_e result, uint32 test_id)
 {
     int ret_val;
     return_result_t *return_data;
@@ -140,7 +150,7 @@ void act_test_report_gpio_result(gpio_test_arg_t *gpio_test_arg, test_result_e r
     {
         return_data = (return_result_t *) (STUB_ATT_RETURN_DATA_BUFFER);
 
-        return_data->test_id = TESTID_GPIO_TEST;
+        return_data->test_id = test_id;
 
         return_data->test_result = ret_val;
 
@@ -150,6 +160,11 @@ void act_test_report_gpio_result(gpio_test_arg_t *gpio_test_arg, test_result_e r
         return_data->return_arg[trans_bytes++] = 0x002c;
 
         uint32_to_unicode(gpio_test_arg->gpioB_value, &(return_data->return_arg[trans_bytes]), &trans_bytes, 16);
+
+        //添加参数分隔符','
+        return_data->return_arg[trans_bytes++] = 0x002c;
+
+        uint32_to_unicode(gpio_test_arg->gpioSIO_value, &(return_data->return_arg[trans_bytes]), &trans_bytes, 16);        
 
         //添加结束符
         return_data->return_arg[trans_bytes++] = 0x0000;
@@ -164,10 +179,7 @@ void act_test_report_gpio_result(gpio_test_arg_t *gpio_test_arg, test_result_e r
     }
     else
     {
-        if (ret_val == FALSE)
-        {
-            led_flash_fail();
-        }
+        act_test_report_test_log(ret_val, test_id);
     }
 }
 
@@ -263,6 +275,13 @@ test_result_e test_gpio(gpio_test_arg_t *gpio_test_arg, int32 *index)
         act_writel(gpio_bak_array[i], gpio_reg);
     }
 
+    if(test_result != TEST_PASS)
+    {
+        gpio_test_arg->gpioA_value = *index;
+        gpio_test_arg->gpioB_value = test_result;
+        gpio_test_arg->gpioSIO_value = 0;
+    }
+
     return test_result;
 }
 
@@ -280,7 +299,26 @@ test_result_e act_test_gpio_test(void *arg_buffer)
 
     ret_val = test_gpio(gpio_test_arg, &index);
 
-    act_test_report_gpio_result(gpio_test_arg, ret_val);
+    act_test_report_gpio_result(gpio_test_arg, ret_val, TESTID_GPIO_TEST);
+
+    return ret_val;
+}
+
+test_result_e act_test_gpio_test_ATS2823(void *arg_buffer)
+{
+    int32 index;
+    test_result_e ret_val;
+    //DEBUG_ATT_PRINT("start gpio test", 0, 0);
+
+    //DEBUG_ATT_PRINT("GPIO_A  :", *((uint32 *)arg_buffer), 2);
+    //DEBUG_ATT_PRINT("GPIO_B  :", *(((uint32 *)arg_buffer)+1), 2);
+    //DEBUG_ATT_PRINT("GPIO_SIO:", *(((uint32 *)arg_buffer)+2), 2);
+
+    gpio_test_arg_t *gpio_test_arg = (gpio_test_arg_t *) arg_buffer;
+
+    ret_val = test_gpio(gpio_test_arg, &index);
+
+    act_test_report_gpio_result(gpio_test_arg, ret_val, TESTID_GPIO_TEST_ATS2823);
 
     return ret_val;
 }

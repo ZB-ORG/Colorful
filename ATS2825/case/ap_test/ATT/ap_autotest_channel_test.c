@@ -18,6 +18,7 @@
 #include "ap_manager_test.h"
 #include "ap_autotest_channel_test.h"
 #include "fm_interface.h"
+#include "ap_autotest_channel_test_SNR.h"
 
 //16个点
 const uint16 pcm_table[]=
@@ -26,6 +27,17 @@ const uint16 pcm_table[]=
     0xf945, 0xc8df, 0xa0de, 0x8757, 0x802f, 0x8c7f, 0xaa63, 0xd550
 };
 
+
+
+volatile uint8 g_adc_buffer_ptr _BANK_DATA_ATTR_;
+
+uint8 g_sample_count _BANK_DATA_ATTR_;
+
+uint32 g_power_val_left _BANK_DATA_ATTR_;
+
+uint32 g_power_val_right _BANK_DATA_ATTR_;
+
+uint32 power_val_array[MAX_POWER_SAMPLE_COUNT] _BANK_DATA_ATTR_;
 
 //使用1K的缓存 16*16*2*2=1k
 void init_dac_buffer(void)
@@ -106,6 +118,21 @@ void sco_dac_dma_config(void)
     sys_udelay(10);
 #endif
 }
+
+void print_channel_data(uint32 dst_addr)
+{
+    int i;
+
+    DEBUG_ATT_PRINT("\n**************\n", 0, 0);
+
+    for(i = 0; i < 128; i += 4)
+    {
+        DEBUG_ATT_PRINT(0, *(uint16 *)(dst_addr + i), 1);
+        DEBUG_ATT_PRINT(0, *(uint16 *)(dst_addr + i + 2), 1);
+    }
+}
+
+
 /******************************************************************************/
 /*!
  * \par  Description:
@@ -122,8 +149,6 @@ void sco_dac_dma_config(void)
 void init_dma_to_adc(uint32 dst_addr, uint32 block_length)
 {
     uint32 status;
-
-    uint8 loop_cnt = 0;
 
     //左右声道均会采集数据
     act_writel(act_readl(ADC_ANACTL) | (1 << ADC_ANACTL_ADLEN), ADC_ANACTL);
@@ -143,10 +168,8 @@ void init_dma_to_adc(uint32 dst_addr, uint32 block_length)
     //dest addr type:memory
     act_writel(act_readl(DMA1CTL) | (0 << DMA1CTL_DSTTYPE_SHIFT), DMA1CTL);
 
-#ifdef PRINT_CHANNEL_DATA
     //reload enable
     act_writel(act_readl(DMA1CTL) | (1 << DMA1CTL_reload), DMA1CTL);
-#endif
 
     //dest address
     act_writel(dst_addr, DMA1DADDR0);
@@ -154,26 +177,27 @@ void init_dma_to_adc(uint32 dst_addr, uint32 block_length)
     //dma length
     act_writel(block_length / 2, DMA1FrameLen);
 
+    //dma1 half & complete int disable
+    act_writel(act_readl(DMAIE) & (~((1 << DMAIE_DMA1HFIE) | (1 << DMAIE_DMA1TCIE))), DMAIE);
+
+    //clear pending，注意不能使用读-或-写这种方式，避免清掉其他pending位
+    act_writel((1 << DMAIP_DMA1HFIP) | (1 << DMAIP_DMA1TCIP), DMAIP);    
+
+    g_adc_buffer_ptr = 0;
+
+    g_sample_count = 0;
+
+    //挂接中断服务程序
+    sys_request_irq(IRQ_DMA1, adc_data_deal);
+
+    //dma1 half & complete int enable
+    act_writel(act_readl(DMAIE) | (1 << DMAIE_DMA1HFIE) | (1 << DMAIE_DMA1TCIE), DMAIE);      
+
     //enable transfer
     act_writel(act_readl(DMA1CTL) | (1 << DMA1CTL_DMA1START), DMA1CTL);
 
-#ifdef PRINT_CHANNEL_DATA
-    while(1)
-    {
-        int i;
-
-        DEBUG_ATT_PRINT("\n**************\n", 0, 0);
-
-        for(i = 0; i < 128; i += 4)
-        {
-            DEBUG_ATT_PRINT(0, *(uint16 *)(dst_addr + i), 1);
-            DEBUG_ATT_PRINT(0, *(uint16 *)(dst_addr + i + 2), 1);
-        }
-
-        sys_mdelay(500);
-    }
-#endif
-
+  
+#if 0
     while (1)
     {
         status = act_readl(DMA1CTL);
@@ -195,7 +219,7 @@ void init_dma_to_adc(uint32 dst_addr, uint32 block_length)
 
         }
     }
-
+#endif
 }
 
 void play_pcm_init(uint8 ain_type)
@@ -207,14 +231,18 @@ void play_pcm_init(uint8 ain_type)
     enable_dac(DAFIS_DMA, DAF0_EN);
 
     //先使能模拟输入，再设置ADC采样率，最后使能ADC
-    if (ain_type == AI_SOURCE_LINEIN)
+    if (ain_type == AI_SOURCE_AUX1)
     {
-        enable_ain(AI_SOURCE_LINEIN, 6);
+        enable_ain(AI_SOURCE_AUX1, 1);
+    }
+    else if (ain_type == AI_SOURCE_AUX0)
+    {
+        enable_ain(AI_SOURCE_AUX0, 1);    
     }
     else if (ain_type == AI_SOURCE_ASEMIC)
     {
         //打开mic测试通道
-        enable_ain(AI_SOURCE_ASEMIC, 6);
+        enable_ain(AI_SOURCE_ASEMIC, 0);
     }
     else
     {
@@ -232,14 +260,12 @@ void play_pcm_init(uint8 ain_type)
     if (ain_type == AI_SOURCE_ASEMIC)
     {
         //设置音量等级为5级音量，该音量可满足mic,linein的测试要求
-        set_pa_volume(25, (0xb0));
+        set_pa_volume(15, (0xbf));
     }
     else
     {
-        set_pa_volume(25, (0xbf));
-    }
-
-    sys_os_time_dly(20);
+        set_pa_volume(30, (0xbf));
+    }       
 }
 
 void play_pcm_exit(void)
@@ -254,14 +280,16 @@ void play_pcm_exit(void)
     disable_adc();
 }
 
-static int32 caculate_power_value(int16 *dac_buffer, uint32 data_length)
+static int32 caculate_power_value(uint32 dac_buffer_addr, uint32 data_length, uint32 *power_val_array, uint32 index)
 {
     uint32 i;
     uint32 power_value = 0;
     uint32 power_sample_value = 0;
 
+    int16 *dac_buffer = (int16 *)dac_buffer_addr;
+
     //计算单个声道的样本点
-    for (i = 0; i < (data_length * 2); i += 2)
+    for (i = 0; i < data_length; i += 2)
     {
         if (dac_buffer[i] >= 0)
         {
@@ -275,218 +303,321 @@ static int32 caculate_power_value(int16 *dac_buffer, uint32 data_length)
         power_value += power_sample_value;
     }
 
-    power_value = power_value / data_length;
+    power_value = power_value / (data_length / 2);
+
+    power_val_array[index] = power_value;
 
     att_write_test_info("power value:", power_value, 1);
 
-    if (power_value < POWER_LOW_THRESHOLD)
+    return 0;
+}
+
+static uint32 libc_abs(int32 value)
+{
+    if (value > 0)
     {
-        return FALSE;
+        return value;
     }
     else
     {
-        return TRUE;
+        return (0 - value);
     }
 }
 
-int32 analyse_sound_data_sub(uint16 *dac_buffer, uint32 data_length, uint8 mode)
+int32 analyse_power_val_valid(uint32 sample_cnt, uint32 *power_val_array, uint32 *p_power_val_left, uint32 *p_power_val_right)
 {
-    int32 ret_val;
+    uint32 i;
+    uint32 power_val;
+    uint32 power_val_total;
+    uint32 div_val;
 
-    ret_val = caculate_power_value(&dac_buffer[0], data_length / 4);
+    int32 diff_val;
 
-    if (ret_val == FALSE)
+    int32 max_diff_val;
+    int32 max_diff_index;
+    int32 invalid_data_flag;
+
+    int32 analyse_flag = 0;
+    
+    uint32 sample_count = (sample_cnt >> 1);
+
+    retry:
+    power_val_total = 0;
+    
+    for(i = 0; i < sample_count; i++)
     {
-        return ret_val;
+        power_val_total += power_val_array[i*2 + analyse_flag];
     }
 
-    //对于linein需要测试两路输出
-    if (mode == 1)
-    {
-        ret_val = caculate_power_value(&dac_buffer[1], data_length / 4);
+    power_val = power_val_total / i;
 
-        if (ret_val == FALSE)
+    invalid_data_flag = FALSE;
+
+    max_diff_val = 0;
+
+    while (1)
+    {
+        //判断采样点离散程度,先找出离散程度很大的点
+        for (i = 0; i < sample_count; i++)
         {
-            return ret_val;
+            if (power_val_array[i*2 + analyse_flag] != INVALID_POWER_VAL)
+            {
+                diff_val = libc_abs(power_val_array[i*2 + analyse_flag] - power_val);
+
+                if (diff_val > max_diff_val)
+                {
+                    max_diff_index = i;
+                    max_diff_val = diff_val;
+                }
+            }
+        }
+
+        //判断离散程度最大的点是否超过限制，如果超过限制，剔除该点，重复计算下一点
+        if (max_diff_val > MAX_POWER_DIFF_VAL)
+        {   
+            libc_print("invalid power", power_val_array[max_diff_index*2 + analyse_flag], 2);
+
+            libc_print("index ", max_diff_index, 2);
+            
+            //标记该点为无效点
+            power_val_array[max_diff_index*2 + analyse_flag] = INVALID_POWER_VAL;
+
+            invalid_data_flag = TRUE;
+
+            max_diff_val = 0;
+
+            //重新计算一次平均值
+            power_val_total = 0;
+
+            div_val = 0;
+
+            for (i = 0; i < sample_count; i++)
+            {     
+                if (power_val_array[i*2 + analyse_flag] != INVALID_POWER_VAL)
+                {
+                    power_val_total += power_val_array[i*2 + analyse_flag];
+                                 
+                    div_val++;
+                }
+            }  
+
+            power_val = (power_val_total / div_val); 
+
+            if(analyse_flag == 0)
+            {
+                libc_print("cal left power", power_val, 2);
+            }
+            else
+            {
+                libc_print("cal right power", power_val, 2);    
+            }
+        }
+        else
+        {
+            break;
         }
     }
 
+    //存在无效点需要重新计算cfo平均值
+    if (invalid_data_flag == TRUE)
+    {
+        power_val_total = 0;
+
+        div_val = 0;
+
+        for (i = 0; i < sample_count; i++)
+        {
+            if (power_val_array[i*2 + analyse_flag] != INVALID_POWER_VAL)
+            {
+                power_val_total += power_val_array[i*2 + analyse_flag];
+                div_val++;
+            }
+            else
+            {
+                continue;
+            }
+        }
+
+        //至少要有2组记录值
+        if (div_val < 2)
+        {
+            return FALSE;
+        }
+
+        power_val = (power_val_total / div_val);
+    }
+
+    if(analyse_flag == 0)
+    {
+        *p_power_val_left = power_val;
+
+        analyse_flag = 1;
+
+        goto retry;
+    }
+    else
+    {
+        *p_power_val_right = power_val;
+    }
+
+    if((libc_abs(*p_power_val_left - power_val_array[sample_cnt - 2]) <= MAX_POWER_DIFF_VAL)
+       && (libc_abs(*p_power_val_right - power_val_array[sample_cnt - 1]) <= MAX_POWER_DIFF_VAL))
+    {
+        return TRUE;
+    }
+    else
+    {
+        return FALSE;
+    }
+}
+
+void adc_data_deal(void)
+{
+    int32 ret_val;
+    uint8 *src_buffer_addr = (uint8 *)SOUND_DATA_ADDR;
+    
+	if ((act_readl(DMAIP) & (1 << DMAIP_DMA1HFIP)) != 0)
+    {
+        libc_print("half",0,0);
+        while ((act_readl(DMAIP) & (1 << DMAIP_DMA1HFIP)) != 0)
+        {
+            act_writel((1 << DMAIP_DMA1HFIP), DMAIP);
+        }   
+    }
+    else if ((act_readl(DMAIP) & (1 << DMAIP_DMA1TCIP)) != 0)
+    {
+        libc_print("Complete", g_adc_buffer_ptr, 2);
+        while ((act_readl(DMAIP) & (1 << DMAIP_DMA1TCIP)) != 0)
+        {
+            act_writel((1 << DMAIP_DMA1TCIP), DMAIP);
+        }
+
+        //print_channel_data(SAVE_SOUND_DATA_ADDR + i * SOUND_DATA_LEN);
+
+        //统计左声道能量值
+        caculate_power_value(src_buffer_addr, SOUND_DATA_LEN / 2, power_val_array, g_sample_count++);
+    
+        //统计右声道能量值
+        caculate_power_value(src_buffer_addr + 2, SOUND_DATA_LEN / 2, power_val_array, g_sample_count++);
+ 
+        //超过最小采样次数,开始进行数据分析
+        if(g_sample_count >= MIN_POWER_SAMPLE_COUNT)
+        {
+            //比较采用得到的能量平均值，如果平均值在阈值范围内，则认为采样数据已经稳定
+            ret_val = analyse_power_val_valid(g_sample_count, power_val_array, &g_power_val_left, &g_power_val_right);
+
+            //如果数据稳定，结束数据采样
+            if(ret_val == TRUE)
+            {
+                act_writel(0, DMA1CTL);               
+            }
+            else
+            {
+                g_sample_count = 0;
+            }
+        }
+    }
+    else
+    {
+        ;//qac
+    }	    
+}
+
+int32 channel_test(void *arg_buffer, uint32 test_id)
+{
+    int32 i;
+    uint32 ret_val = TRUE;
+    channel_test_arg_t *channel_test_arg = (channel_test_arg_t *)arg_buffer;
+    
+    libc_memset(power_val_array, 0, sizeof(power_val_array));
+
+    //开始通过linein通道采集数据
+    init_dma_to_adc(SOUND_DATA_ADDR, SOUND_DATA_LEN);  
+
+    while(1)
+    {
+        if(act_readl(DMA1CTL) == 0)
+        {
+            sys_free_irq(IRQ_DMA1);
+
+            if(test_id == TESTID_MIC_CH_TEST)
+            {
+                //采集结束，关闭通道
+                disable_ain(AI_SOURCE_ASEMIC);                    
+            }
+            else
+            {
+                //采集结束，关闭通道
+                disable_ain(AI_SOURCE_AUX1);   
+                disable_ain(AI_SOURCE_AUX0); 
+            }
+            break;
+        }
+    }
+    
+    DEBUG_ATT_PRINT("return power val left", g_power_val_left, 2);
+
+    DEBUG_ATT_PRINT("return power val right", g_power_val_right, 2);
+
+    if(channel_test_arg->test_left_ch == TRUE)
+    {
+        if(g_power_val_left < channel_test_arg->left_ch_power_threadshold)
+        {
+            ret_val = FALSE;
+        }
+    }
+
+    if(channel_test_arg->test_right_ch == TRUE)
+    {
+        if(g_power_val_right < channel_test_arg->right_ch_power_threadshold)
+        {
+            ret_val = FALSE;
+        }
+    }  
+
+    if(ret_val == FALSE)
+    {
+        channel_test_arg->left_ch_power_threadshold = g_power_val_left;
+        channel_test_arg->right_ch_power_threadshold = g_power_val_right;
+    }
+    
+    if(test_id == TESTID_LINEIN_CH_TEST_ATS2825 || test_id == TESTID_LINEIN_CH_TEST_ATS2823)
+    {
+#ifdef DEBUG_WRITE_CHANNEL_DATA
+        write_temp_file(1, SOUND_DATA_ADDR, SOUND_DATA_LEN);
+#endif  
+    }
+    else if(test_id == TESTID_MIC_CH_TEST)
+    {
+#ifdef DEBUG_WRITE_CHANNEL_DATA
+        write_temp_file(0, SOUND_DATA_ADDR, SOUND_DATA_LEN);
+#endif                     
+    }      
+    else
+    {
+        ;//nothing for QAC
+    }
+
+    if(ret_val == TRUE)
+    {
+        ret_val = thd_test(SOUND_DATA_ADDR, channel_test_arg);
+    }
+    else
+    {
+        channel_test_arg->left_ch_SNR_threadshold = 0;
+        channel_test_arg->left_ch_max_sig_point = 0;
+        channel_test_arg->right_ch_SNR_threadshold = 0;
+        channel_test_arg->right_ch_max_sig_point = 0;
+    }
+    
     return ret_val;
 }
 
-int32 test_linein_channel(void)
-{
-    int32 i;
-    int32 test_result;
-
-    for (i = 0; i < MAX_SAMPLE_COUNT; i++)
-    {
-        //开始通过linein通道采集数据
-        init_dma_to_adc(LINEIN_SOUND_DATA_ADDR, SOUND_DATA_LEN);
-
-        test_result = analyse_sound_data_sub(LINEIN_SOUND_DATA_ADDR, SOUND_DATA_LEN, 1);
-
-        if (test_result == FALSE)
-        {
-            break;
-        }
-    }
-#ifdef DEBUG_WRITE_CHANNEL_DATA
-    write_temp_file(1, LINEIN_SOUND_DATA_ADDR, SOUND_DATA_LEN);
-#endif
-    //采集结束，关闭通道
-    disable_ain(AI_SOURCE_LINEIN);
-
-    return test_result;
-}
-
-int32 test_mic_channel(void)
-{
-    int32 i;
-    int32 test_result;
-
-    for (i = 0; i < MAX_SAMPLE_COUNT; i++)
-    {
-        //开始通过mic通道采集数据
-        init_dma_to_adc(MIC_SOUND_DATA_ADDR, SOUND_DATA_LEN);
-
-        test_result = analyse_sound_data_sub(MIC_SOUND_DATA_ADDR, SOUND_DATA_LEN, 1);
-
-        if (test_result == FALSE)
-        {
-            break;
-        }
-    }
-#ifdef DEBUG_WRITE_CHANNEL_DATA
-    write_temp_file(0, MIC_SOUND_DATA_ADDR, SOUND_DATA_LEN);
-#endif
-    //采集结束，关闭通道
-    disable_ain(AI_SOURCE_ASEMIC);
-
-    //停止数据发送
-    act_writel(0, DMA0CTL);
-
-    return test_result;
-}
-
-bool test_fm_exit(void)
-{
-    int ret;
-
-    ret = fm_close();
-
-    disable_ain(AI_SOURCE_FM);
-
-    disable_adc();
-
-    sys_drv_uninstall(DRV_GROUP_FM);
-
-    if (ret != 0)
-    {
-        return FALSE;
-    }
-    else
-    {
-        return TRUE;
-    }
-}
-
-bool test_fm_init(void)
-{
-    int32 ret;
-    uint8 band_info, level;
-    uint32 freq = 10800;
-    ret = sys_drv_install(DRV_GROUP_FM, 0, "drv_fm.drv");
-    if (ret != 0)
-    {
-        goto test_fm_fail0;
-    }
-    band_info = 0; //默认频段
-    level = 8; //默认搜台门限
-
-    ret = fm_open(band_info, level, 0);
-    if (ret != 0)
-    {
-        goto test_fm_fail0;
-    }
-    if ((freq < 87500) || (freq > 108000))
-    {
-        freq = 87500;
-    }
-    ret = fm_set_freq(freq);
-    test_fm_fail0: if (ret != 0)
-    {
-        test_fm_exit();
-        return FALSE;
-    }
-    else
-    {
-        fm_mute(0);
-        return TRUE;
-    }
-}
-
-void init_fm_channel(void)
-{
-    ///PMP mode AA MUTE
-    *((REG32)(DAC_ANACTL)) &= (~(1 << DAC_ANACTL_AIN2DMT));
-
-    //enable ADC Module
-    *((REG32)(MRCR)) |= (1 << MRCR_AudioIOReset);
-
-    //set ADC clock
-    *((REG32)(CMU_DEVCLKEN)) |= 1 << CMU_DEVCLKEN_ADCCLKEN;
-
-    //Analog In enable L & R channel
-    *((REG32)(ADC_ANACTL)) |= 1 << ADC_ANACTL_ADLEN;
-    *((REG32)(ADC_ANACTL)) |= 1 << ADC_ANACTL_ADREN;
-
-    //set source input gain
-    set_ain_gain(AI_SOURCE_FM, 5);
-
-    //delay
-    sys_mdelay(150);
-
-    //PMP mode AA MUTE disable
-    *((REG32)(DAC_ANACTL)) |= 1 << DAC_ANACTL_AIN2DMT;
-
-}
-
-int32 test_fm_channel(void)
-{
-    int32 test_result;
-
-    test_result = test_fm_init();
-
-    if (test_result == 0)
-    {
-        test_result = TEST_FM_FAIL;
-    }
-
-    //打开FM采集数据的测试通道
-    init_fm_channel();
-
-    //开始通过FM通道采集数据
-    init_dma_to_adc(FM_SOUND_DATA_ADDR, SOUND_DATA_LEN);
-
-    test_result = analyse_sound_data_sub(FM_SOUND_DATA_ADDR, SOUND_DATA_LEN, 1);
-
-    //采集结束，关闭通道
-    //disable_ain(AI_SOURCE_FM);
-
-    //停止数据发送
-    act_writel(0, DMA0CTL);
-
-    test_fm_exit();
-
-    //ret:
-    return test_result;
-}
-
-void act_test_report_channel_result(uint16 test_id, int32 ret_val)
+void act_test_report_channel_result(uint16 test_id, int32 ret_val, void *arg_buffer)
 {
     return_result_t *return_data;
     uint16 trans_bytes = 0;
+    channel_test_arg_t *channel_test_arg = (channel_test_arg_t *)arg_buffer;
 
     if (g_test_mode != TEST_MODE_CARD)
     {
@@ -496,32 +627,70 @@ void act_test_report_channel_result(uint16 test_id, int32 ret_val)
 
         return_data->test_result = ret_val;
 
-        //添加结束符
-        //return_data->return_arg[trans_bytes++] = 0x0000;
+        int32_to_unicode(channel_test_arg->left_ch_power_threadshold, &(return_data->return_arg[trans_bytes]), &trans_bytes, 10);
+        
+        return_data->return_arg[trans_bytes++] = 0x002c;
+        
+        int32_to_unicode(channel_test_arg->right_ch_power_threadshold, &(return_data->return_arg[trans_bytes]), &trans_bytes, 10);
+        
+        return_data->return_arg[trans_bytes++] = 0x002c;
+        
+        int32_to_unicode(channel_test_arg->left_ch_SNR_threadshold, &(return_data->return_arg[trans_bytes]), &trans_bytes, 10);
+        
+        return_data->return_arg[trans_bytes++] = 0x002c;
+        
+        int32_to_unicode(channel_test_arg->right_ch_SNR_threadshold, &(return_data->return_arg[trans_bytes]), &trans_bytes, 10);
 
-        act_test_report_result(return_data, 4);
+        return_data->return_arg[trans_bytes++] = 0x002c;
+
+        //如果参数未四字节对齐，要四字节对齐处理
+        if ((trans_bytes % 2) != 0)
+        {
+            return_data->return_arg[trans_bytes++] = 0x0000;
+        }        
+        
+        act_test_report_result(return_data, trans_bytes * 2 + 4);
     }
     else
     {
-        if (ret_val == FALSE)
-        {
-            led_flash_fail();
-        }
+        act_test_report_test_log(ret_val, test_id);
     }
 }
 
-test_result_e act_test_linein_channel_test(void *arg_buffer)
+test_result_e act_test_linein_channel_test(void *arg_buffer, uint32 ic_type)
 {
-    int32 result;
+    int32 result = 0;
 
-    //初始化ADC,DAC,初始化相关DMA
-    play_pcm_init(AI_SOURCE_LINEIN);
+    if(ic_type == 1)
+    {
+        //初始化ADC,DAC,初始化相关DMA
+        play_pcm_init(AI_SOURCE_AUX1);
 
-    result = test_linein_channel();
+        result = channel_test(arg_buffer, TESTID_LINEIN_CH_TEST_ATS2825);
 
-    play_pcm_exit();
+        play_pcm_exit();
 
-    if (result == 0)
+        if(result == TRUE)
+        {
+            //初始化ADC,DAC,初始化相关DMA
+            play_pcm_init(AI_SOURCE_AUX0);
+
+            result = channel_test(arg_buffer, TESTID_LINEIN_CH_TEST_ATS2825);
+
+            play_pcm_exit();         
+        }
+    }
+    else
+    {
+        //初始化ADC,DAC,初始化相关DMA
+        play_pcm_init(AI_SOURCE_AUX0);
+
+        result = channel_test(arg_buffer, TESTID_LINEIN_CH_TEST_ATS2823);
+
+        play_pcm_exit();    
+    }
+    
+    if (result == FALSE)
     {
         att_write_test_info("linein channel test failed", 0, 0);
     }
@@ -530,9 +699,26 @@ test_result_e act_test_linein_channel_test(void *arg_buffer)
         att_write_test_info("linein channel test ok", 0, 0);
     }
 
-    act_test_report_channel_result(TESTID_LINEIN_CH_TEST, result);
-
+    if(ic_type == 1)
+    {
+        act_test_report_channel_result(TESTID_LINEIN_CH_TEST_ATS2825, result, arg_buffer);
+    }
+    else
+    {
+        act_test_report_channel_result(TESTID_LINEIN_CH_TEST_ATS2823, result, arg_buffer);    
+    }
+    
     return result;
+}
+
+test_result_e act_test_linein_channel_test_ATS2825(void *arg_buffer)
+{
+    return act_test_linein_channel_test(arg_buffer, 1);
+}
+
+test_result_e act_test_linein_channel_test_ATS2823(void *arg_buffer)
+{
+    return act_test_linein_channel_test(arg_buffer, 0);
 }
 
 test_result_e act_test_mic_channel_test(void *arg_buffer)
@@ -542,11 +728,11 @@ test_result_e act_test_mic_channel_test(void *arg_buffer)
     //初始化ADC,DAC,初始化相关DMA
     play_pcm_init(AI_SOURCE_ASEMIC);
 
-    result = test_mic_channel();
+    result = channel_test(arg_buffer, TESTID_MIC_CH_TEST);
 
     play_pcm_exit();
 
-    if (result == 0)
+    if (result == FALSE)
     {
         att_write_test_info("mic channel test failed", 0, 0);
     }
@@ -555,196 +741,8 @@ test_result_e act_test_mic_channel_test(void *arg_buffer)
         att_write_test_info("mic channel test ok", 0, 0);
     }
 
-    act_test_report_channel_result(TESTID_MIC_CH_TEST, result);
+    act_test_report_channel_result(TESTID_MIC_CH_TEST, result, arg_buffer);
 
     return result;
 }
-
-test_result_e act_test_fm_channel_test(void *arg_buffer)
-{
-    int32 result;
-
-    //初始化ADC,DAC,初始化相关DMA
-    play_pcm_init(AI_SOURCE_FM);
-
-    result = test_fm_channel();
-
-    play_pcm_exit();
-
-    if (result == 0)
-    {
-        ;
-    }
-    else
-    {
-        ;
-    }
-
-    act_test_report_channel_result(TESTID_FM_CH_TEST, result);
-
-    return result;
-}
-
-#ifdef DEBUG_WRITE_CHANNEL_DATA
-static const uint8 att_mic_file[] = "MIC.PCM";
-static const uint8 att_linein_file[] = "LINEIN.PCM";
-
-static uint8 tmp_buffer[30] _BANK_DATA_ATTR_;
-
-/*! \cond UI_DRIVER_API */
-/******************************************************************************/
-/*!
- * \par  Description:
- *    内码字符串转unicode字符串
- * \param[in]   src：源字符串指针
- * \param[in]   len：要转换的内码字符串长度
- * \param[out]  dest：目的字符串指针
- * \return      是否转换成功
- * \retval      TRUE 转换成功
- * \retval      FALSE 转换失败
- * \ingroup     string
- * \note        目的字符串缓冲区由用户保证不会溢出，缓冲区大小需要加上结束符。
- *******************************************************************************/
-bool char_to_unicode(uint8 *dest, uint8 *src, uint16 len)
-{
-    int s_cnt = 0;
-    int d_cnt = 0;
-    uint16 font_code;
-
-    while (1)
-    {
-        if ((s_cnt >= len) || (src[s_cnt] == 0))//到尾或者结束符
-
-        {
-            break;
-        }
-
-        if ((uint8) src[s_cnt] >= 0x80)
-        {
-            font_code = 0x3f;
-        }
-        else
-        {
-            font_code = src[s_cnt];
-        }
-        s_cnt++;
-
-        dest[d_cnt] = *((uint8*) &font_code); //低字节
-        d_cnt++;
-        dest[d_cnt] = *((uint8*) &font_code + 1); //高字节
-        d_cnt++;
-    }
-    dest[d_cnt] = 0;
-    d_cnt++;
-    dest[d_cnt] = 0;
-    return TRUE;
-}
-
-/******************************************************************************/
-/*!
- * \par  Description:
- *    将内码编码文件名转换为Unicode编码文件名。
- * \param[in]    file_name 内码编码文件名
- * \param[out]   file_name 输出Unicode编码文件名
- * \return       none
- * \ingroup      common_func
- * \par          exmaple code
- * \code
- 例子1：将内码编码文件名转换为Unicode编码文件名
- const char const_rec_name[] = "rec_001.wav";
- uint8 new_rec_name[26];
-
- libc_memcpy(new_rec_name, const_rec_name, 12);
- com_ansi_to_unicode(new_rec_name);
- //接着，就可以使用 new_rec_name 来创建名字为 rec_001.wav 的文件了
- * \endcode
- * \note
- * \li  用于创建文件前把文件名转换为Unicode编码，以适应 exFat 文件系统。
- * \li  用户需自己保证 file_name 够存放Unicode编码文件名，比如 英文内码文件名
- *      rec_001.wav，转成Unicode编码文件名，需要缓冲区大小为 26 个字节，即
- *      Unicode编码标志字符0xfffe 2字节 + 11个字符 2 * 11字节 + 结束符0x0 0x0 2字节。
- * \li  受限于辅助缓冲区大小（52字节），文件名不能超过 24 个字符长度。
- *******************************************************************************/
-void com_ansi_to_unicode(uint8 *file_name)
-{
-    uint16 ansi_len = (uint16) libc_strlen(file_name);
-    uint16 i;
-
-    //往后移动2字节，前面添加 0xfffe
-    for (i = ansi_len; i > 0; i--)
-    {
-        file_name[(i - 1) + 2] = file_name[i - 1];
-    }
-    file_name[0] = 0xff;
-    file_name[1] = 0xfe;
-    file_name[ansi_len + 2] = 0x0;
-
-    //把文件名转换为Unicode编码 com_name_buffer
-    char_to_unicode(tmp_buffer, file_name + 2, ansi_len);
-
-    //拷贝Unicode编码
-    libc_memcpy(file_name + 2, tmp_buffer, ansi_len * 2 + 2);
-}
-
-void write_temp_file(uint8 file_index, uint8 *write_buffer, uint32 write_len)
-{
-    int file_handle;
-
-    int ret_val;
-
-    uint8 filename[64];
-
-    libc_memset(filename, 0, 64);
-
-    if(file_index == 0)
-    {
-        libc_memcpy(filename, att_mic_file, sizeof(att_mic_file));
-    }
-    else
-    {
-        libc_memcpy(filename, att_linein_file, sizeof(att_linein_file));
-    }
-
-    com_ansi_to_unicode(filename);
-
-    //定位到根目录
-    vfs_cd(g_file_sys_id, CD_ROOT, 0);
-
-    ret_val = vfs_file_dir_exist(g_file_sys_id, filename, 1);
-
-    if(ret_val == 0)
-    {
-        file_handle = vfs_file_create(g_file_sys_id, filename, write_len);
-
-        if(file_handle == 0)
-        {
-            libc_print("create recrod file error!\n", 0, 0);
-
-            while(1);
-        }
-
-        vfs_file_write(g_file_sys_id, write_buffer, write_len, file_handle);
-
-        vfs_file_close(g_file_sys_id, file_handle);
-    }
-    else
-    {
-        file_handle = vfs_file_open(g_file_sys_id, filename, OPEN_MODIFY);
-
-        if(file_handle == 0)
-        {
-            libc_print("open file error!\n", 0, 0);
-
-            while(1);
-        }
-
-        vfs_file_write(g_file_sys_id, write_buffer, write_len, file_handle);
-
-        vfs_file_close(g_file_sys_id, file_handle);
-    }
-
-    return;
-
-}
-#endif
 

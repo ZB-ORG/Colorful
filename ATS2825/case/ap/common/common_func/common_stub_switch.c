@@ -31,7 +31,7 @@ static void aset_tools_open_ack(uint16 cmd)
 
 uint32 att_test_fread(uint8 *buffer, uint32 len, uint32 offset)
 {
-    int ret_val;
+    int ret_val = 0;
     int read_len;
     uint8 cmd_data[16];
     uint32 loop_exit;
@@ -124,6 +124,8 @@ app_result_e common_load_att_code(int32 file_sys_id, uint8 stg_base)
         aset_tools_open_ack(0x04fe);
 
         sys_mdelay(2);
+
+        sys_disable_use_temp_pool();
 
         if(g_app_info_state.stub_phy_type == STUB_PHY_USB)
         {
@@ -224,6 +226,8 @@ app_result_e com_sys_install_stub(void *ev_param)
     msg.content.data[0] = need_uninstall_led;
 
     send_sync_msg(APP_ID_MANAGER, &msg, &msg_reply, 0);
+    
+    g_app_info_state_all.stub_mode_flag = 1;
 
     if (stub_type == STUB_PC_TOOL_ASET_EQ_MODE)
     {
@@ -245,8 +249,10 @@ app_result_e com_sys_install_stub(void *ev_param)
     }
     else if (stub_type == STUB_PC_TOOL_ATT_MODE)
     {
+        sys_disable_mem_use(0x38000, 0x3c000);
+        
         //≤ª‘ –Ì–¥VRAM
-        DISABLE_VRAM_WRITE();
+        //DISABLE_VRAM_WRITE();
         result = common_load_att_code(0, DISK_S);
     }
     else

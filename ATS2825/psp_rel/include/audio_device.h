@@ -740,5 +740,8 @@ typedef struct _asrc_channel
     uint32 nSampleRate;
 } asrc_adjust_record_t;
 
+//内部PA模拟部分宏定义
+#define VOL_HARD_PA     40
+
 #endif
 

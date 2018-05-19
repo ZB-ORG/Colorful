@@ -47,7 +47,7 @@ HANDLE music_lyric_check(uint32* len_val)
     vfs_file_dir_offset(eh_vfs_mount, &g_temp_pdir_layer, &g_temp_pfile_offset, 0);
     //set to cur file path
     get_ret = vfs_file_dir_offset(eh_vfs_mount, &g_file_path_info.file_path.dirlocation.dir_layer_info,
-            &g_file_path_info.file_path.dirlocation.cluster_no, 1);
+            &g_file_path_info.file_path.dirlocation.file_info.file_extend_info.cluster_no, 1);
     if (get_ret == TRUE)
     {
         _get_lyric_name(&g_cur_id3_info);

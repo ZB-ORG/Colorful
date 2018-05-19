@@ -19,7 +19,12 @@ int32 open_mmm(void)
         return 0;
     }
     open_ret = mmm_mp_cmd(&g_mp_handle, MMM_MP_OPEN, (unsigned int) NULL);
+    if((open_ret != -1)&&(1 == g_app_info_state_all.fix_sample_rate_flag))
+    {
+        mmm_mp_cmd(&g_mp_handle, MMM_MP_FIX_SAMPLE_RATE, NULL);
+    }
     g_mmm_opened = TRUE;
+    
     return open_ret;
 }
 
@@ -29,7 +34,9 @@ app_result_e mengine_tts_start(void* msg_ptr)
     //private_msg_t* data_ptr = (private_msg_t*) msg_ptr;
     bool ret_vals = TRUE;
 
-    if ((g_eg_status_p->play_status == PlayFast) || (g_eg_status_p->play_status == PlaySta))
+    if ((g_eg_status_p->play_status == PlayFast) 
+        || (g_eg_status_p->play_status == PlaySta)
+        || (g_eg_status_p->play_status == PlayAB))
     {
         //œ»‘›Õ£≤•∑≈
         ret_vals = stop(STOP_PAUSE); //‘›Õ£≤•∑≈

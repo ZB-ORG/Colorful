@@ -14,7 +14,7 @@
 #include "enhanced.h"
 #include "mmm_mp.h"
 
-#define AB_SUPPORT
+//#define AB_SUPPORT
 
 //在继续从断点播放之前，检查这个文件所在的目录的名字是否改了，如果改了，清除断点信息
 #define CHECK_BK_DIR
@@ -105,7 +105,9 @@ typedef enum
     /*! DRM时钟错误  */
     EG_ERR_SECURE_CLOCK,
     /*! DRM信息错误  */
-    EG_ERR_DRM_INFO
+    EG_ERR_DRM_INFO,
+    /*! 读卡超时  */
+    EG_ERR_RAED_CARD_TIMEOUT
 } eg_err_e;
 
 /*! 引擎初始化状态机 */

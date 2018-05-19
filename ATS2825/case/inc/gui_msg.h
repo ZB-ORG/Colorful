@@ -116,6 +116,8 @@ typedef enum
     KEY_TYPE_LONG_UP = 0x01,
     /*! 任意按键类型 */
     KEY_TYPE_ALL = 0x3f,
+    /*!超长按*/    
+    KEY_TYPE_LONG_10S = 0x40,
 } key_type_e;
 
 typedef enum
@@ -123,6 +125,7 @@ typedef enum
     KEY_DEAL_NULL, //不做额外处理
     KEY_DEAL_FILTER, //过滤后续按键
     KEY_DEAL_FILTER_UP, //仅过滤抬起按键
+    KEY_DEAL_ITSELF,//过滤自身按键，防止超长按多次重复响应
 } key_deal_e;
 
 /*!
@@ -205,6 +208,8 @@ typedef struct
     uint8 filter_key;
     /*! 过滤掉按键长按后续动作，即 KEY_TYPE_SHORT_UP */
     uint8 filter_key_up;
+    /*! 过滤超长按键超长按后续动作*/
+    uint8 filter_key_itself;
     //逻辑按键映射表
     uint8 key_val_map[KEY_MAX_COUNT];
     //触摸按键映射表

@@ -1,13 +1,11 @@
-
 /*******************************************************************************
-*                              US282A
-*                 Copyright(c) 2014-2015 Actions (Zhuhai) Microelectronics Co., Limited,
-*                            All Rights Reserved.
-*        brief   主函数，初始ap，参数和创建后台
-*      <author>       <time>
-*       Wekan   2015-3-27
-*******************************************************************************/
-
+ *                              US282A
+ *                 Copyright(c) 2014-2015 Actions (Zhuhai) Microelectronics Co., Limited,
+ *                            All Rights Reserved.
+ *        brief   主函数，初始ap，参数和创建后台
+ *      <author>       <time>
+ *       Wekan   2015-3-27
+ *******************************************************************************/
 
 #include  "ap_btcall.h"
 
@@ -43,14 +41,14 @@ btcall_info_t g_btcall_cur_info;
 bool g_background_call_flag = FALSE;//后台打电话，即属于嵌套子场景，打完电话后回到原先应用
 
 /******************************************************************************
-* \par  Description:   读取应用VM全局变量,初始化全局变量
-* \param[in]     null0
-* \param[out]   none
-* \return           none
-* \note
-*   <author>    <time>
-*    Wekan   2015-3-27
-*******************************************************************************/
+ * \par  Description:   读取应用VM全局变量,初始化全局变量
+ * \param[in]     null0
+ * \param[out]   none
+ * \return           none
+ * \note
+ *   <author>    <time>
+ *    Wekan   2015-3-27
+ *******************************************************************************/
 static void _read_var(void)
 {
     //读取common VM公共变量信息
@@ -67,14 +65,14 @@ static void _read_var(void)
 }
 
 /******************************************************************************
-* \par  Description:  applib初始化
-* \param[in]     null0
-* \param[out]   none
-* \return           none
-* \note
-*   <author>    <time>
-*    Wekan   2015-3-27
-*******************************************************************************/
+ * \par  Description:  applib初始化
+ * \param[in]     null0
+ * \param[out]   none
+ * \return           none
+ * \note
+ *   <author>    <time>
+ *    Wekan   2015-3-27
+ *******************************************************************************/
 static void _app_init(void)
 {
     /*读入VM变量*/
@@ -98,14 +96,14 @@ static void _app_init(void)
 }
 
 /******************************************************************************
-* \par  Description:  applib退出
-* \param[in]     null0
-* \param[out]   none
-* \return           none
-* \note
-*   <author>    <time>
-*    Wekan   2015-3-27
-*******************************************************************************/
+ * \par  Description:  applib退出
+ * \param[in]     null0
+ * \param[out]   none
+ * \return           none
+ * \note
+ *   <author>    <time>
+ *    Wekan   2015-3-27
+ *******************************************************************************/
 void _app_exit(void)
 {
     com_view_manager_exit();
@@ -119,16 +117,15 @@ void _app_exit(void)
     applib_quit();
 }
 
-
 /******************************************************************************
-* \par  Description:  处理后台冲突问题，退出不是自己的后台
-* \param[in]     null0
-* \param[out]   none
-* \return           none
-* \note
-*   <author>    <time>
-*    Wekan   2015-3-27
-*******************************************************************************/
+ * \par  Description:  处理后台冲突问题，退出不是自己的后台
+ * \param[in]     null0
+ * \param[out]   none
+ * \return           none
+ * \note
+ *   <author>    <time>
+ *    Wekan   2015-3-27
+ *******************************************************************************/
 
 void kill_conflict_console(void)
 {
@@ -149,14 +146,14 @@ void kill_conflict_console(void)
     }
 }
 /******************************************************************************
-* \par  Description:  创建后台
-* \param[in]     null0
-* \param[out]   none
-* \return           none
-* \note
-*   <author>    <time>
-*    Wekan   2015-3-27
-*******************************************************************************/
+ * \par  Description:  创建后台
+ * \param[in]     null0
+ * \param[out]   none
+ * \return           none
+ * \note
+ *   <author>    <time>
+ *    Wekan   2015-3-27
+ *******************************************************************************/
 
 void create_console(void)
 {
@@ -191,14 +188,14 @@ void kill_console(void)
 }
 
 /******************************************************************************
-* \par  Description:  处理低电退出的情况
-* \param[in]    null
-* \param[out]   none
-* \return      
-* \note
-*   <author>    <time>
-*    Wekan   2015-10-30
-*******************************************************************************/
+ * \par  Description:  处理低电退出的情况
+ * \param[in]    null
+ * \param[out]   none
+ * \return
+ * \note
+ *   <author>    <time>
+ *    Wekan   2015-10-30
+ *******************************************************************************/
 
 void quit_for_low_power(void)
 {
@@ -220,14 +217,14 @@ app_result_e att_btcall_quit_deal(void)
 
 }
 /******************************************************************************
-* \par  Description:  应用的入口函数和场景管理器模块
-* \param[in]    PARAM_FROM_XXX
-* \param[out]   none
-* \return          返回时，退出app
-* \note
-*   <author>    <time>
-*    Wekan   2015-3-27
-*******************************************************************************/
+ * \par  Description:  应用的入口函数和场景管理器模块
+ * \param[in]    PARAM_FROM_XXX
+ * \param[out]   none
+ * \return          返回时，退出app
+ * \note
+ *   <author>    <time>
+ *    Wekan   2015-3-27
+ *******************************************************************************/
 
 int main(int argc, const char *argv[])
 {
@@ -262,16 +259,13 @@ int main(int argc, const char *argv[])
     //解除静音并设置音量模式
     com_set_mute(FALSE);
 
-    //关闭DAE，禁用MDRC模块
-    com_set_dae_onoff(FALSE);
-
-    if (g_background_call_flag == FALSE)
+    if ((g_background_call_flag == FALSE) || (g_app_info_vector[APP_TYPE_BTSTACK].used == 0))
     {
         if (g_standby_exit_flag == FALSE)
         {
             com_reset_sound_volume(0);
 
-            com_tts_state_play((uint16)(TTS_MODE_ONLYONE | TTS_MODE_NOBLOCK), (void*)TTS_ENTER_BTCALL);
+            com_tts_state_play((uint16) (TTS_MODE_ONLYONE | TTS_MODE_NOBLOCK), (void*) TTS_ENTER_BTCALL);
 
             //创建蓝牙后台
             com_btmanager_init(FALSE);
@@ -299,14 +293,11 @@ int main(int argc, const char *argv[])
 
     result = get_message_loop();
     sys_os_time_dly(5);//留一点时间给eg处理
-    if((result == RESULT_POWER_OFF) || (result == RESULT_LOW_POWER))//低电退出
+    if ((result == RESULT_POWER_OFF) || (result == RESULT_LOW_POWER))//低电退出
     {
         quit_for_low_power();
     }
-
-    //恢复DAE，启用MDRC模块
-    com_set_dae_onoff(TRUE);
-
+    
     com_switch_volume_mode(VOLUME_MODE_NORMAL);
     com_set_volume_gain((uint8) com_get_config_default(SETTING_SOUND_MAIN_VOLUME_GAIN));
     com_reset_sound_volume(0);
@@ -330,9 +321,9 @@ int main(int argc, const char *argv[])
     }
 
     //ATT工具进入该ap，退出之后都是进入btplay应用
-    if(g_app_info_state.stub_tools_type == STUB_PC_TOOL_ATT_MODE)
+    if (g_app_info_state.stub_tools_type == STUB_PC_TOOL_ATT_MODE)
     {
-        result = att_btcall_quit_deal();    
+        result = att_btcall_quit_deal();
     }
 
     //create new app
@@ -342,5 +333,4 @@ int main(int argc, const char *argv[])
 
     return result;
 }
-
 

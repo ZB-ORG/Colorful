@@ -89,6 +89,9 @@ SECTIONS
  		btcall_eg_message_loop.o(.bank)        	    
 
         btcall_eg_message_handle.o(.rodata)
+         btcall_eg_stub_asqt.o(.rcode) 
+		btcall_eg_callring.o(.text.irq)
+
     }
     
     /* 初始化了的全局数据段，紧跟在 .text段后面: .data */

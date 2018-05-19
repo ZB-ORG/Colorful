@@ -12,7 +12,7 @@
 #include <attr.h>
 #include <typeext.h>
 #include "sys_board_def.h"
-
+#include <mem_manager.h>
 
 typedef enum
 {
@@ -33,6 +33,14 @@ typedef enum
     SYS_HOSC_PARAMETER,
     SYS_RESET_TIMER,
     SYS_PRINT_EXCEPTION_INFO,
+    SYS_AVOID_LINEIN_NOISE,
+    SYS_MEM_USE_INFO,
+    SYS_SET_MEM_USE_INFO,
+    SYS_CLEAR_TEMP_POOL,
+    SYS_DISABLE_USE_TEMP_POOL,
+    SYS_ENABLE_USE_TEMP_POOL,
+    SYS_DISABLE_USE_SEND_BUFFER,
+    SYS_READ_PAGEMISS_CALLBACK,
 }sys_info_type_e;
 
 typedef enum
@@ -63,8 +71,8 @@ typedef enum
     REQUEST_IRQ,
     FREE_IRQ,
     
-    MALLOC,
-    FREE,
+    MEM_MALLOC,
+    MEM_FREE,
     
     MQ_SEND,
     MQ_RECEIVE,
@@ -137,6 +145,11 @@ typedef enum
     GET_TIME_OF_DAY,
 
     PRINT_EXCEPTION_INFO,
+    MEM_POOL_CREATE,
+    MEM_POOL_DESTROY,
+    MEM_SET_LOCK_INFO,
+    MEM_ENABLE_USE,
+	MEM_DISABLE_USE,	
 }kernel_cmd_e;
 
 /*
@@ -246,6 +259,12 @@ struct sys_operations {
     sys_op_i system_dma_print;
     sys_op_i get_time_of_day;
     sys_op_i print_exception_info;
+    sys_op_i mem_pool_create;
+    sys_op_i mem_pool_destroy;
+    sys_op_i mem_set_lock_info;
+    sys_op_i enable_mem_use;
+    sys_op_i disable_mem_use;
+	
 };
 
 /*
@@ -330,8 +349,8 @@ type：DSP库类型
 返回值void
 !!!NOTE:bank代码，禁止在中断调用
 */
-#define sys_free_dsp_codec(type)    \
-(void)sys_op_entry((void*)(uint32)(type), (void*)0, (void*)0, FREE_DSP_CODEC)
+#define sys_free_dsp_codec(name,type)    \
+(void)sys_op_entry((void*)(name), (void*)(uint32)(type), (void*)0, FREE_DSP_CODEC)
 
 /*
 int sys_bank_flush(uint8 page_index)
@@ -499,8 +518,19 @@ size：申请内存大小(字节单位)
 返回值 内存地址
 */
 #define sys_malloc(size)        \
-(void *) sys_op_entry((void *)(uint32)(size), (void *)0, (void *)0, MALLOC)
-    
+(void *) sys_op_entry((void *)(uint32)(size), (void *)(MEM_DATA), (void *)0, MEM_MALLOC)
+
+
+#define sys_malloc_bt_data(size) \
+(void *) sys_op_entry((void *)(uint32)(size), (void *)(MEM_BT_DATA), (void *)0, MEM_MALLOC) 
+
+
+#define sys_malloc_bank_data(size) \
+(void *) sys_op_entry((void *)(uint32)(size), (void *)(MEM_BANK_DATA), (void *)0, MEM_MALLOC)
+
+#define sys_malloc_large_data(size) \
+(void *) sys_op_entry((void *)(uint32)(size), (void *)(MEM_LDATA), (void *)0, MEM_MALLOC)
+
 /*
 void sys_free(void* addr)
 该接口用于释放申请内存
@@ -508,8 +538,16 @@ addr：内存地址
 返回值int：0-成功，非0失败
 */    
 #define sys_free(addr)             \
-(void) sys_op_entry((void *)(addr), (void *)0, (void *)0, FREE)
+(int) sys_op_entry((void *)(addr), (void *)(MEM_DATA), (void *)0, MEM_FREE)
 
+#define sys_free_bt_data(addr)             \
+(int) sys_op_entry((void *)(addr), (void *)(MEM_BT_DATA), (void *)0, MEM_FREE)
+
+#define sys_free_bank_data(addr)             \
+(int) sys_op_entry((void *)(addr), (void *)(MEM_BANK_DATA), (void *)0, MEM_FREE)
+
+#define sys_free_large_data(addr)             \
+(int) sys_op_entry((void *)(addr), (void *)(MEM_LDATA), (void *)0, MEM_FREE)
 
 /*
 int mq_send(uint8 queue_id, void *msg)
@@ -960,6 +998,11 @@ type：设置类型
 #define sys_base_set_info(info,type)     \
 (int)sys_op_entry((void*)(info), (void*)(uint32)(type), (void*)0, BASE_SET_INFO)
 
+//标志进入S3BT场景，此时需要对VRAM做特殊处理，不丢弃尾部index
+#define sys_base_set_enter_s3bt_scene()  (base_enter_s3bt_scene())
+
+//标志退出S3BT场景，此时不对VRAM做特殊处理，丢弃尾部index
+#define sys_base_set_exit_S3bt_scene()   (base_exit_s3bt_scene())
 /*
 void sys_dsp_print(void)
 该接口用于打印dsp缓存数据
@@ -988,12 +1031,13 @@ uint32 sys_read_c0count(void)
 #define sys_read_c0count()         \
 (uint32)sys_op_entry((void*)0, (void*)0, (void*)0, RANDOM)
 
+#if 0
 /*
 void sys_us_timer_start(void)
 该接口用于初始微秒计时器
 */
 #define sys_us_timer_start()    \
-(void)sys_op_entry((void*)(0), (void*)(0), (void*)(0), RECORD_ABTIME_US)
+    (void)sys_op_entry((void*)(0), (void*)(0), (void*)(0), RECORD_ABTIME_US)
 
 /*
 uint32 sys_us_timer_break(void)
@@ -1002,8 +1046,8 @@ uint32 sys_us_timer_break(void)
 !!!NOTE：与sys_us_timer_start配合使用，中间不允许有调频动作，否则计时不准
 */
 #define sys_us_timer_break()    \
-(uint32)sys_op_entry((void*)(1), (void*)(0), (void*)(0), RECORD_ABTIME_US)
-
+    (uint32)sys_op_entry((void*)(1), (void*)(0), (void*)(0), RECORD_ABTIME_US)
+#endif
 /*
 void* sys_share_query_creat(int8 query_id, uint8 *mem_addr, uint16 size)
 该接口用于创建共享内存查询管理队列，并返回可被写入的内存地址
@@ -1162,7 +1206,17 @@ void sys_reset_timer(void)
 !!!NOTE:bank代码，禁止在中断调用
 */
 #define sys_reset_timer()	     \
-(void)sys_op_entry((void*)0, (void*)(uint32)SYS_RESET_TIMER, (void*)0, SET_SYS_INFO)			
+(void)sys_op_entry((void*)0, (void*)(uint32)SYS_RESET_TIMER, (void*)0, SET_SYS_INFO)
+
+/*
+void sys_avoid_linein_noise(channel_num)
+该接口用于开机消除linein底噪
+返回值NULL
+!!!NOTE:bank代码，禁止在中断调用
+*/
+#define sys_avoid_linein_noise(a)	     \
+(void)sys_op_entry((void*)(a), (void*)(uint32)SYS_AVOID_LINEIN_NOISE, (void*)0, SET_SYS_INFO)
+
 
 /*
 void sys_print_exception_info(exc_code)
@@ -1181,6 +1235,63 @@ tm：时间
 */							
 #define sys_get_time_of_day(a)	     \
 (void)sys_op_entry((void*)(a), (void*)0, (void*)0, GET_TIME_OF_DAY)			
+
+/*
+void sys_read_mem_use_info(void)
+该接口用于读取内存使用信息结构体地址
+返回值NULL
+!!!NOTE:bank代码，禁止在中断调用
+*/
+#define sys_read_mem_use_info()	     \
+(int)sys_op_entry((void*)0, (void*)(uint32)SYS_MEM_USE_INFO, (void*)0, SET_SYS_INFO)	
+
+/*
+void sys_set_cache_info(void)
+该接口用于设置某个ap场景下各子场景cache使用情况
+返回值NULL
+!!!NOTE:bank代码，禁止在中断调用
+*/
+#define sys_set_mem_use_info(a)	     \
+(int)sys_op_entry((void*)(a), (void*)(uint32)SYS_SET_MEM_USE_INFO, (void*)0, SET_SYS_INFO)	
+
+#define sys_clear_temp_pool()	     \
+(int)sys_op_entry((void*)0, (void*)(uint32)SYS_CLEAR_TEMP_POOL, (void*)0, SET_SYS_INFO)	
+
+#define sys_disable_use_temp_pool()	     \
+    (int)sys_op_entry((void*)0, (void*)(uint32)SYS_DISABLE_USE_TEMP_POOL, (void*)0, SET_SYS_INFO) 
+
+#define sys_enable_use_temp_pool()	     \
+(int)sys_op_entry((void*)0, (void*)(uint32)SYS_ENABLE_USE_TEMP_POOL, (void*)0, SET_SYS_INFO)
+
+#define sys_disable_use_send_buffer()	     \
+(int)sys_op_entry((void*)0, (void*)(uint32)SYS_DISABLE_USE_SEND_BUFFER, (void*)0, SET_SYS_INFO)	
+
+#define sys_read_pagemiss_cbk()	     \
+(int)sys_op_entry((void*)0, (void*)(uint32)SYS_READ_PAGEMISS_CALLBACK, (void*)0, SET_SYS_INFO)	
+
+#define sys_mem_pool_create(a)  \
+(void)sys_op_entry((void*)(a), (void*)0, (void*)0, MEM_POOL_CREATE)
+
+#define sys_mem_pool_clear(a, b)  \
+(int)sys_op_entry((void*)(a), (void*)(b), (void*)(MEM_POOL_OP_CLEAR), MEM_POOL_DESTROY)
+
+#define sys_mem_pool_destroy(a, b)  \
+(int)sys_op_entry((void*)(a), (void*)(b), (void*)(MEM_POOL_OP_DESTROY), MEM_POOL_DESTROY)
+
+#define sys_mem_pool_force_destroy(a, b)  \
+(int)sys_op_entry((void*)(a), (void*)(b), (void*)(MEM_POOL_OP_FORCE_DESTROY), MEM_POOL_DESTROY)
+
+#define sys_set_mem_lock(a, b)  \
+(int)sys_op_entry((void*)(a), (void*)(b), (void*)SET_MEM_LOCK, MEM_SET_LOCK_INFO)
+
+#define sys_clr_mem_lock(a, b)  \
+(int)sys_op_entry((void*)(a), (void*)(b), (void*)CLR_MEM_LOCK, MEM_SET_LOCK_INFO)
+
+#define sys_enable_mem_use(a,b) \
+(int)sys_op_entry((void*)(a), (void*)(b), (void*)(0), MEM_ENABLE_USE)
+
+#define sys_disable_mem_use(a,b) \
+(int)sys_op_entry((void*)(a), (void*)(b), (void*)(0), MEM_DISABLE_USE)
 
 #endif
 

@@ -21,6 +21,11 @@ void config_wait_pa_ok(void)
 //处理创建后台蓝牙的过程
 void deal_bt_inback(app_result_e result)
 {
+    if (result == RESULT_ESD_RESTART)
+    {
+        return;
+    }
+    
     if (g_comval.support_bt_inback == 1)
     {
         com_btmanager_init(FALSE);
@@ -177,7 +182,7 @@ void config_power_on_dispatch(app_result_e result)
             {
                 config_wait_pa_ok();//等pa正常
                 //ESD RESTART不需要播报TTSs
-                com_tts_state_play(TTS_MODE_ONLYONE | TTS_MODE_NOBLOCK, (void *) TTS_POWERON);
+                com_tts_state_play(TTS_MODE_ONLYONE | TTS_MODE_NOBLOCK | TTS_MODE_SYS_NORECV, (void *) TTS_POWERON);
 #ifdef ENABLE_TRUE_WIRELESS_STEREO
                 g_app_info_state_all.power_on_flag=1;
 #endif                    
@@ -208,8 +213,16 @@ void config_power_on_dispatch(app_result_e result)
             }
         }
         config_wait_pa_ok();//确保pa正常
+        
         //创建ap
         com_ap_switch_deal(result);
+
+        if(g_app_info_state.stub_tools_type == 0)
+        {
+            g_config_var.esd_flag = TRUE;
+        
+            sys_vm_write(&g_config_var, VM_AP_CONFIG, sizeof(g_config_var));
+        }
     }
 }
 

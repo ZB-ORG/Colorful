@@ -140,17 +140,17 @@ bool mengine_special_switch(uint8 direct, uint16 dest_num)
     if (direct == SWITCH_BY_NO)
     {
         //数字点歌
-        ret = fsel_get_byno((void*) g_eg_cfg_p->location.dirlocation.filename, dest_num);
+        ret = fsel_get_byno((void*) g_eg_cfg_p->location.dirlocation.file_info.file_extend_info.file_ext, dest_num);
     }
     else if (direct == SWITCH_NEXT_DIR)
     {
         //目录向后
-        ret = fsel_get_nextdir((void*) g_eg_cfg_p->location.dirlocation.filename);
+        ret = fsel_get_nextdir((void*) g_eg_cfg_p->location.dirlocation.file_info.file_extend_info.file_ext);
     }
     else
     {
         //目录向前
-        ret = fsel_get_prevdir((void*) g_eg_cfg_p->location.dirlocation.filename);
+        ret = fsel_get_prevdir((void*) g_eg_cfg_p->location.dirlocation.file_info.file_extend_info.file_ext);
     }
 
     //恢复循环模式

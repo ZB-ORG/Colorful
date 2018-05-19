@@ -79,6 +79,7 @@ typedef struct{//×î´ó2k
     sv_prms_t dsp_cfg;
 }VM_SAVE_t;
 
+extern int ring_dma_isr(void);
 
 extern app_result_e btcall_deal_app_msg(void);
 extern app_result_e get_message_loop(void);

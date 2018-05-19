@@ -324,7 +324,11 @@ void key_scan_int_process(void)
     key_type = KEY_TYPE_TK;
     key_val = key_i2c_tk_check();
 #endif
+#ifdef SUPPORT_UART_SIM_KEY
+   uart1_process();
 
+   key_val = record_key_play(key_val);
+#endif
     /*没有按键*/
     if (g_oldkey_val == NO_KEY)
     {
@@ -370,6 +374,9 @@ void key_scan_int_process(void)
                 //save old key as cur value
                 post_key_msg(key_type, KEY_PHY_DOWN, g_oldkey_val);
                 g_tmp_count = 0;
+#ifdef SUPPORT_UART_SIM_KEY
+			    get_keyval(g_oldkey_val);
+#endif
             }
         }
     }
@@ -388,6 +395,9 @@ void key_scan_int_process(void)
                 //发键值消息
                 post_key_msg(key_type, KEY_PHY_CONT, g_oldkey_val);
             }
+#ifdef SUPPORT_UART_SIM_KEY
+			get_keytime();
+#endif
         }
         else
         {
@@ -397,6 +407,9 @@ void key_scan_int_process(void)
                 //发keyup消息
                 post_key_msg(key_type, KEY_PHY_UP, g_oldkey_val);
                 key_init_key_vars();
+#ifdef SUPPORT_UART_SIM_KEY
+				reocrdkey_print();
+#endif
             }
         }
     }

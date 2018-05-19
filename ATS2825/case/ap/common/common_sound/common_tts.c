@@ -8,6 +8,7 @@
  ********************************************************************************/
 
 #include "common_tts.h"
+#include "common_func.h"
 
 tts_play_info_t __section__(".gl_tts_data") g_tts_play_info;
 
@@ -158,11 +159,18 @@ bool com_tts_state_play_init(uint16 tts_mode, void* tts_ptr)
 {
     pthread_ext_param_t tts_thread;
 
-    PRINT_INFO_INT("tts enter:", (tts_mode << 16) | g_tts_play_info.section_ids[0]);
+    PRINT_INFO_INT("tts enter:", ((uint32)tts_mode << 16) | g_tts_play_info.section_ids[0]);
+     //DAE模式切换时必须保证按键音已播完
+    keytone_play_deal_wait();
+
+    sys_comval->bypass_temp = sys_comval->dae_cfg.bypass; //TTS播报前备份音效的开关状态
+    
+    //报TTS之前关闭actions音效
+    com_set_dae_onoff(FALSE);   
 
     if (tts_play_init(tts_mode, tts_ptr) == FALSE)
     {
-        PRINT_ERR("tts play init fail!!");
+        PRINT_ERR("tts init fail");
         g_tts_play_info.status = TTS_STATUS_IDLE;
         return FALSE;
     }
@@ -287,7 +295,7 @@ tts_play_ret_e com_tts_state_play_loop(uint16 tts_mode)
                 {
                     g_tts_play_info.option |= (uint8) FORCE_STOP_TTS;
                     ret_val = TTS_PLAY_RET_BY_BTEV;
-                    PRINT_INFO("tts force stop by btstack!");
+                    PRINT_INFO("tts stop by btstack!");
                     break;
                 }
             }
@@ -356,7 +364,7 @@ uint8 tts_fifo_out(uint16 *tts_mode, uint8 *tts_sections)
 {
     uint8 i;
 
-    if (g_tts_play_info.count == 0)
+    if ((g_tts_play_info.count == 0) || (g_tts_play_info.count > TTS_FIFO_DEPTH))
     {
         return -1;
     }
@@ -364,7 +372,7 @@ uint8 tts_fifo_out(uint16 *tts_mode, uint8 *tts_sections)
     *tts_mode = g_tts_play_info.tts_mode[0];
     libc_memcpy(tts_sections, g_tts_play_info.tts_fifo[0], TTS_SECTIONS_MAX);
     g_tts_play_info.count--;
-
+    
     for (i = 0; i < g_tts_play_info.count; i++)
     {
         g_tts_play_info.tts_mode[i] = g_tts_play_info.tts_mode[i + 1];

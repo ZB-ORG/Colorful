@@ -16,10 +16,10 @@ bool g_vfs_changed = FALSE;//文件系统是否改动
 //时间从2000-1-1 00:00:00 ~ 2128-12-31  23:59:58
 uint32 rtc_to_uint32(file_time_t * rtc)
 {
-   uint32 t = (rtc->year > 2000)?(rtc->year - 2000):0;
-   t = (t << 25) + (rtc->month << 21) + (rtc->day << 16);
-   t += (rtc->hour << 11) + (rtc->minute << 5) + (rtc->second/2);
-   return t;
+    uint32 t = (rtc->year > 2000)?(rtc->year - 2000):0;
+    t = (t << 25) + (rtc->month << 21) + (rtc->day << 16);
+    t += (rtc->hour << 11) + (rtc->minute << 5) + (rtc->second/2);
+    return t;
 }
 
 /*

@@ -48,7 +48,7 @@ bool get_app_msg(private_msg_t *private_msg)
         handle_timers(g_app_timer_vector, g_app_timer_count);
     }
 
-    sys_dsp_print();
+    //sys_dsp_print();
 
     //接收 应用私有消息
     if (sys_mq_receive((uint32) (g_this_app_info->mq_id), (void *) private_msg) == 0)

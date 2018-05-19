@@ -66,6 +66,10 @@ int com_view_key_event(key_event_t *p_ke, const key_event_map_t *app_ke_maplist,
                 {
                     com_filter_key_up();
                 }
+                else if (this_ke_map->ke.deal == KEY_DEAL_ITSELF)
+                {
+                    com_filter_key_itself();
+                }
                 else
                 {
                     ; //nothing for QAC
@@ -101,6 +105,10 @@ int com_view_key_event(key_event_t *p_ke, const key_event_map_t *app_ke_maplist,
             else if (this_ke_map->ke.deal == KEY_DEAL_FILTER_UP)
             {
                 com_filter_key_up();
+            }
+            else if (this_ke_map->ke.deal == KEY_DEAL_ITSELF)
+            {
+                com_filter_key_itself();
             }
             else
             {

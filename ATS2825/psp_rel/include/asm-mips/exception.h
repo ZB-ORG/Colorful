@@ -110,8 +110,11 @@ typedef struct pt_regs {
 //内存保护异常
 #define EXCEPTION_MPU_ERROR                   (8)
 
+//cache error
+#define EXCEPTION_CACHE_ERROR                 (9)
+
 //用户自定义的异常
-#define EXCEPTION_USER_DEFINE_ERROR           (9)
+#define EXCEPTION_USER_DEFINE_ERROR           (32)
 
 
 extern void default_exception_server(void);

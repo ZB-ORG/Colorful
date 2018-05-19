@@ -37,16 +37,28 @@ const char app_name_ram[APP_ID_MAX][12] =
  * \note
  *******************************************************************************/
 void _get_app_name(char *namebuf, uint8 ap_id, uint8 type)
-{
-    libc_memcpy(namebuf, app_name_ram[ap_id], 12);
-
-    if(type == APP_TYPE_GUI)
+{   
+    if(ap_id < APP_ID_MAX)
     {
-        if(g_app_info_state.autotest_mode == TRUE)
+        sys_os_sched_lock();
+        
+        libc_memcpy(namebuf, app_name_ram[ap_id], 12);
+
+        sys_os_sched_unlock();
+        
+        if(type == APP_TYPE_GUI)
         {
-            g_p_test_share_info->front_ap_id = ap_id;
-            g_p_test_share_info->ap_switch_flag = TRUE;
+            if(g_app_info_state.autotest_mode == TRUE)
+            {
+                g_p_test_share_info->front_ap_id = ap_id;
+                g_p_test_share_info->ap_switch_flag = TRUE;
+            }
         }
+        
+    }
+    else
+    {
+        libc_print("invalid ap id:", ap_id, 2);
     }
 }
 

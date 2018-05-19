@@ -22,6 +22,7 @@ static uint8 config_charge_mode = 0; //充电模式：0表示开机充电模式，会开启后台蓝
 //#define SWITCH_ON           0
 //#define SWITCH_OFF          1
 static int8 display_timer_id = -1;
+static uint16 charger_out_cnt = 0;
 static bool charge_full_flag = FALSE;
 
 app_result_e config_charge_key_deal_quit(void);
@@ -54,8 +55,8 @@ app_result_e config_charge_sys_deal_quit(void *ev_param);
 
 const sys_event_map_t __section__(".rodata.se_maplist") config_charge_se_maplist[] =
 {
-    {{MSG_USB_UNSTICK, SYSMSG_STOP_TTS_YES },      config_charge_sys_deal_quit},
-    {{MSG_SYS_ADAPTOR_OUT, SYSMSG_STOP_TTS_YES },  config_charge_sys_deal_quit},
+    {{MSG_USB_UNSTICK, SYSMSG_STOP_TTS_YES },      NULL},
+    {{MSG_SYS_ADAPTOR_OUT, SYSMSG_STOP_TTS_YES },  NULL},
 
     /*! 结束标志 */
     {{MSG_NULL, 0 }, NULL},
@@ -229,8 +230,17 @@ app_result_e config_charging(int param)
 
         if (detect_power_on() == FALSE)//主动监测电源拔出，实际上可以不要，后面实验一下是否可去掉
         {
-            result = config_charge_sys_deal_quit(NULL);
-            break;
+            charger_out_cnt ++;
+            if (charger_out_cnt > 100)
+            {
+                charger_out_cnt = 0;
+                result = config_charge_sys_deal_quit(NULL);
+                break;
+            }
+        }
+        else
+        {
+            charger_out_cnt = 0;
         }
 
         //挂起10ms，多任务调度

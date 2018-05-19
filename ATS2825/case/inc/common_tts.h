@@ -71,6 +71,9 @@
 #define IGNORE_PLAY_TTS             (1 << 7)
 #define FORCE_STOP_TTS              (1 << 6)
 
+/*! TTS相关宏定义 */
+#define TTS_MIN_VOL                  8     //TTS播放时的最小音量
+
 typedef enum
 {
     TTS_CTRL_IGNORE = 0,

@@ -319,57 +319,17 @@ uint32 com_btmanager_gen_random_lap(void)
 
     sys_vm_read(&btstack_magic, VM_BTSTACK, sizeof(uint16));
 
-    if (btstack_magic != VRAM_MAGIC(VM_BTSTACK))
+    if ((btstack_magic != VRAM_MAGIC(VM_BTSTACK)) && (btstack_magic != ATT_MAGIC))
     {
-        param_rw.logical_index = PARAM_BT_ADDR;
-        param_rw.rw_len = sizeof(bt_addr);
-        param_rw.rw_buffer = bt_addr;
+        //如果还在播放按键音，要等待按键音播放完毕
+        keytone_play_deal_wait();
 
-        //如果未读取到蓝牙地址，需要随机生成蓝牙地址
+        //如果还在播报TTS，要等待TTS播报完毕
+        com_tts_state_play_wait();
 
-        ret_val = base_param_read(&param_rw);
-        
-        if(ret_val == 0)     
-        {
-            //读取到蓝牙地址，判断有效性
-            for(i = 0; i < 6; i++)
-            {
-                if((bt_addr[i] != 0) && (bt_addr[i] != 0xff))
-                {
-                    break;
-                }
-            }
-
-            if(i == 6)
-            {
-                //参数无效
-                //如果还在播放按键音，要等待按键音播放完毕
-                keytone_play_deal_wait();
-
-                //如果还在播报TTS，要等待TTS播报完毕
-                com_tts_state_play_wait();
-
-                //生成随机数
-                bt_random_lap = gen_random_lap();
-                PRINT_INFO_INT("gen random lap:", bt_random_lap);                
-            }
-            else
-            {
-                bt_random_lap = sys_random(); 
-            }
-        }  
-        else
-        {
-            //如果还在播放按键音，要等待按键音播放完毕
-            keytone_play_deal_wait();
-
-            //如果还在播报TTS，要等待TTS播报完毕
-            com_tts_state_play_wait();
-
-            //生成随机数
-            bt_random_lap = gen_random_lap();
-            PRINT_INFO_INT("gen random lap:", bt_random_lap);    
-        }
+        //生成随机数
+        bt_random_lap = gen_random_lap();
+        PRINT_INFO_INT("gen random lap:", bt_random_lap);    
     }
     else
     {

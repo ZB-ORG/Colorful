@@ -184,11 +184,12 @@ bool alarm_fsel_init(uint8 disk_type, uint8 ring_type, uint16 ring_file_no)
         //构建文件路径
         plocation = &(g_alarm_path.file_path.dirlocation);
         plocation->disk = disk_type;
-        libc_memcpy(plocation->filename, &ext_name, 4);
+        libc_memcpy(plocation->file_info.file_extend_info.file_ext, &ext_name, 4);
         plocation->dir_layer = 0;
         //get dir location
 
-        if (vfs_file_dir_offset(g_fs_mount_id, &plocation->dir_layer_info, &plocation->cluster_no, 0) == TRUE)
+        if (vfs_file_dir_offset(g_fs_mount_id, &plocation->dir_layer_info,\
+            &plocation->file_info.file_extend_info.cluster_no, 0) == TRUE)
         {
             plocation->file_total = total;
             plocation->file_num = ring_file_no;

@@ -29,8 +29,7 @@
 app_timer_t conf_app_timer_vector[COMMON_TIMER_COUNT + APP_TIMER_COUNT];
 //系统变量
 comval_t g_comval;
-//config应用变量
-g_config_var_t g_config_var;
+
 //wav录音掉电回写文件头结构体
 record_writehead_t g_writehead;
 //是否第一次上电标志
@@ -50,6 +49,9 @@ bool g_config_standby_exit = FALSE;
 bool g_config_bt_flag = FALSE;
 bool g_config_esd_restart = FALSE;
 
+//是否支持UHOST延迟
+uint8 g_uhost_delay = 0;
+
 /******************************************************************************/
 /*!
  * \par  Description:
@@ -62,13 +64,16 @@ bool g_config_esd_restart = FALSE;
  *******************************************************************************/
 void __section__(".bank_var") _read_var(void)
 {
+    wp_zone_info_t wp_zone_info;
+    
     //读取common VM公共变量信息
     com_setting_comval_init(&g_comval);
 
     sys_vm_read(&g_config_var, VM_AP_CONFIG, sizeof(g_config_var));
     //初始化config的VM变量
-    if ((g_config_var.magic != VRAM_MAGIC(VM_AP_CONFIG)) || ((uint8) ((act_readl(RTC_BAK0) \
-        & (0xff << MY_RTC_FUNC_INDEX)) >> MY_RTC_FUNC_INDEX) == APP_FUNC_INVALID))
+    //if ((g_config_var.magic != VRAM_MAGIC(VM_AP_CONFIG)) || ((uint8) ((act_readl(RTC_BAK0) \
+   //     & (0xff << MY_RTC_FUNC_INDEX)) >> MY_RTC_FUNC_INDEX) == APP_FUNC_INVALID))
+    if ((g_config_var.magic != VRAM_MAGIC(VM_AP_CONFIG)) || (g_config_var.ap_id == APP_FUNC_INVALID))
     {
         //第一次上电
         g_first_boot = TRUE;
@@ -91,6 +96,25 @@ void __section__(".bank_var") _read_var(void)
 
         //第一次上电需要设置睡眠唤醒方式
         en_play_wake_up(FALSE);
+
+        base_query_support_write_protect(&wp_zone_info);
+
+        if(wp_zone_info.set_write_protect_size != 0)
+        {
+            PRINT_INFO("flash support write protect");
+
+            PRINT_INFO_INT("fw size: ", wp_zone_info.fw_cap_size);
+
+            PRINT_INFO_INT("spi flash size: ", wp_zone_info.spi_cap_size);
+
+            PRINT_INFO_INT("need protect size: ", wp_zone_info.need_write_protect_size);
+
+            PRINT_INFO_INT("real protect size: ", wp_zone_info.set_write_protect_size);
+        }
+        else
+        {
+            PRINT_INFO("flash not support write protect");
+        }
     }
 }
 
@@ -121,6 +145,9 @@ bool _app_init(void)
     com_rcp_init();//必须在xxx_rcp_var_init之前
 
     com_view_manager_init();
+#ifdef SUPPORT_ASET_TEST
+    aset_global_para_init();
+#endif    
 
     return TRUE;
 }
@@ -140,6 +167,62 @@ bool _app_exit(void)
     return TRUE;
 }
 
+int check_s3bt_vram_valid(void)
+{
+    int start_index;
+
+    int i;
+
+    for(i = 0; i < 4; i++)
+    {
+        if(i == 2)
+        {
+            //VM_S3BT_APP_STATUS这个值在这里先不判断
+            continue;
+        }
+        
+        if(base_read_vram_index(VM_S3BT_APP_GLOBAL + (i << 16)) == 0)
+        {
+            break;
+        }
+    }
+
+    if(i < 4)
+    {
+        return FALSE;
+    }
+    else
+    {
+        return TRUE;
+    }
+}  
+
+uint32 get_sdk_version(uint8 *sdk_version_buffer)
+{
+    uint32 sdk_version;
+
+    sdk_version = ((sdk_version_buffer[0] - '0') << 8);
+    sdk_version |= ((sdk_version_buffer[2] - '0') << 4);
+    sdk_version |= ((sdk_version_buffer[3] - '0'));
+
+    return sdk_version;
+}
+
+//打印psp的版本号和case的版本号
+void config_print_version(void)
+{
+    uint32 psp_version[4];
+
+    uint32 case_version[4];
+
+    sys_get_fw_info((void*) psp_version, FW_INFO_SDK_VERSION_ADDR, FW_INFO_SDK_VERSION_LEN);
+
+    sys_get_fw_info((void*) case_version, FW_INFO_CASE_VERSION_ADDR, FW_INFO_CASE_VERSION_LEN);
+
+    PRINT_INFO_INT("psp version", get_sdk_version(psp_version));
+
+    PRINT_INFO_INT("case version", get_sdk_version(case_version));
+}
 /******************************************************************************/
 /*!
  * \par  Description:
@@ -172,7 +255,7 @@ int main(int argc, const char *argv[])
     adjust_freq_set_level(AP_FRONT_LOW_PRIO, FREQ_LEVEL8, FREQ_NULL);
 
     _read_var(); //g_comval 的初始化必须在 config_globe_data_init 之前
-
+   
     if (((uint32) argc & 0xff) == SWITCH_ON)
     {
         //DAE配置环境已初始化好的标志，确保不会在DAE配置环境初始化好之前进行DAE参数设置
@@ -185,7 +268,7 @@ int main(int argc, const char *argv[])
         {
             if ((act_readl(RTC_BAK0) & (1 << MY_RTC_BT_FLAG)) != 0)
             {
-                g_config_bt_flag = TRUE;
+                g_config_bt_flag = TRUE;               
             }
 
             //清除S3BT标志
@@ -195,27 +278,40 @@ int main(int argc, const char *argv[])
             config_flush_rtc_reg();
 
             g_config_standby_exit = TRUE;
-            if(power_on_flag)       //意外断电
+            
+            if(power_on_flag != 0)       //意外断电
             {
                 libc_print("UNEXP SHUT DOWN",0,0);
                 g_config_bt_flag = FALSE;
                 g_config_standby_exit = FALSE;
             }
-        }
-        else if (((act_readl(RTC_BAK0) & (1 << MY_RTC_ESD_FLAG)) != 0) || (g_config_var.esd_flag == TRUE))
-        {
-            //检测记录的ap func index是否合法，不合法的ap func index进行过滤
-            //防止开机又关机
-            if(com_check_ap_func_index_valid() == TRUE)
+
+            //这里判断vram相关index是否存在，如果不存在，则不走s3bt流程
+            if(check_s3bt_vram_valid() == FALSE)
             {
-                g_customer_state |= CUSTOMER_ESD_WAKEUP;
-                //不清除ESD RESTART标志，由AP自己清除
-                g_config_esd_restart = TRUE;
+                libc_print("s3bt vram invalid",0,0);
+                g_config_bt_flag = FALSE;
+                g_config_standby_exit = FALSE;                
             }
         }
         else
         {
-            ;//nothing for qac
+            if(base_read_vram_index(VM_S3BT_BT_STACK) == (VM_S3BT_BT_STACK_LEN + 4))
+            {        
+                base_clear_vram_index(VM_S3BT_BT_STACK);            
+            }    
+            
+            if (((act_readl(RTC_BAK0) & (1 << MY_RTC_ESD_FLAG)) != 0) || (g_config_var.esd_flag == TRUE))
+            {
+                //检测记录的ap func index是否合法，不合法的ap func index进行过滤
+                //防止开机又关机
+                if(com_check_ap_func_index_valid() == TRUE)
+                {
+                    g_customer_state |= CUSTOMER_ESD_WAKEUP;
+                    //不清除ESD RESTART标志，由AP自己清除
+                    g_config_esd_restart = TRUE;
+                }
+            }
         }
     }
     
@@ -233,6 +329,8 @@ int main(int argc, const char *argv[])
         //尽量提前加载BT STACK
         if ((g_config_standby_exit == TRUE) && (g_config_bt_flag == TRUE))
         {
+            sys_base_set_enter_s3bt_scene();
+            
             com_btmanager_init(TRUE);//pathcode已加载，不用再加载
         }
 
@@ -251,7 +349,8 @@ int main(int argc, const char *argv[])
             UHOST_POWER_OPEN();
             UHOST_POWER_ENABLE();
             //set uhost cfg
-            g_uhost_cfg = (uint8) com_get_config_default(SETTING_UHOST_USE_DELAY);
+            g_uhost_delay = (uint8) com_get_config_default(SETTING_UHOST_USE_DELAY);
+            g_uhost_cfg = g_uhost_delay;
         }
 
         config_sys_init();
@@ -273,6 +372,8 @@ int main(int argc, const char *argv[])
         }
         else
         {
+            config_print_version();
+            
             result = config_poweron_option();
 
             if (g_config_esd_restart == TRUE)
@@ -313,6 +414,9 @@ int main(int argc, const char *argv[])
     }
     else //以下是关机操作
     {
+        //解除静音模式
+        com_set_mute(FALSE);
+        
         if (((uint32) argc & 0xff) == SWITCH_LOWPOWER)
         {
             //电量不足
@@ -334,6 +438,10 @@ int main(int argc, const char *argv[])
                 }
                 
             }
+            else
+            {
+                g_ap_switch_var.rtcalarm_poweroff = FALSE;
+            }
         }
 
         //进入S3BT
@@ -348,12 +456,13 @@ int main(int argc, const char *argv[])
             }
             else
             {
-            	//BTSTACK 退出
-            	g_config_var.esd_flag = FALSE;          //清除ESD标记
+                //BTSTACK 退出
+                g_config_var.esd_flag = FALSE;          //清除ESD标记
                 act_writel(act_readl(RTC_BAK0) | (1 << MY_RTC_BT_FLAG), RTC_BAK0);
                 config_flush_rtc_reg();
                 com_btmanager_exit(TRUE, FALSE);
                 result = sys_power_off(TRUE);
+                goto config_exit;
             }
         }
         else

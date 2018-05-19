@@ -156,13 +156,14 @@ app_result_e com_rcp_cmd_dispatch_bank(rcp_command_t *p_rcp_cmd, void *p_cur_par
 
             if (this_rcp_ctrl_func != NULL)
             {
-                g_ignore_switch_mute = FALSE;
+#ifndef ENABLE_TRUE_WIRELESS_STEREO
                 if (get_mute_enable() == TRUE)
                 {
                     change_mute_enable(FALSE);
                     com_reset_sound_volume(0);
                     g_ignore_switch_mute = TRUE;
                 }
+#endif
                 com_start_key_tone(KEYTONE_NOBLOCK);
                 result = this_rcp_ctrl_func(p_rcp_cmd->param1, p_rcp_cmd->param2);
             }

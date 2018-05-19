@@ -10,8 +10,6 @@ HANDLE lrc_handle _BANK_DATA_ATTR_;
 uint32 lrc_pos_file _BANK_DATA_ATTR_;
 uint32 lrc_file_len _BANK_DATA_ATTR_;
 static const uint8 lrc_asc[] = "LRC";
-static pfile_offset_t temp_pfile_offset _BANK_DATA_ATTR_;
-static pdir_layer_t temp_pdir_layer _BANK_DATA_ATTR_;
 
 uint16 len_sting(uint8 *str, uint8 str_type);
 bool open_lrc_file(uint8 *lrc_name);
@@ -100,9 +98,13 @@ HANDLE lyric_open(char * music_filename,uint32* file_len)
         libc_memset(lrc_temp_buf, 0x00, EH_SECTOR_SIZE);
         sys_vm_write(lrc_temp_buf, VM_AP_LYRIC_LENGTH);
     }*/
+//    sys_os_sched_lock();
+    
     open_lrc_file(music_filename);
     
     *file_len = lrc_file_len;
+
+//    sys_os_sched_unlock();
 
     return lrc_handle;
 }
@@ -146,6 +148,59 @@ uint16 len_sting(uint8 *str, uint8 str_type)
 
 }
 
+void copy_lrc_name(void *src_name, void *dst_name)
+{
+    uint32 i;
+    uint8 *src_lrc_name_ansi;
+    uint8 *dst_lrc_name_ansi;
+    uint16 *src_lrc_name_uni;
+    uint16 *dst_lrc_name_uni;
+    if (*(uint16*) src_name == 0xfeff)
+    {
+        src_lrc_name_uni = (uint16 *)src_name;
+        dst_lrc_name_uni = (uint16 *)dst_name;
+        //unicode
+        for(i = 0; i<64; i++)
+        {
+            //先确定结束符再确定后缀的.号位置
+            if(src_lrc_name_uni[i] == 0x0000)
+            {
+                if(src_lrc_name_uni[i-4] == 0x002e)
+                {
+                    i=i-4;
+                }
+                else if(src_lrc_name_uni[i-5] == 0x002e)
+                {
+                    i=i-5;
+                }
+                else
+                {
+                    //qac;
+                }
+                libc_print("lrc i = ",i,2);
+                break;
+            } 
+            dst_lrc_name_uni[i] = src_lrc_name_uni[i];
+        }
+        //添加后缀名
+        dst_lrc_name_uni[i++] = 0x002e;
+        dst_lrc_name_uni[i++] = 'l';
+        dst_lrc_name_uni[i++] = 'r';
+        dst_lrc_name_uni[i++] = 'c';
+        dst_lrc_name_uni[i++] = 0;
+    }
+    else//ASCII
+    {
+        src_lrc_name_ansi = (uint8 *)src_name;
+        dst_lrc_name_ansi = (uint8 *)dst_name;
+        libc_memcpy(dst_lrc_name_ansi, src_lrc_name_ansi, (uint32)64);
+        src_lrc_name_ansi[8] = 'l';
+        src_lrc_name_ansi[9] = 'r';
+        src_lrc_name_ansi[10] = 'c';
+        src_lrc_name_ansi[11] = 0;
+    }
+    return ;
+}
 /******************************************************************************/
 /*
  * \par  Description:打开歌词文件
@@ -163,7 +218,8 @@ bool open_lrc_file(uint8 *lrc_name)
     uint8 i;
     uint16 temp;
     uint32 tmp32;
-
+    pfile_offset_t temp_pfile_offset;
+    pdir_layer_t temp_pdir_layer; 
     if (lrc_name == NULL)
     {
         return FALSE;
@@ -185,41 +241,51 @@ bool open_lrc_file(uint8 *lrc_name)
         return FALSE;
     }
 
+    lrc_handle = 0;
+    copy_lrc_name(lrc_name, lrc_temp_buf);
+
     //save current path
     vfs_file_dir_offset(eh_vfs_mount, &temp_pdir_layer, &temp_pfile_offset, 0);
 
+    if(vfs_file_dir_exist(eh_vfs_mount, &lrc_temp_buf, 1) == 0)
+    {
+        libc_print("NO exist lrc",0,0);
+        return FALSE;
+    }
+    
     if (i > 0)
     {
         temp = temp-4;//去掉.XXX
         //unicode
-        tmp32 = vfs_dir(eh_vfs_mount, DIR_HEAD, NULL, LRC_EXT_BITMAP);
-        while(1)
-        {
-            if (0 != tmp32)
-            {
-                vfs_get_name(eh_vfs_mount,lrc_temp_buf,temp+1);//包含结束符
-                if(0 == libc_memcmp(lrc_name,lrc_temp_buf,(uint32)temp<<1))
-                {
-                    break;
-                }
-            }
-            else
-            {
-                break;
-            }
-            tmp32 = vfs_dir(eh_vfs_mount, DIR_NEXT, NULL, LRC_EXT_BITMAP);
-        }
+//        tmp32 = vfs_dir(eh_vfs_mount, DIR_HEAD, NULL, LRC_EXT_BITMAP);
+
+//        while(1)
+//        {
+//            if (0 != tmp32)
+//            {
+//                vfs_get_name(eh_vfs_mount,lrc_temp_buf,temp+1);//包含结束符
+//                if(0 == libc_memcmp(lrc_name,lrc_temp_buf,(uint32)temp<<1))
+//                {
+//                    break;
+//                }
+//            }
+//            else
+//            {
+//                break;
+//            }
+//            tmp32 = vfs_dir(eh_vfs_mount, DIR_NEXT, NULL, LRC_EXT_BITMAP);
+//        }
         
-        if(0 != tmp32)
+//        if(0 != tmp32)
         {
-            lrc_handle = vfs_file_open(eh_vfs_mount, NULL, R_NORMAL_SEEK);                
+            lrc_handle = vfs_file_open(eh_vfs_mount, lrc_temp_buf, R_NORMAL_SEEK);                
         }
-        else
-        {
-            lrc_handle = 0;
-        }
+//        else
+//        {
+//            lrc_handle = 0;
+//        }
     }
-    else
+    else//ASCII
     {
         temp = temp - 3;
         libc_memcpy(lrc_temp_buf, lrc_name, (uint32) temp);
@@ -232,6 +298,7 @@ bool open_lrc_file(uint8 *lrc_name)
 
     if (lrc_handle == 0)
     {
+        libc_print("!!open lrc error!!",0,0);
         return FALSE;
     }
 
@@ -242,6 +309,7 @@ bool open_lrc_file(uint8 *lrc_name)
     {
         vfs_file_close(eh_vfs_mount, lrc_handle);
         lrc_handle = 0;
+        libc_print("!!lrc len <16!!",0,0);
         return FALSE;
     }
 

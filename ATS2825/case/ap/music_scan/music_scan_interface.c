@@ -16,8 +16,12 @@ void * music_scan_open(void* param)
     //初始化创建线程的参数
     scan_thread_param.pthread_param.start_rtn = music_scan_file;
     scan_thread_param.pthread_param.arg = param;
-    scan_thread_param.pthread_param.ptos = (void *) AP_FRONT_HIGH_STK_POS;
+    //scan_thread_param.pthread_param.ptos = (void *) AP_FRONT_HIGH_STK_POS;
+    g_scan_thread_task_addr = sys_malloc_large_data(AP_FRONT_HIGH_STK_SIZE);
+    scan_thread_param.pthread_param.ptos = (void *)(g_scan_thread_task_addr + AP_FRONT_HIGH_STK_SIZE);
     scan_thread_param.stk_size = AP_FRONT_HIGH_STK_SIZE;
+
+    libc_print("scan thread addr:", g_scan_thread_task_addr, 2);
     //禁止调度
     sys_os_sched_lock();
 
@@ -57,5 +61,7 @@ int32 music_scan_close(music_scan_param_t *p_music_scan)
         libc_pthread_mutex_unlock(p_music_scan->mutex);
         libc_pthread_mutex_destroy(&p_music_scan->mutex);
     }
+
+    sys_free_large_data(g_scan_thread_task_addr);
     return 0;
 }

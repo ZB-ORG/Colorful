@@ -39,11 +39,11 @@ void welcome_delay_ms(uint8 dly_ms)
 
 void flush_rtc(void)
 {
-   act_writel(0xA596, RTC_REGUPDATA);
-   while (0x5A69 != act_readl(RTC_REGUPDATA))
-   {
-      ;//delay for RTC update complete
-   }
+    act_writel(0xA596, RTC_REGUPDATA);
+    while (0x5A69 != act_readl(RTC_REGUPDATA))
+    {
+        ;//delay for RTC update complete
+    }
 }
 
 void welcome_RTL_poweron(void)
@@ -430,6 +430,11 @@ __section__(".FIRST") void disp_starting(void (*adfu_launch)(void), void (*read_
 
 #ifdef FT_MODE
     act_writel((act_readl(HOSC_CTL) & 0xffff0000), HOSC_CTL);
+    act_writel(0xA596, RTC_REGUPDATA);
+    while (act_readl(RTC_REGUPDATA) != 0x5A69)
+    {
+        ;//qac
+    }
     welcome_delay_ms(20);
     //act_writel((act_readl(HOSC_CTL) | 0x4646), HOSC_CTL);
     welcome_delay_ms(10);

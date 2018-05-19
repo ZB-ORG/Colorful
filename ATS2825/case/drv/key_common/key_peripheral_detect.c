@@ -159,7 +159,7 @@ void check_linein_status(uint32 detect_mode)
     }
 
 #if (SUPPORT_AUX_DETECT != 0)
-    ret_val = check_device_in_out(check_aux, ((detect_mode & PER_DETECT_AUX_FOR_IN) != 0));
+    ret_val = check_device_in_out(check_aux, (bool)((detect_mode & PER_DETECT_AUX_FOR_IN) != 0));
     if (ret_val == 1)
     {
         msg = MSG_SYS_LINEIN_IN;

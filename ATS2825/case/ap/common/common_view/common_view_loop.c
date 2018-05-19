@@ -148,9 +148,9 @@ app_result_e com_view_loop(void)
     handle_timers(g_com_app_timer_vct, COM_APP_TIMER_MAX);
 
     //DSP打印和中断打印代理打印
-    sys_dsp_print();
+    //sys_dsp_print();
 
-    if (g_keytone_infor.count > 0)
+    if ((g_keytone_infor.count > 0) || (g_keytone_infor.thread_eixt == TRUE))
     {
         keytone_play_deal();
     }

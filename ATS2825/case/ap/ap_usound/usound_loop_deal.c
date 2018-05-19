@@ -25,14 +25,14 @@ const key_event_map_t __section__(".rodata.ke_maplist") usound_ke_maplist[] =
     { { KEY_PLAY, 0, KEY_TYPE_SHORT_UP, KEY_DEAL_NULL}, _key_play_deal},
 
     /*! 音量加 */
-    { { KEY_VADD, 0, KEY_TYPE_DOWN | KEY_TYPE_LONG | KEY_TYPE_HOLD, KEY_DEAL_FILTER_UP}, _key_vol_deal},
+    { { KEY_VADD, 0, KEY_TYPE_DOWN | KEY_TYPE_LONG | KEY_TYPE_HOLD, KEY_DEAL_FILTER_UP}, _key_vol_add_deal},
     /*! 音量加 */
-    { { KEY_NEXT_VOLADD, 0, KEY_TYPE_LONG | KEY_TYPE_HOLD, KEY_DEAL_FILTER_UP}, _key_vol_deal},
+    { { KEY_NEXT_VOLADD, 0, KEY_TYPE_LONG | KEY_TYPE_HOLD, KEY_DEAL_FILTER_UP}, _key_vol_add_deal},
 
     /*! 音量减 */
-    { { KEY_VSUB, 0, KEY_TYPE_DOWN | KEY_TYPE_LONG | KEY_TYPE_HOLD, KEY_DEAL_FILTER_UP}, _key_vol_deal},
+    { { KEY_VSUB, 0, KEY_TYPE_DOWN | KEY_TYPE_LONG | KEY_TYPE_HOLD, KEY_DEAL_FILTER_UP}, _key_vol_sub_deal},
     /*! 音量减 */
-    { { KEY_PREV_VOLSUB, 0, KEY_TYPE_LONG | KEY_TYPE_HOLD, KEY_DEAL_FILTER_UP}, _key_vol_deal},
+    { { KEY_PREV_VOLSUB, 0, KEY_TYPE_LONG | KEY_TYPE_HOLD, KEY_DEAL_FILTER_UP}, _key_vol_sub_deal},
 
     /*! 结束标志 */
     { { KEY_NULL, 0, KEY_TYPE_NULL, KEY_DEAL_NULL}, NULL},
@@ -87,7 +87,7 @@ app_result_e get_message_loop(void)
         usound_get_status(&g_play_status);
         
         //读取NTRIRQ判断是否为充电器      
-        if(act_readl(Usbirq_hcusbirq)&(0x01<<6))
+        if((act_readl(Usbirq_hcusbirq) & (0x01 << 6)) != 0)
         {
             act_writel((act_readl(Usbirq_hcusbirq)|(0x01<<6)),Usbirq_hcusbirq);
             NTRIRQ_count ++;
@@ -99,9 +99,11 @@ app_result_e get_message_loop(void)
         }
         if(NTRIRQ_count >= 5)
         {
+#ifndef __ESD_MODE_            
             result = RESULT_NEXT_FUNCTION;
             libc_print("charger in",0,0);
             break;
+#endif            
         }
         if(NO_NTRIRQ_count >= 200)
         {
@@ -123,7 +125,20 @@ app_result_e get_message_loop(void)
 
         if (g_play_status.line_status == 1)
         {
+            //esd可能会让line_status状态不正常，导致切换应用，因此，ESD不走此分支
+ #ifndef __ESD_MODE_
             result = RESULT_NEXT_FUNCTION;
+            break;
+ #endif
+            
+        }
+        
+        if (g_play_status.switch_flag == 1)
+        {
+            libc_print("switch stub ok", 0, 0);
+
+            //进入stub应用程序
+            result = RESULT_ENTER_STUB_DEBUG;
 
             break;
         }

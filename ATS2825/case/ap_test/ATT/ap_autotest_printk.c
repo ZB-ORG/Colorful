@@ -18,7 +18,6 @@
 
 #include "ap_manager_test.h"
 
-#define PRINT_BUF_ADDR 0x26000
 #define PRINT_BUF_SIZE STUB_ATT_RW_TEMP_BUFFER_LEN
 
 #define _SIGN     1  // 有符号
@@ -193,9 +192,18 @@ int print_log(const char* format, ...)
 
     va_list args;
 
+    uint8 *data_buffer;
+    
+    if(g_test_mode == TEST_MODE_CARD)
+    {
+        return;    
+    }    
+
     va_start(args, format);
 
-    print_log = (print_log_t *) PRINT_BUF_ADDR;
+    data_buffer = sys_malloc_large_data(256);
+
+    print_log = (print_log_t *) data_buffer;
 
     trans_bytes = vsnprintf((uint8 *) &(print_log->log_data), PRINT_BUF_SIZE, format, args);
 
@@ -206,11 +214,13 @@ int print_log(const char* format, ...)
     //保证四字节对齐
     trans_bytes = (((trans_bytes + 3) >> 2) << 2);
 
-    att_write_data(STUB_CMD_ATT_PRINT_LOG, trans_bytes, PRINT_BUF_ADDR);
+    att_write_data(STUB_CMD_ATT_PRINT_LOG, trans_bytes, data_buffer);
 
     libc_dma_print((uint8 *) &(print_log->log_data), 0, 0);
 
     att_read_data(STUB_CMD_ATT_ACK, 0, STUB_ATT_RW_TEMP_BUFFER);
+
+    sys_free_large_data(data_buffer);
 
     return 0;
 }

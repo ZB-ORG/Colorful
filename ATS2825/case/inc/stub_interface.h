@@ -87,6 +87,7 @@ typedef enum
     SET_DEBUG_MODE = 7,
     GET_PHY_INTERFACE = 8,
     CLR_RECV_DATA = 9,
+    SET_IN_TIMEOUT = 10,
 } stub_ioctl_t;
 
 typedef struct

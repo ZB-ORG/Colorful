@@ -113,13 +113,16 @@ void en_play_wake_up(bool standby_enter)
 void enter_standby_S3S4(bool standby_enter)
 {
     UINT32 i;
+    msg_apps_t msg;
     en_play_wake_up(standby_enter);
 	
     /** 保证anti-pop之前IC PA 初始化完成
     */
-    config_wait_pa_ok();
-	
-
+    while (g_app_info_state.inner_pa_inited == FALSE)
+    { //等待 IC PA 初始化完成
+        sys_os_time_dly(1);
+    }
+    
 #if ((CASE_BOARD_TYPE == CASE_BOARD_ATS2823) || (CASE_BOARD_TYPE == CASE_BOARD_DVB_ATS2823))
 //ATS2823 肯定不能支持屏幕，不会有时钟的需求，将时钟高校低关闭，降低电流
     act_writel(act_readl(RTC_CTL) | (1 << 2), RTC_CTL);
@@ -145,11 +148,10 @@ void enter_standby_S3S4(bool standby_enter)
         //设置进入S3BT标志
         if((act_readl(INTC_PD) & 0x01) != 0)
         {
-            //PRINT_INFO("reboot exit S3BT");
+            PRINT_INFO("reboot exit S3BT");
 
             //act_writel(0x1e, WD_CTL); //使能S3BT
             //while(1);
-            msg_apps_t msg;
            
              //打开PA，PA开机后常开
             if (g_app_info_state.aout_mode == AO_SOURCE_DAC)
@@ -172,7 +174,11 @@ void enter_standby_S3S4(bool standby_enter)
                 //DEMO IC:A0,A1,A2,A3
                 enable_pa(1, 0, AO_SOURCE_I2S);
 #endif
-            }    
+            } 
+            else
+            {
+                ;//nothing
+            }
 
             //config ap重新执行一次开机流程
             msg.content.data[0] = APP_ID_CONFIG;
@@ -200,7 +206,7 @@ void enter_standby_S3S4(bool standby_enter)
         */
         while (0x5A69 != act_readl(RTC_REGUPDATA))
         {
-          ;//delay for RTC update complete
+            ;//delay for RTC update complete
         }
         act_writel(0x00, POWER_CTL); //disable All，休眠进S4
     }

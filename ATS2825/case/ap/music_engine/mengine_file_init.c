@@ -142,7 +142,7 @@ bool mengine_file_init(void)
             //比较后缀名
             vfs_get_name(g_file_sys_id, exname, 0);
 
-            if (libc_strncmp(exname, loaction_ptr->filename, sizeof(exname)) != 0)
+            if (libc_strncmp(exname, loaction_ptr->file_info.file_extend_info.file_ext, sizeof(exname)) != 0)
             {
                 init_result = FALSE;
                 break;
@@ -187,7 +187,7 @@ bool mengine_file_init(void)
             libc_memset(&g_eg_cfg_p->bk_infor, 0, sizeof(mmm_mp_bp_info_t));
 
             //获取当前模式下的第一个可播放文件
-            init_result = fsel_get_nextfile(loaction_ptr->filename);
+            init_result = fsel_get_nextfile(loaction_ptr->file_info.file_extend_info.file_ext);
             //找到可播放文件
             if (init_result == TRUE)
             {

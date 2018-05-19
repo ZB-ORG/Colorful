@@ -208,6 +208,9 @@ static bool wma_content_object(uint32 objsize)
 
     uint16 j;
     asf_tagobj_t *tag_info_tab_p;
+
+    sys_os_sched_lock();
+    
     tag_info_tab_p = (asf_tagobj_t *) tag_info_tab;
 
     read_buf_data(tag_info_tab, sizeof(asf_tagobj_t));
@@ -288,6 +291,8 @@ static bool wma_content_object(uint32 objsize)
          }
          */
     }
+
+    sys_os_sched_unlock();
 
     return TRUE;
 }

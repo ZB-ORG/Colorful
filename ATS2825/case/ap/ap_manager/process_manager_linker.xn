@@ -50,6 +50,7 @@ SECTIONS
     APPLIB_DATA	:
     {
     	KEEP(applib_globe_data_com.o(.g_app_info_state))
+    	KEEP(applib_globe_data_com.o(.gl_rcp_buffer))
     }
 
     /*³£×¤´úÂë*/
@@ -99,103 +100,41 @@ SECTIONS
     OFFSET = . & 0x3ffff;
     
     BANK_MANAGER_0    : 
-    {
-        ctor.o(.text .rodata .xdata)           
-        . = BANK_MANAGER_SIZE;    
+    {        
+       
+        manager_get_name.o(.text .rodata .xdata)  
+        manager_mem_manager.o(.text .rodata .xdata) 
     }   
+     
     
     . = ((. + AP_BANK_SPACE) & (~(AP_BANK_SPACE - 1))) + OFFSET;
     BANK_MANAGER_1    : 
-    {       
-        manager_main.o(.text .rodata .xdata)            
-        . = BANK_MANAGER_SIZE;
-          
-    }  
-    
-    . = ((. + AP_BANK_SPACE) & (~(AP_BANK_SPACE - 1))) + OFFSET;
-    BANK_MANAGER_2    : 
-    {                  
+    {     
+        ctor.o(.text .rodata .xdata)  
+        manager_main.o(.text .rodata .xdata)                         
         common_config.o(.text .rodata .xdata)
-        . = BANK_MANAGER_SIZE;
+        manager_applib_funs.o(.text .rodata .xdata) 
+        app_engine_config.o(.text .rodata .xdata)             
+        common_speaker_control.o(.text .rodata .xdata)
           
     }     
     
     . = ((. + AP_BANK_SPACE) & (~(AP_BANK_SPACE - 1))) + OFFSET;
     BANK_MANAGER_3    : 
-    {              
-        manager_applib_funs.o(.text .rodata .xdata) 
-        app_engine_config.o(.text .rodata .xdata)
-        . = BANK_MANAGER_SIZE; 
-    }     
-    
-    . = ((. + AP_BANK_SPACE) & (~(AP_BANK_SPACE - 1))) + OFFSET;
-    BANK_MANAGER_4    : 
-    {           
-        manager_msg_handle3.o(.text .rodata .xdata)  
-        . = BANK_MANAGER_SIZE;         
-    }   
-    
-    . = ((. + AP_BANK_SPACE) & (~(AP_BANK_SPACE - 1))) + OFFSET;
-    BANK_MANAGER_5    : 
-    {            
-        manager_get_name.o(.text .rodata .xdata)  
-        . = BANK_MANAGER_SIZE;         
-    }   
-    
-    . = ((. + AP_BANK_SPACE) & (~(AP_BANK_SPACE - 1))) + OFFSET;
-    BANK_MANAGER_6    : 
-    {            
-        manager_msg_handle.o(.text .rodata .xdata) 
-        . = BANK_MANAGER_SIZE;                     
-    }       
-    
-    . = ((. + AP_BANK_SPACE) & (~(AP_BANK_SPACE - 1))) + OFFSET;
-    BANK_MANAGER_7    : 
-    {            
-        manager_globe_data_init.o(.text .rodata .xdata) 
-        . = BANK_MANAGER_SIZE;                      
-    }  
-      
-    . = ((. + AP_BANK_SPACE) & (~(AP_BANK_SPACE - 1))) + OFFSET;
-    BANK_MANAGER_8    : 
-    {            
-        manager_sub_thread.o(.text .rodata .xdata) 
-        . = BANK_MANAGER_SIZE;                      
-    }       
-    
-    . = ((. + AP_BANK_SPACE) & (~(AP_BANK_SPACE - 1))) + OFFSET;
-    BANK_MANAGER_9    : 
-    {            
-        manager_msg_handle2.o(.text .rodata .xdata)
-        . = BANK_MANAGER_SIZE;                          
-    }
-    
-    . = ((. + AP_BANK_SPACE) & (~(AP_BANK_SPACE - 1))) + OFFSET;
-    BANK_MANAGER_10    : 
-    {            
-        common_speaker_control.o(.text .rodata .xdata)
-        . = BANK_MANAGER_SIZE;                      
-    }  
-
-    . = ((. + AP_BANK_SPACE) & (~(AP_BANK_SPACE - 1))) + OFFSET;
-    BANK_MANAGER_11    : 
-    {            
-        manager_stub_deal.o(.text .rodata .xdata)
-        . = BANK_MANAGER_SIZE;                      
-    }
-    
-    . = ((. + AP_BANK_SPACE) & (~(AP_BANK_SPACE - 1))) + OFFSET;
-    BANK_MANAGER_12    : 
-    {            
+    {       
+        manager_globe_data_init.o(.text .rodata .xdata)        
+        manager_stub_deal.o(.text .rodata .xdata)        
         manager_config_hosc_freq.o(.text .rodata .xdata)
-        . = BANK_MANAGER_SIZE;                      
-    }
-
-	. = ((. + AP_BANK_SPACE) & (~(AP_BANK_SPACE - 1))) + OFFSET;
-    BANK_MANAGER_13    : 
-    {
-    	manager_key_drv_install.o(.text .rodata .xdata)
-        manager_FT_test.o(.text .rodata .xdata)
-        . = BANK_MANAGER_SIZE;                      
+        manager_key_drv_install.o(.text .rodata .xdata)
+        manager_FT_test.o(.text .rodata .xdata) 
+        manager_sub_thread.o(.text .rodata .xdata)           
+    } 
+    
+    . = ((. + AP_BANK_SPACE) & (~(AP_BANK_SPACE - 1))) + OFFSET;
+    BANK_MANAGER4    : 
+    {                  
+        manager_msg_handle2.o(.text .rodata .xdata)
+        manager_msg_handle3.o(.text .rodata .xdata)  
+        manager_msg_handle.o(.text .rodata .xdata)       
     }
 }

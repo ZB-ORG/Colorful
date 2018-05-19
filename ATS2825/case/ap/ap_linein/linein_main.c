@@ -92,7 +92,14 @@ bool _app_init(void)
 
 //退出app的功能函数,保存配置信息
 bool _app_deinit(void)
-{
+{   
+#ifdef SUPPORT_ASET_TEST
+    if ((g_app_info_state.stub_tools_type == STUB_PC_TOOL_WAVES_ASET_MODE) || (g_app_info_state.stub_tools_type == STUB_PC_TOOL_ASET_EQ_MODE))
+    {
+        aset_test_exit();
+    }
+#endif
+
     //注销RCP回调函数
     linein_rcp_var_exit();
 

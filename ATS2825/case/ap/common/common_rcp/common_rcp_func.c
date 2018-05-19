@@ -192,12 +192,23 @@ app_result_e __section__(".bank_2") com_get_support_feature(uint32 data1, uint32
     uint32 support_feature_low = 0;
     uint32 support_feature_high = 0;
 
-    support_feature_low = SUPPORT_FEATURE_A2DP_PLAY
-    | SUPPORT_FEATURE_SDCARD_PLAY
-    | SUPPORT_FEATURE_UHOST_PLAY
-    | SUPPORT_FEATURE_LINEIN_PLAY
-    | SUPPORT_FEATURE_ALARM_CLOCK
-    | SUPPORT_FEATURE_ALARM_BUILDIN_RING;
+    if (1 == sys_comval->dae_cfg.enable_2823T)
+    {
+        support_feature_low = SUPPORT_FEATURE_A2DP_PLAY
+        | SUPPORT_FEATURE_SDCARD_PLAY
+        | SUPPORT_FEATURE_UHOST_PLAY
+        | SUPPORT_FEATURE_LINEIN_PLAY;
+    }
+    else
+    {
+        support_feature_low = SUPPORT_FEATURE_A2DP_PLAY
+        | SUPPORT_FEATURE_SDCARD_PLAY
+        | SUPPORT_FEATURE_UHOST_PLAY
+        | SUPPORT_FEATURE_LINEIN_PLAY
+        | SUPPORT_FEATURE_ALARM_CLOCK
+        | SUPPORT_FEATURE_ALARM_BUILDIN_RING;
+    }
+
 
     if (sys_comval->support_fmradio == 1)
     {
@@ -287,12 +298,38 @@ app_result_e com_set_system_setting(uint32 data1, uint32 data2, void *data, uint
 
             if (get_mute_enable() == TRUE)
             {
+#ifdef ENABLE_TRUE_WIRELESS_STEREO
+                com_switch_mute(1,0,NULL);
+#else
                 change_mute_enable(FALSE);
+#endif
+
                 com_reset_sound_volume(0);
             }
             //com_start_key_tone(KEYTONE_NOBLOCK);
 
-            com_set_sound_volume(volume, SET_VOLUME_SYNC_TO_REMOTE);
+            if(g_app_info_vector[1].app_id == 5)
+            {
+                msg_apps_t msg;
+                //返回消息内容存放变量
+                msg_reply_t reply;
+                
+                //存放输入参数的地址
+                msg.content.addr = &data2;
+                
+                //存放获取参数的地址
+                reply.content = NULL;
+                
+                //消息类型(即消息名称)
+                msg.type = MSG_UENGINE_VOL_SEND_SYNC;
+                
+                //发送同步消息
+                send_sync_msg(APP_ID_UENGINE, &msg, &reply, 0);
+            }
+            else
+            {
+                com_set_sound_volume(volume, SET_VOLUME_SYNC_TO_REMOTE);
+            }
         }
         break;
 
@@ -395,7 +432,11 @@ app_result_e com_ctrl_switch_mute(uint32 data1, uint32 data2)
 {
     if (g_ignore_switch_mute == FALSE)
     {
+#ifdef ENABLE_TRUE_WIRELESS_STEREO
+        com_switch_mute(1,0,NULL);
+#else
         com_switch_mute();
+#endif 
     }
 
     return RESULT_NULL;

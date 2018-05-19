@@ -7,6 +7,7 @@
  ********************************************************************************/
 #include "app_linein.h"
 static void update_sound_mode(void);
+void  __section__(".BANK_CONTROL_1_2")update_waves_bin_para(void);
 static int8 linein_sound_mode_timer_id = -1;
 
 const key_event_map_t __section__(".rodata.ke_maplist") linein_ke_maplist[] =
@@ -62,12 +63,29 @@ app_result_e key_eq_deal(void)
     return RESULT_KEY_EVENT_REDEAL_BY_COMMON;
 }
 
+app_result_e deal_btstack_hd_err(void)
+{
+    //先卸载掉BT STACK，并断电
+    com_btmanager_exit(FALSE, TRUE);
+
+    //再装载BT STACK
+    g_need_auto_connect_timeout = 1;
+    g_neednot_tts_play_reset = 1;
+    com_btmanager_init(FALSE);
+    g_need_auto_connect_timeout = 0;
+
+    return RESULT_NULL;
+}
+
+
 app_result_e linein_sys_deal_aux_out(void *ev_param);
 
 const sys_event_map_t __section__(".rodata.se_maplist") linein_se_maplist[] =
 {
     { { MSG_LINEIN_OUT, SYSMSG_STOP_TTS_YES }, linein_sys_deal_aux_out },
 
+    { { MSG_BTSTACK_ERR_HARDWARE_EXCEPTION, SYSMSG_STOP_TTS_YES}, deal_btstack_hd_err},
+    
     /*! 结束标志 */
     { { MSG_NULL, 0 }, NULL },
 };
@@ -85,6 +103,10 @@ app_result_e _linein_loop_deal(void)
     while (1)
     {
         update_sound_mode();
+        if (1 == g_app_info_state_all.waves_dae_para_update_flag)
+        {
+            update_waves_bin_para(); 
+        }
         
         //获取状态并处理
         linein_get_status(&g_linein_eg_status);
@@ -176,6 +198,7 @@ void linein_modify_timer_proc(void)
      g_energy_detect_cnt_timer = -1;;
      libc_print("cnet",g_comval.dae_cfg.period_count,2);
      com_update_dae_config(&g_comval.dae_cfg);
+     com_reset_sound_volume(0);
 }
 
 static void sound_mode_handle(void)
@@ -196,5 +219,11 @@ static void update_sound_mode(void)
     }
 }
 
+void  __section__(".BANK_CONTROL_1_2")update_waves_bin_para(void)
+{
+    g_app_info_state_all.waves_dae_para_update_flag = 0;
+    linein_stop();
+    linein_sound_mode_timer_id = set_single_shot_app_timer(APP_TIMER_ATTRB_CONTROL,1000, sound_mode_handle);
+}
 
 

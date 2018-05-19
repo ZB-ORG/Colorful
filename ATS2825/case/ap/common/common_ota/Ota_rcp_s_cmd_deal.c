@@ -10,7 +10,6 @@
 #include "vm_def.h"
 
 /*APK向小机发送握手数据*/
-uint8 __section__(".bank")g_write_info_buf[512];
 app_result_e ota_receive_connect_data(uint32 data1, uint32 data2, void *data, uint16 data_len)
 {    
     uint32 i;
@@ -21,13 +20,19 @@ app_result_e ota_receive_connect_data(uint32 data1, uint32 data2, void *data, ui
     int ret;
     connect_message_t* connect_msg;
     ota_write_info_t *write_info;
-    ota_write_info_t *write_info_ret = g_write_info_buf;
+    ota_write_info_t *write_info_ret;
+    uint8 *temp_data_buffer;
+    //ota_write_info_t *write_info_ret = g_write_info_buf;
     //libc_print("APK request to connect!!",0,0);
+
+    temp_data_buffer = sys_malloc_large_data(512);
+
+    write_info_ret = (ota_write_info_t *)temp_data_buffer;
     
     buf += 2;    
 
     ret = sys_vm_read(&g_ota_restore_data,VM_OTA,sizeof(restore_breakpoint_t));
-    if(ret != 0)//没读到VM_OTA数据
+    if ((ret != 0) || (g_ota_restore_data.dowmload_statue == OTA_DOWNLOAD_STATE_CLEAR))//没读到VM_OTA数据/清除数据
     {
         g_ota_restore_data.dowmload_statue = OTA_DOWNLOAD_STATE_NULL; 
     }
@@ -45,7 +50,7 @@ app_result_e ota_receive_connect_data(uint32 data1, uint32 data2, void *data, ui
      
         if(CheckSum16(buf,check_len)==checksum)//检验成功
         {    
-            
+            //注意这里操作会引起write_info和write_info_ret指针的变化!!!
             write_info=(ota_write_info_t *)(buf + 8);//握手数据从16字节开始是信息分区表的内容
             //记录握手信息
             sys_vm_write(write_info,VM_OTA_CONNECT,2 + sizeof(ota_write_item_t) * write_info->part_total);
@@ -66,7 +71,7 @@ app_result_e ota_receive_connect_data(uint32 data1, uint32 data2, void *data, ui
                 libc_memcpy(&g_ota_restore_data.cru_updata, &g_OTA_var->g_cur_rec_state.cru_updata, 8);
                 g_ota_restore_data.pack_count = 0;
                 g_ota_restore_data.part_id = connect_msg->wirte_info.part_info[0].part_id;
-                g_ota_restore_data.random_code = connect_msg->random_upg_val;   
+                //g_ota_restore_data.random_code = connect_msg->random_upg_val;   
                 g_ota_restore_data.dowmload_statue = OTA_DOWNLOAD_STATE_START;  
                 g_OTA_var->g_send_erro_count = 0;
 
@@ -111,6 +116,7 @@ app_result_e ota_receive_connect_data(uint32 data1, uint32 data2, void *data, ui
         {
             g_OTA_var->g_connect_repy.connect_state = OTA_FW_DIFFERENT; //2次升级固件不是同一个
             libc_print("connect message is different",0,0);
+            sys_free_large_data(temp_data_buffer);
             return RESULT_NULL;
         }
         
@@ -122,6 +128,7 @@ app_result_e ota_receive_connect_data(uint32 data1, uint32 data2, void *data, ui
             {
                 change_app:
                 libc_print("change applicant!!",0,0);
+                sys_free_large_data(temp_data_buffer);
                 return RESULT_NULL;
             }
             else//换分区
@@ -134,7 +141,7 @@ app_result_e ota_receive_connect_data(uint32 data1, uint32 data2, void *data, ui
                 
                 
                 sys_vm_read(write_info_ret,VM_OTA_PART_INFO,1);
-                sys_vm_read(write_info_ret,VM_OTA_PART_INFO,2 + sizeof(ota_write_item_t) * write_info_ret->part_total);                       
+                sys_vm_read(write_info_ret,VM_OTA_PART_INFO,2 + sizeof(ota_write_item_t) * write_info_ret->part_total);
                
                 libc_print("g_cur_rec_state.part_id",g_OTA_var->g_cur_rec_state.part_id,2);
 
@@ -181,7 +188,7 @@ app_result_e ota_receive_connect_data(uint32 data1, uint32 data2, void *data, ui
             g_OTA_var->g_reply_bkinfo.connect_state = OTA_BK_CONTINUE;
             g_OTA_var->g_reply_bkinfo.cru_pack_count = g_OTA_var->g_cru_pack_count;
             g_OTA_var->g_reply_bkinfo.part_id = g_OTA_var->g_cur_rec_state.part_id;
-            g_OTA_var->g_reply_bkinfo.random_upg_key = g_ota_restore_data.random_code;
+            //g_OTA_var->g_reply_bkinfo.random_upg_key = g_ota_restore_data.random_code;
             g_OTA_var->g_reply_bkinfo.rec_data_state = RECEIVE_DARA_FAIL;
             libc_print("g_cur_rec_state.part_id",g_OTA_var->g_cur_rec_state.part_id,2);
             //libc_print("restore breakpoint!!",0,0);
@@ -194,7 +201,7 @@ app_result_e ota_receive_connect_data(uint32 data1, uint32 data2, void *data, ui
         }   
             
     }    
-
+    sys_free_large_data(temp_data_buffer);
     return RESULT_NULL;
 }
 
@@ -211,6 +218,13 @@ app_result_e ota_receive_data(uint32 data1, uint32 data2, void *data, uint16 dat
     checksum = *buf;
     apk_send_pak_num = *(buf+1);
     buf += 1;
+
+    if(g_ota_restore_data.dowmload_statue == OTA_DOWNLOAD_STATE_CLEAR)
+    {
+        //手机发送清除命令后小机又收到fw包，如果不返回导致OTA状态错误
+        libc_print("OTA state err!!",0,0);
+        return RESULT_NULL;
+    }
     
     if(CheckSum16(buf,514>>1)==checksum)//检验成功
     {    

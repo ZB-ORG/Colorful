@@ -23,11 +23,16 @@
  * \note         uengine_event_deal.c
  */
 /*******************************************************************************/
-app_result_e uengine_sync_volume(uint32 volume)
+app_result_e uengine_sync_volume(uint32 volume,uint8 mode)
 {
     app_result_e ret_value = RESULT_NULL;
 
     uint32 set_vol;
+    if(mode == 1)
+    {
+        set_vol = volume;
+        goto set_true_vol;
+    }
 
     //PRINT_INFO_INT("volsync", volume);
 
@@ -44,6 +49,7 @@ app_result_e uengine_sync_volume(uint32 volume)
     {
         set_vol = VOLUME_VALUE_MAX;
     }
+    set_true_vol:    
     if (set_vol > VOLUME_VALUE_MAX)
     {
         set_vol = VOLUME_VALUE_MAX;
@@ -60,6 +66,35 @@ app_result_e uengine_sync_volume(uint32 volume)
 
     g_share_ptr->vol_val = set_vol;
 
+    return ret_value;
+
+}
+
+
+/******************************************************************************/
+/*!
+ * \par  Description:
+ * \app_result_e uengine_set_volume(private_msg_t* cur_msg,uint32 volume)
+ * \处理音量调节
+ * \param[in]    private_msg_t* cur_msg
+ * \param[out]   none
+ * \return       int the result
+ * \retval       RESULT_IGNOR 忽略
+ * \retval       RESULT_APP_QUIT 退出app
+ * \note         uengine_event_deal.c
+ */
+/*******************************************************************************/
+app_result_e uengine_switch_deal(void)
+{
+    app_result_e ret_value = RESULT_NULL;
+
+    
+    //send asyn volume
+    g_cur_play_status_p->switch_flag = 1;
+
+    //更新共享内存
+    g_cur_play_status_p = sys_share_query_update(APP_ID_UENGINE);
+   
     return ret_value;
 
 }
@@ -161,11 +196,19 @@ app_result_e uengine_play_pause(void)
 /*******************************************************************************/
 app_result_e uengine_next_song(void)
 {
-
     //hid report change is ok
     ud_set_cmd(SET_HID_OPERS, 0x10);
 
     g_stop_by_tts = 0;
+    
+    g_auto_play_count = 0;
+
+    if(g_switch_song_flag != 0xff)
+    {
+        g_switch_song_flag = 0;
+    }
+    
+    g_auto_play_flag = 1;
 
     return RESULT_NULL;
 }
@@ -189,7 +232,170 @@ app_result_e uengine_prev_song(void)
     ud_set_cmd(SET_HID_OPERS, 0x20);
 
     g_stop_by_tts = 0;
+    
+    g_auto_play_count = 0;
+    
+    if(g_switch_song_flag != 0xff)
+    {    
+        g_switch_song_flag = 0;
+    }
+    
+    g_auto_play_flag = 1;
 
+    return RESULT_NULL;
+}
+
+/******************************************************************************/
+/*!
+ * \par  Description:
+ * \app_result_e uengine_vol_add(void)
+ * \调大音量
+ * \param[in]
+ * \param[out]   none
+ * \return       int the result
+ * \retval       RESULT_IGNOR 忽略
+ * \retval       RESULT_APP_QUIT 退出app
+ * \note         uengine_event_deal.c
+ */
+/*******************************************************************************/
+app_result_e uengine_vol_add(void)
+{
+
+    //hid report change is ok
+    ud_set_cmd(SET_HID_OPERS, 0x01);
+    
+    ud_hid_deal();
+
+    g_stop_by_tts = 0;
+
+    return RESULT_NULL;
+}
+
+/******************************************************************************/
+/*!
+ * \par  Description:
+ * \app_result_e uengine_vol_sub(void)
+ * \调小音量
+ * \param[in]
+ * \param[out]   none
+ * \return       int the result
+ * \retval       RESULT_IGNOR 忽略
+ * \retval       RESULT_APP_QUIT 退出app
+ * \note         uengine_event_deal.c
+ */
+/*******************************************************************************/
+app_result_e uengine_vol_sub(void)
+{
+
+    //hid report change is ok
+    ud_set_cmd(SET_HID_OPERS, 0x02);
+
+    ud_hid_deal();
+    
+    g_stop_by_tts = 0;
+
+    return RESULT_NULL;
+}
+/******************************************************************************/
+/*!
+ * \par  Description:
+ * \app_result_e uengine_vol_sub(void)
+ * \音量同步
+ * \param[in]
+ * \param[out]   none
+ * \return       int the result
+ * \retval       RESULT_IGNOR 忽略
+ * \retval       RESULT_APP_QUIT 退出app
+ * \note         uengine_event_deal.c
+ */
+/*******************************************************************************/
+app_result_e uengine_vol_sync(uint8 vol)
+{
+    int8 vol_sync_cnt = 0;
+    uint8 symbol = 0;
+    uint8 i = 0;
+
+    //libc_print("vol__",vol,2);
+    
+    if((vol == 0) || (vol == 31))
+    {
+        g_force_equ = 1;
+    }
+    #if 0
+    if(vol == 0)
+    {        
+        for (i = 0;i < 25;i ++)
+        {
+            ud_set_cmd(SET_HID_OPERS, 0x02);
+            
+            ud_hid_deal();
+            
+            ud_set_cmd(SET_HID_OPERS, 0x00);
+            
+            ud_hid_deal();
+        }
+    }
+    else if(vol == 31)
+    {
+        for (i = 0;i < 25;i ++)
+        {
+            ud_set_cmd(SET_HID_OPERS, 0x01);
+            
+            ud_hid_deal();
+            
+            ud_set_cmd(SET_HID_OPERS, 0x00);
+            
+            ud_hid_deal();
+        }
+    }
+    else
+    #endif
+    {
+        vol_sync_cnt = ((int8)vol - (int8)g_cur_play_status_p->change_vol_val);
+        if(vol_sync_cnt < 0)
+        {
+            symbol = 1;
+            vol_sync_cnt = 0 - vol_sync_cnt;
+        }
+        //if(vol_sync_cnt >= 15)
+        {
+            vol_sync_cnt = vol_sync_cnt/2;
+        }
+        if(vol_sync_cnt == 0)
+        {
+            vol_sync_cnt = 1;
+        }
+        //libc_print("adjust cnt:",vol_sync_cnt,2);
+        if(symbol == 0)
+        {
+            for (i = 0;i < ( vol_sync_cnt);i ++)
+            {
+                ud_set_cmd(SET_HID_OPERS, 0x01);
+                
+                ud_hid_deal();
+                
+                ud_set_cmd(SET_HID_OPERS, 0x00);
+                
+                ud_hid_deal();
+            }
+        }
+        else
+        {
+            for (i = 0;i < (vol_sync_cnt);i ++)
+            {
+                ud_set_cmd(SET_HID_OPERS, 0x02);
+                
+                ud_hid_deal();
+                
+                ud_set_cmd(SET_HID_OPERS, 0x00);
+                
+                ud_hid_deal();
+            }
+        }
+    }
+    
+    g_vol_sync_timer = sys_get_ab_timer();
+    
     return RESULT_NULL;
 }
 
@@ -211,11 +417,14 @@ app_result_e uengine_tts_start(void)
 
     ud_get_status(&g_status_data);
     if(1 == g_uspeaker_24bit)
-	{
-    	ccd_i2s_pa_set_clock(44);
+    {
+        if(g_pa_type == 1)
+        {
+            ccd_i2s_pa_set_clock(44);
+        }
 
-    	ud_set_cmd(SET_USPEAKER_24BIT,USPEAKER24_TTS_START);
-	}
+        ud_set_cmd(SET_USPEAKER_24BIT,USPEAKER24_TTS_START);
+    }
 
     ud_set_cmd(SET_TTS_FLAG,1);
 
@@ -237,7 +446,9 @@ app_result_e uengine_tts_start(void)
     }
 
     g_stop_by_tts = 1;
-
+    
+    g_switch_song_flag = 0xff;
+    
     return RESULT_NULL;
 }
 
@@ -261,14 +472,21 @@ app_result_e uengine_tts_stop(void)
 
     g_ain_out_setting.adc_sample = (int32) g_status_data.sample_rate;
     
-	if(1 == g_uspeaker_24bit)
-	{
-    	ccd_i2s_pa_set_clock(g_status_data.sample_rate);
+    if(1 == g_uspeaker_24bit)
+    {
+        g_ain_out_setting.dac_sample = (int32) g_status_data.sample_rate;
+                
+        g_ain_out_setting.adc_sample = (int32) g_status_data.sample_rate;
+        
+        if(g_pa_type == 1)
+        {
+            ccd_i2s_pa_set_clock(g_status_data.sample_rate);
+        }
 
-    	ud_set_cmd(SET_USPEAKER_24BIT,USPEAKER24_SAMPLE_RATE);
+        ud_set_cmd(SET_USPEAKER_24BIT,USPEAKER24_SAMPLE_RATE);
 
-    	ud_set_cmd(SET_USPEAKER_24BIT,USPEAKER24_TTS_STOP);
-	}
+        ud_set_cmd(SET_USPEAKER_24BIT,USPEAKER24_TTS_STOP);
+    }
     ud_set_cmd(SET_TTS_FLAG,0);
 
     //manual stop flag
@@ -276,5 +494,7 @@ app_result_e uengine_tts_stop(void)
     //hid report change is ok
     uegine_player_open();
 
+    g_switch_song_flag = 0;
+    
     return RESULT_NULL;
 }

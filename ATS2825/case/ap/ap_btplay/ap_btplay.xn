@@ -113,7 +113,7 @@ SECTIONS
     . = ((. + AP_BANK_SPACE) & (~(AP_BANK_SPACE - 1))) + OFFSET;
     BANK_CONTROL_1_2	: 
     {
-        btplay_message_handle.o(".text.autoplay")
+        btplay_message_handle.o(.text.autoplay)
         btplay_display.o(.text .rodata)
         btplay_message_loop.o(.text.autoplay)
     }=0x0

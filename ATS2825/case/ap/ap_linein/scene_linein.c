@@ -241,13 +241,6 @@ app_result_e scene_linein(void)
 
     set_play_disk_type(PLAY_DISK_NULL);
 
-#ifdef SUPPORT_ASET_TEST
-    if ((g_app_info_state.stub_tools_type == STUB_PC_TOOL_WAVES_ASET_MODE) || (g_app_info_state.stub_tools_type == STUB_PC_TOOL_ASET_EQ_MODE))
-    {
-        aset_test_exit();
-    }
-#endif
-
     if ((uint8) com_get_config_default(LINEIN_CHANNEL_SEL) == 1)
     {
 	    if (get_engine_type() == ENGINE_LINEIN)
@@ -255,7 +248,7 @@ app_result_e scene_linein(void)
 	        linein_close_engine(APP_ID_LINEIN_EG);
 	    }
 	
-	    com_set_dae_chan(FALSE, FALSE);
+	    //com_set_dae_chan(FALSE, FALSE);
 	}
 
     //调用场景退出函数

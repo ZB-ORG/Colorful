@@ -53,6 +53,23 @@ int com_btmanager_force_unlink(void)
     return 0;
 }
 
+int com_btmanager_clearpairlist(void)
+{
+#ifdef ENABLE_TRUE_WIRELESS_STEREO
+    if ((g_app_info_vector[APP_TYPE_BTSTACK].used == 1)
+            && (g_bt_stack_cur_info.conn_status >= CONN_STATUS_WAIT_PAIR))
+    {
+        msg_apps_t msg;
+        //消息类型(即消息名称)
+        msg.type = MSG_BTSTACK_CLEAR_TWSPAIR_LIST;
+        msg.content.data[0] = 0;
+        //发送同步消息
+        send_sync_msg_btmanager(NULL, &msg, NULL, 0);
+    }
+#endif
+    return 0;
+}
+
 int com_btmanager_BQB_test(void)
 {
     msg_apps_t msg;
@@ -75,6 +92,7 @@ int com_btmanager_BQB_test(void)
 
 int com_btmanager_rmt_dev_set(void)
 {
+#if 0
     bt_paired_info_t cur_list;
     msg_apps_t msg;
 
@@ -93,6 +111,6 @@ int com_btmanager_rmt_dev_set(void)
         //存在多于1个已配对的设备
         //在这里获取到所选择的设备地址，然后用该地址进行操作
     }
-
+#endif
     return RESULT_NULL;
 }

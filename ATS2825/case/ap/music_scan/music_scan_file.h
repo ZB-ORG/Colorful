@@ -32,6 +32,7 @@ extern music_scan_param_t g_scan_param;
 extern uint32 g_file_newest_time;
 extern uint32 g_vm_file_newest_time;
 extern bool g_vfs_changed;
+extern uint8 *g_scan_thread_task_addr;
 
 void * music_scan_open(void* param);
 int32 music_scan_close(music_scan_param_t *p_music_scan);

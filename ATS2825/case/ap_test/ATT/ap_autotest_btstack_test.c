@@ -69,16 +69,16 @@ void connect_source(void)
     msg_apps_t msg;
     msg_reply_t temp_reply;
 
-    if (g_bt_status.num_connected == 0)
+    //if (g_bt_status.num_connected == 0)
     {
-        if ((g_bt_status.support_profile & (uint8) HFP_SUPPORTED) != 0)
+        //if ((g_bt_status.support_profile & (uint8) HFP_SUPPORTED) != 0)
         {
             //消息类型(即消息名称)
-            msg.type = MSG_AUTOTEST_HFP_CONNECT_SYNC;
+            //msg.type = MSG_AUTOTEST_HFP_CONNECT_SYNC;
             //发送同步消息
-            send_sync_msg(MSG_TARGET_ID_BTSTACK, &msg, &temp_reply, 0);
+            //send_sync_msg(MSG_TARGET_ID_BTSTACK, &msg, &temp_reply, 0);
         }
-        else
+        //else
         {
             msg.type = MSG_AUTOTEST_A2DP_CONNECT_SYNC;
             send_sync_msg(MSG_TARGET_ID_BTSTACK, &msg, &temp_reply, 0);
@@ -90,17 +90,21 @@ void connect_source(void)
     return;
 }
 
-bool test_bstack_status_deal(btplay_test_arg_t *btplay_test_arg)
+
+bool test_bstack_status_deal(btplay_test_arg_t *btplay_test_arg, bt_paired_dev_info2_t *bt_paired_dev2, uint32 *ret_val)
 {
     bool loop_exit = FALSE;
+    uint32 status_bak;
+
+    status_bak = g_bt_status.conn_status;
 
     test_get_btstack_status(&g_bt_status);
 
-    DEBUG_ATT_PRINT("bt status", g_bt_status.conn_status, 2);
+    //DEBUG_ATT_PRINT("bt status", g_bt_status.conn_status, 2);
 
-    DEBUG_ATT_PRINT("err status", g_bt_status.err_status, 2);
+    //DEBUG_ATT_PRINT("err status", g_bt_status.err_status, 2);
 
-    DEBUG_ATT_PRINT("hfp status", g_bt_status.hfp_status, 2);
+    //DEBUG_ATT_PRINT("hfp status", g_bt_status.hfp_status, 2);
 
     //DEBUG_ATT_PRINT("support profile", g_bt_status.support_profile, 2);
 
@@ -141,9 +145,15 @@ bool test_bstack_status_deal(btplay_test_arg_t *btplay_test_arg)
     }
     else if (g_bt_status.conn_status == TEST_CONN_STATUS_LINKED)
     {
+        *ret_val = TRUE;
+        if ((status_bak != g_bt_status.conn_status) && (btplay_test_arg->bt_fast_mode == TRUE))
+        {
+            test_btstack_get_paired_dev_info(bt_paired_dev2);               
+        }
+        
         //连接性测试，发现连接成功立即返回
         if (btplay_test_arg->bt_test_mode == 0)
-        {
+        {    
             loop_exit = TRUE;
         }
     }
@@ -230,7 +240,7 @@ static void switch_app(uint32 app_func_id)
     send_async_msg(MSG_TARGET_ID_FRONTAPP, &msg);    
 }
 
-uint32 test_bt_manager_loop_deal(btplay_test_arg_t *btplay_test_arg)
+uint32 test_bt_manager_loop_deal(btplay_test_arg_t *btplay_test_arg, bt_paired_dev_info2_t *bt_paired_dev2)
 {
     uint8 loop_cnt = 0;
     uint32 timer_id;
@@ -242,11 +252,13 @@ uint32 test_bt_manager_loop_deal(btplay_test_arg_t *btplay_test_arg)
 
     timer_id = tick_ISR_install();
 
+    ret_val = FALSE;
+
     while (1)
     {
-        if (loop_cnt == 5)
+        if (loop_cnt == 50)
         {
-            loop_exit = test_bstack_status_deal(btplay_test_arg);
+            loop_exit = test_bstack_status_deal(btplay_test_arg, bt_paired_dev2, &ret_val);
             loop_cnt = 0;
             
             if (loop_exit == TRUE)
@@ -255,8 +267,18 @@ uint32 test_bt_manager_loop_deal(btplay_test_arg_t *btplay_test_arg)
             }            
         }
 
+        if (loop_exit == TRUE && g_att_version == 0)
+        {
+            break;
+        }        
+
         if (g_test_share_info.ap_switch_flag == TRUE)
         {
+            if(g_att_version == 0)
+            {
+                sys_os_sched_lock();
+            }
+            
             libc_print("ap quit, test over", 0, 0);
             g_test_share_info.ap_switch_flag = FALSE;
             break;
@@ -275,24 +297,18 @@ uint32 test_bt_manager_loop_deal(btplay_test_arg_t *btplay_test_arg)
 
         }
         loop_cnt++;
-        sys_os_time_dly(10);
+        sys_os_time_dly(1);
     }
 
     tick_ISR_uninstall(timer_id);
-    
-    sys_os_time_dly(300);
    
-    if ((g_connect_cnt == 4) && (g_bt_status.conn_status != TEST_CONN_STATUS_LINKED))
+    if (ret_val == FALSE)
     {       
         att_write_test_info("btplay test failed", 0, 0);
-
-        ret_val = FALSE;
     }
     else
     {        
         att_write_test_info("btplay test ok", 0, 0);
-
-        ret_val = TRUE;
     }
     
     return ret_val;
@@ -308,6 +324,8 @@ void act_test_btstack_install(btplay_test_arg_t *btplay_test_arg)
 
     bt_paired_dev_info_t bt_paired_dev;
 
+    bt_paired_dev_info2_t bt_paired_dev2;
+
     while (1)
     {
         if (g_test_share_info.front_ap_id == APP_ID_BTCALL)
@@ -316,7 +334,7 @@ void act_test_btstack_install(btplay_test_arg_t *btplay_test_arg)
             break;
         }
 
-        sys_os_time_dly(5);
+        sys_os_time_dly(1);
     }
 
     while (1)
@@ -336,22 +354,54 @@ void act_test_btstack_install(btplay_test_arg_t *btplay_test_arg)
         //sys_os_time_dly(1);
     }
 
-    DEBUG_ATT_PRINT("btstack install", 0, 0);
+    //DEBUG_ATT_PRINT("btstack install", 0, 0);
 
-    for (i = 0; i < 6; i++)
+    if ((g_att_version == 1) && (g_support_norflash_wp == TRUE))
     {
-        bt_paired_dev.remote_addr[i] = btplay_test_arg->bt_transmitter_addr[i];
-        DEBUG_ATT_PRINT("remote addr: ", bt_paired_dev.remote_addr[i], 2);
+        btplay_test_arg->bt_fast_mode = TRUE;    
+    }
+    else
+    {
+        btplay_test_arg->bt_fast_mode = FALSE;
     }
 
-    bt_paired_dev.support_profile = (uint8)(A2DP_SUPPORTED | LINKKEY_VALID | PROFILE_VALID);
+    if(btplay_test_arg->bt_fast_mode == FALSE)
+    {
+retry:
+        for (i = 0; i < 6; i++)
+        {
+            bt_paired_dev.remote_addr[i] = btplay_test_arg->bt_transmitter_addr[i];
+            //DEBUG_ATT_PRINT("remote addr: ", bt_paired_dev.remote_addr[i], 2);
+        }
 
-    msg.type = MSG_AUTOTEST_SET_PAIRED_DEV_SYNC;
-    msg.content.addr = &bt_paired_dev;
+        bt_paired_dev.support_profile = (uint8)(A2DP_SUPPORTED | LINKKEY_VALID | PROFILE_VALID);
+        
+        msg.type = MSG_AUTOTEST_SET_PAIRED_DEV_SYNC;
+        msg.content.addr = &bt_paired_dev;
+    }
+    else
+    {
+        for (i = 0; i < 6; i++)
+        {
+            bt_paired_dev2.remote_addr[i] = btplay_test_arg->bt_transmitter_addr[i];
+            //DEBUG_ATT_PRINT("remote addr: ", bt_paired_dev2.remote_addr[i], 2);
+        }
 
+        ret = test_btstack_read_paired_dev_info(&bt_paired_dev2);
+
+        //配对列表不存在，使用之前的连接方式
+        if(ret == FALSE)
+        {
+            DEBUG_ATT_PRINT("no found pair list ", 0, 0);
+            goto retry;    
+        }
+    
+        msg.type = MSG_AUTOTEST_SET_PAIRED_DEV2_SYNC;
+        msg.content.addr = &bt_paired_dev2;
+    }
     send_sync_msg(MSG_TARGET_ID_BTSTACK, &msg, NULL, 0);
 
-    DEBUG_ATT_PRINT("set pair list", 0, 0);
+    //DEBUG_ATT_PRINT("set pair list", 0, 0);
 
 }
 
@@ -361,23 +411,50 @@ test_result_e act_test_bt_test(void *arg_buffer)
     return_result_t *return_data;
     uint16 trans_bytes = 0;
 
+    bt_paired_dev_info2_t bt_paired_dev2;
+
+    libc_memset(&bt_paired_dev2, 0, sizeof(bt_paired_dev_info2_t));
+
     btplay_test_arg_t *btplay_test_arg = (btplay_test_arg_t *) arg_buffer;
     
     if (g_att_version == 1)
     {
         /* config 应用继续运行并启动其它程序;
          */
-        g_test_ap_info->test_stage = 1;
+        g_p_test_ap_info_bak->test_stage = 1;
     }
 
-    sys_os_sched_unlock();    
-
+    sys_os_sched_unlock(); 
+    
     act_test_btstack_install(btplay_test_arg);
+    
+    if (g_test_mode == TEST_MODE_CARD) 
+    {
+        vfs_file_close(g_file_sys_id, g_test_file_handle);
+        
+        _config_fs_deinit(DISK_H, &g_file_sys_id);    
+    }      
 
-    ret_val = test_bt_manager_loop_deal(btplay_test_arg);
+    ret_val = test_bt_manager_loop_deal(btplay_test_arg, &bt_paired_dev2);
+    
+    if (g_test_mode == TEST_MODE_CARD) 
+    {
+        g_file_sys_id = _config_fs_init(DISK_H);  
+        
+        g_test_file_handle = vfs_file_open(g_file_sys_id, g_ap_name, R_NORMAL_SEEK);  
+    } 
+
+    if ((btplay_test_arg->bt_fast_mode == TRUE) && (ret_val == TRUE))
+    {
+        test_btstack_save_paired_dev_info(&bt_paired_dev2);    
+    }
 
     if (g_test_mode != TEST_MODE_CARD)
-    {
+    { 
+        if (g_att_version == 0)
+        {
+           stub_ioctrl_set(SWITCH_URAM, STUB_USE_URAM1, 0);    
+        }
         return_data = (return_result_t *) (STUB_ATT_RETURN_DATA_BUFFER);
 
         return_data->test_id = TESTID_BT_TEST;
@@ -390,6 +467,11 @@ test_result_e act_test_bt_test(void *arg_buffer)
         return_data->return_arg[trans_bytes++] = 0x002c;
 
         bytes_to_unicode(&(btplay_test_arg->bt_test_mode), 0, 1, &(return_data->return_arg[trans_bytes]), &trans_bytes);
+
+        //添加参数分隔符','
+        return_data->return_arg[trans_bytes++] = 0x002c;
+
+        bytes_to_unicode(&(btplay_test_arg->bt_fast_mode), 0, 1, &(return_data->return_arg[trans_bytes]), &trans_bytes);
 
         //添加结束符
         return_data->return_arg[trans_bytes++] = 0x0000;
@@ -404,135 +486,14 @@ test_result_e act_test_bt_test(void *arg_buffer)
     }
     else
     {
-        if (ret_val == FALSE)
-        {
-            led_flash_fail();
-        }
+        act_test_report_test_log(ret_val, TESTID_BT_TEST);
     }
-    
-    sys_os_sched_lock();
 
+    sys_os_sched_lock();
+    
     return ret_val;
 }
 
-test_result_e act_test_enter_ft_mode(void *arg_buffer)
-{
-    return_result_t *return_data;
 
-    if (g_test_mode != TEST_MODE_CARD)
-    {
-        return_data = (return_result_t *) (STUB_ATT_RETURN_DATA_BUFFER);
 
-        return_data->test_id = TESTID_FTMODE;
-
-        return_data->test_result = TRUE;
-
-        act_test_report_result(return_data, 4);
-
-        act_test_read_testid(att_cmd_temp_buffer, 80);
-    }
-
-    sys_local_irq_save();
-
-    //A21 digital function
-    act_writel((act_readl(AD_Select) & 0xfffffffc), AD_Select);
-
-    //A22 digital function
-    act_writel((act_readl(AD_Select1) & 0xfffffff9), AD_Select);
-
-    act_writel(act_readl(GPIOAOUTEN) | (1 << 21), GPIOAOUTEN);
-
-    act_writel(act_readl(GPIOAOUTEN) | (1 << 22), GPIOAOUTEN);
-
-    act_writel(act_readl(GPIOADAT) & (~(1 << 21)), GPIOADAT);
-
-    act_writel(act_readl(GPIOADAT) & (~(1 << 22)), GPIOADAT);
-
-    act_writel((act_readl(VD15_DCDC_CTL) & 0xffffe7ff), VD15_DCDC_CTL);
-
-    DEBUG_ATT_PRINT("FT MODE", 0, 0);
-
-    //FT mode
-    sys_mdelay(20);
-    sys_mdelay(10);
-    act_writel(act_readl(0xc01b0000) | 0x00000014, 0xc01b0000); //ft test mode
-    sys_mdelay(20);
-    act_writel((act_readl(WD_CTL) & (~0x10)), WD_CTL);
-    while (1)
-    {
-        ;
-    }
-}
-
-test_result_e act_test_enter_BQB_mode(void *arg_buffer)
-{
-    int i;
-
-    bool ret;
-
-    msg_apps_t msg;
-
-    return_result_t *return_data;
-
-    if (g_att_version == 1)
-    {
-        /* config 应用继续运行并启动其它程序;
-         */
-        g_test_ap_info->test_stage = 1;
-    }
-
-    sys_os_sched_unlock();
-
-    while (1)
-    {
-        switch_app(APP_ATT_FUNC_ID_BTPLAY);
-        
-        if (g_test_share_info.front_ap_id == APP_ID_BTPLAY)
-        {
-            g_test_share_info.ap_switch_flag = FALSE;
-            break;
-        }
-
-        sys_os_time_dly(5);
-    }
-#if 0
-    while (1)
-    {
-        DEBUG_ATT_PRINT("send install msg", 0, 0);
-
-        //等待BTSTACK加载
-        msg.type = MSG_AUTOTEST_QUERY_BTSTACK_WORK_SYNC;
-
-        ret = send_sync_msg(MSG_TARGET_ID_BTSTACK, &msg, NULL, 100);
-
-        if (ret == TRUE)
-        {
-            break;
-        }
-
-        //sys_os_time_dly(1);
-    }
-#endif
-    DEBUG_ATT_PRINT("btstack install", 0, 0);
-
-    if (g_test_mode != TEST_MODE_CARD)
-    {
-        return_data = (return_result_t *) (STUB_ATT_RETURN_DATA_BUFFER);
-
-        return_data->test_id = TESTID_BQBMODE;
-
-        return_data->test_result = TRUE;
-
-        act_test_report_result(return_data, 4);
-
-        act_test_read_testid(att_cmd_temp_buffer, 80);
-    }
-
-    //消息类型(即消息名称)
-    msg.type = MSG_BTSTACK_BQB_TEST_SYNC;
-
-    //发送同步消息
-    send_sync_msg(MSG_TARGET_ID_BTSTACK, &msg, NULL, 0);
-
-}
 

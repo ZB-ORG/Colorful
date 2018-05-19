@@ -47,7 +47,7 @@
 #define TESTID_MODIFY_BLENAME       0x02
 #define TESTID_FM_TEST              0x05
 #define TESTID_GPIO_TEST            0x06
-#define TESTID_LINEIN_CH_TEST       0x07
+#define TESTID_LINEIN_CH_TEST_ATS2825       0x07
 #define TESTID_MIC_CH_TEST          0x08
 #define TESTID_FM_CH_TEST           0x09
 #define TESTID_SDCARD_TEST          0x0a
@@ -66,6 +66,9 @@
 #define TESTID_MONITOR              0x17
 #define TESTID_FTMODE               0x18
 #define TESTID_BQBMODE              0x19
+#define TESTID_FLASHTEST            0x1a
+#define TESTID_LRADC_TEST           0x1b
+#define TESTID_LINEIN_CH_TEST_ATS2823  0x1c
 
 //特殊测试ID,需要和工具绑定，不能随意更改ID值 范围0xc0-0xfe
 #define TESTID_MODIFY_BTADDR  0xc0
@@ -73,6 +76,7 @@
 #define TESTID_MP_TEST        0xc2
 #define TESTID_MP_READ_TEST   0xc3
 #define TESTID_READ_BTADDR    0xc4
+#define TESTID_BER_TEST       0xc5
 
 //读取该测试ID,小机需要一直等待PC回复有效的TESTID
 #define TESTID_ID_WAIT        0xfffe
@@ -260,7 +264,11 @@ typedef int32 (*read_arg_func_t)(uint16 *line_buffer, uint8 *arg_buffer, uint32 
 typedef struct
 {
     uint16 test_id;
-    test_func_t test_func;
+    uint16  support_card_test:1;       //是否支持卡测试方案
+    uint16  support_att_ap_test:1;     //是否支持ATT工具应用测试
+    uint16  support_att_card_test:1;   //是否支持ATT卡启动测试
+    uint16  reserved:13;       
+    test_func_t test_func; 
 }att_task_stru_t;
 
 typedef struct
@@ -307,6 +315,7 @@ typedef struct
 {
     uint8 bt_transmitter_addr[6];
     uint8 bt_test_mode;
+    uint8 bt_fast_mode;
 }btplay_test_arg_t;
 
 typedef struct
@@ -338,9 +347,6 @@ typedef struct
     uint8 pwr_test;
     int8 pwr_threshold_low;
     int8 pwr_threshold_high;
-    uint8 ber_test;
-    int8 ber_threshold_low;
-    int8 ber_threshold_high;
 }mp_test_arg_t;
 
 typedef struct
@@ -369,11 +375,21 @@ typedef struct
 
 typedef struct
 {
+    uint32 record_cnt;
+    uint32 succeed_cnt;
+    uint32 failed_cnt;    
+}log_test_info_t;
+
+typedef struct
+{
     uint32 magicl;
     uint32 magich;
     uint8 reserved;
     uint8 addr[3];
     uint32 record_cnt;
+    uint32 succeed_cnt;
+    uint32 failed_cnt;
+    bt_paired_dev_info2_t bt_paired_dev_info;
     uint32 checksum;
 }btaddr_log_file_t;
 
@@ -394,6 +410,67 @@ typedef struct
     uint8 ble_device_name[BT_BLE_NAME_LEN_MAX]; //设备名称    
 }bt_addr_vram_t;
 
+/** ATF文件传入的参数
+*/
+typedef struct
+{
+    uint8 ber_channel_low;          //低信道号
+    uint8 ber_channel_mid;          //中信道号
+    uint8 ber_channel_high;         //高信道号
+    int8  ber_thr_low;
+    int8  ber_thr_high;
+}ber_test_arg_t;
+
+typedef struct
+{
+    uint8 lradc1_test;
+    uint8 lradc1_thr_low;
+    uint8 lradc1_thr_high;
+    uint8 lradc2_test;
+    uint8 lradc2_thr_low;
+    uint8 lradc2_thr_high;
+    uint8 lradc4_test;
+    uint8 lradc4_thr_low;
+    uint8 lradc4_thr_high;    
+}lradc_test_arg_t;
+
+typedef struct
+{
+    uint8 test_left_ch;
+    uint8 test_right_ch;
+    uint8 test_left_ch_SNR;
+    uint8 test_right_ch_SNR;
+    uint32 left_ch_power_threadshold;
+    uint32 right_ch_power_threadshold;
+    uint32 left_ch_SNR_threadshold;
+    uint32 right_ch_SNR_threadshold;
+    uint16 left_ch_max_sig_point;
+    uint16 right_ch_max_sig_point;
+}channel_test_arg_t;
+
+typedef enum
+{
+    //只读打开，如果文件不存在，返回文件长度为0
+    FILE_OPEN_MODE_RB,
+    //只写打开，如果文件存在，则文件长度清0
+    FILE_OPEN_MODE_WB,
+}att_file_open_mode_e;
+
+typedef struct
+{
+    stub_ext_cmd_t ext_cmd;
+    uint8 open_mode[8];     //打开文件模式，4字节unicode字符
+    uint8 file_name[0];     //文件名，unicode字符
+}att_fopen_arg_t;
+
+typedef struct
+{
+    stub_ext_cmd_t ext_cmd;
+    uint16 offsetl;         //文件写入偏移
+    uint16 offseth;
+    uint16 lengthl;          //文件写入长度
+    uint16 lengthh;
+}att_fwrite_arg_t;
 
 extern int32 g_file_sys_id;
 extern os_event_t *thread_mutex;
@@ -407,10 +484,14 @@ extern uint8 g_cur_line_num;
 extern uint32 g_write_file_len;
 extern uint8 g_skip_product_test;
 extern uint8 g_att_version;
-extern uint8 g_app_func_id;
+extern uint32 g_app_func_id;
 extern test_ap_info_t* g_test_ap_info;
 extern autotest_test_info_t g_test_info;
-
+extern uint32 g_epc_addr[];
+extern const uint8 g_ap_name[];
+extern test_ap_info_t *g_p_test_ap_info_bak;
+extern uint8 g_support_norflash_wp;
+extern uint32 g_test_base_time;
 extern int32 _config_fs_init(uint8 disk_type) __FAR__;
 
 extern int send_sync_msg(uint8 target_id, msg_apps_t *msg, msg_reply_t *reply, uint32 timeout) __FAR__;
@@ -423,7 +504,11 @@ extern void tick_ISR_uninstall(uint32 timer_id) __FAR__;
 
 extern test_result_e act_test_gpio_test(void *arg_buffer) __FAR__;
 
-extern test_result_e act_test_linein_channel_test(void *arg_buffer) __FAR__;
+extern test_result_e act_test_gpio_test_ATS2823(void *arg_buffer) __FAR__;
+
+extern test_result_e act_test_linein_channel_test_ATS2825(void *arg_buffer) __FAR__;
+
+extern test_result_e act_test_linein_channel_test_ATS2823(void *arg_buffer) __FAR__;
 
 extern test_result_e act_test_fm_channel_test(void *arg_buffer) __FAR__; 
 
@@ -477,7 +562,7 @@ extern int32 act_test_start_deal(void) __FAR__;
 
 extern void att_power_off(void) __FAR__;
 
-extern void write_log_file(void) __FAR__;
+extern void write_log_file(uint32 mode) __FAR__;
 
 extern int act_test_read_bt_name(void *arg_buffer) __FAR__;
 
@@ -486,4 +571,10 @@ extern test_result_e act_test_enter_ft_mode(void *arg_buffer) __FAR__;
 extern test_result_e act_test_enter_BQB_mode(void *arg_buffer) __FAR__;
 
 extern void act_test_change_test_timeout(uint16 timeout) __FAR__;
+
+extern void act_test_flashtest(void *arg_buffer) __FAR__;
+
+extern test_result_e act_test_ber_test(void *arg_buffer) __FAR__;
+
+extern test_result_e act_test_lradc_test(void *arg_buffer) __FAR__;
 #endif

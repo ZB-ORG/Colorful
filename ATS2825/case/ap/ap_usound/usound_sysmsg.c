@@ -25,7 +25,10 @@
 app_result_e ud_unstick_msg_deal(void *ev_param)
 {
     ev_param = ev_param;//avoid warning
-
+ #ifdef __ESD_MODE_
+    return RESULT_NULL;
+ #else
     return RESULT_NEXT_FUNCTION;
+ #endif
 }
 

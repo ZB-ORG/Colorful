@@ -121,9 +121,8 @@ void tm_alarm_clock_view(view_update_e mode)
             }
 
             g_p_clock_show->twinkling_flag = TRUE;
-            g_p_clock_show->twinkling_timer_id = set_app_timer(APP_TIMER_ATTRB_UI | (COM_VIEW_ID_DISP_CLOCK << 8), 500,
-                    clock_handle);
-
+            g_p_clock_show->twinkling_timer_id = set_app_timer(APP_TIMER_ATTRB_COM_UI \
+                | (COM_VIEW_ID_DISP_CLOCK << 8), 500, clock_handle);            
             __tm_alarm_clock_redraw();
         }
         break;

@@ -20,24 +20,25 @@ uint16 fsel_sortlsit_vram_read(uint16 src_num)
     //读出目录列表
     sys_vm_read(read_ptr, VM_PLIST_INFO_START0, 0x1000);
     //读节目单
-    sys_vm_read(index_ptr, VM_PLIST_INDEX_START0, 0x1000);
+//    sys_vm_read(index_ptr, VM_PLIST_INDEX_START0, 0x1000);
 
-    if (src_num > 0)
-    {
-        src_num--;
-    }
-    if (src_num < SUPPORT_MUSIC_FILE)
-    {
-        //文件序号
-        dst_num = index_ptr[src_num];
-    }
-    else
-    {
-        src_num++;
-        dst_num = src_num;
-    }
+//    if (src_num > 0)
+//    {
+//        src_num--;
+//    }
+//    if (src_num < SUPPORT_MUSIC_FILE)
+//    {
+//        //文件序号
+//        dst_num = index_ptr[src_num];
+//    }
+//    else
+//    {
+//        src_num++;
+//        dst_num = src_num;
+//    }  
+    libc_print("######num change",0,0);
 
-    return dst_num;
+    return src_num;
 }
 
 //根据节目序号定位到文件
@@ -81,9 +82,10 @@ bool fsel_sortlist_set_location(file_location_t *location)
 bool fsel_list_get_location(file_location_t *location)
 {
     vfs_get_name(eh_vfs_mount, &eh_cur_ext_name, 0);
-    *(uint32*) &location->filename = eh_cur_ext_name;
+    *(uint32*) &location->file_info.file_extend_info.file_ext = eh_cur_ext_name;
     //获取当前文件的路径信息
-    if (FALSE == vfs_file_dir_offset(eh_vfs_mount, &location->dir_layer_info, &location->cluster_no, 0))
+    if (FALSE == vfs_file_dir_offset(eh_vfs_mount, &location->dir_layer_info, \
+        &location->file_info.file_extend_info.cluster_no, 0))
     {
         return FALSE;
     }
@@ -112,7 +114,7 @@ bool fsel_list_set_location(file_location_t *location)
     bool ret_val;
 
     //如果输入的location为无效值
-    if ((location == NULL) || (*(uint32*) &location->filename == 0))
+    if ((location == NULL) || (*(uint32*) &location->file_info.file_extend_info.file_ext == 0))
     {
         //当前目录下的文件总数
         eh_file_total = fsel_total_file_curdir();
@@ -121,12 +123,13 @@ bool fsel_list_set_location(file_location_t *location)
         return FALSE;
     }
     //定位文件
-    ret_val = vfs_file_dir_offset(eh_vfs_mount, &location->dir_layer_info, &location->cluster_no, 1);
+    ret_val = vfs_file_dir_offset(eh_vfs_mount, &location->dir_layer_info, \
+        &location->file_info.file_extend_info.cluster_no, 1);
 
     if (ret_val != FALSE)
     {
         vfs_get_name(eh_vfs_mount, &eh_cur_ext_name, 0);
-        if (*(uint32*) &location->filename != eh_cur_ext_name)
+        if (*(uint32*) &location->file_info.file_extend_info.file_ext != eh_cur_ext_name)
         {
             ret_val = FALSE;
         }
@@ -149,7 +152,7 @@ bool fsel_list_set_location(file_location_t *location)
     }
 
     //赋值更新eh_cur_ext_name
-    libc_memcpy(&eh_cur_ext_name, location->filename, 4);
+    libc_memcpy(&eh_cur_ext_name, location->file_info.file_extend_info.file_ext, 4);
 
     return TRUE;
 }

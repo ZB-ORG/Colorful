@@ -1,5 +1,4 @@
 
-
 #include  "ap_btcall.h"
 
 bool btcall_send_sync_msg(void *input_param, void *output_param, uint32 msg_type)
@@ -33,6 +32,4 @@ bool btcall_send_sync_msg(void *input_param, void *output_param, uint32 msg_type
 
     return bret;
 }
-
-
 

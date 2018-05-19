@@ -14,108 +14,161 @@
 
 # 如果源文件都没有修改，仅仅只想再次生成固件，可输入make build_DVB_ATS2823_TWS或make build完成固件的生成
 
-.PHONY : all clean clean_target
+.PHONY : all clean clean_target test
 
-all:
-	#make clean
-	#make EVB
-	make clean
-	make DVB_ATS2825
-	make clean
-	make DVB_ATS2823
-	#make clean
-	#make EVB_OTA
-	#make clean
-	#make DVB_ATS2823_OTA
-	#make clean
-	#make EVB_TWS
-	make clean
-	make DVB_ATS2825_TWS
-	make clean
-	make DVB_ATS2823_TWS
-	make clean
-	make DVB_ATS2825_OTA	
-EVB:
-	./config.sh US282A_BTBOX_EVB 0 0 2>&1 | tee ./config.log
-	./make.sh 2 2>&1 | tee ./make.log
-	./build.sh US282A_BTBOX_EVB US282A_BTBOX_EVB 2>&1 | tee ./build.log
-		
 DVB_ATS2825:
-	./config.sh US282A_BTBOX_DVB_ATS2825 0 0 2>&1 | tee ./config.log
+	./config.sh ./config_txt/US282A_BTBOX_DVB_ATS2825.ini 2>&1 | tee ./config.log
 	./make.sh 2 2>&1 | tee ./make.log
-	./build.sh US282A_BTBOX_DVB_ATS2825 US282A_BTBOX_DVB_ATS2825 2>&1 | tee ./build.log	
+	./build.sh ./config_txt/US282A_BTBOX_DVB_ATS2825.ini 2>&1 | tee ./build.log	
+
+EVB:
+	./config.sh ./config_txt/US282A_BTBOX_EVB.ini 2>&1 | tee ./config.log
+	./make.sh 2 2>&1 | tee ./make.log
+	./build.sh ./config_txt/US282A_BTBOX_EVB.ini 2>&1 | tee ./build.log		
 	
 DVB_ATS2823:
-	./config.sh US282A_BTBOX_DVB_ATS2823 0 0 2>&1 | tee ./config.log
+	./config.sh ./config_txt/US282A_BTBOX_DVB_ATS2823.ini 2>&1 | tee ./config.log
 	./make.sh 2 2>&1 | tee ./make.log
-	./build.sh US282A_BTBOX_DVB_ATS2823 US282A_BTBOX_DVB_ATS2823 2>&1 | tee ./build.log		
+	./build.sh ./config_txt/US282A_BTBOX_DVB_ATS2823.ini 2>&1 | tee ./build.log		
+
+DVB_ATS2823T:
+	./config.sh ./config_txt/US282A_BTBOX_DVB_ATS2823T.ini 2>&1 | tee ./config.log
+	./make.sh 2 2>&1 | tee ./make.log
+	./build.sh ./config_txt/US282A_BTBOX_DVB_ATS2823T.ini 2>&1 | tee ./build.log
+	
+DVB_ATS2823B:
+	./config.sh ./config_txt/US282A_BTBOX_DVB_ATS2823B.ini 2>&1 | tee ./config.log
+	./make.sh 2 2>&1 | tee ./make.log
+	./build.sh ./config_txt/US282A_BTBOX_DVB_ATS2823B.ini 2>&1 | tee ./build.log	
 	
 EVB_OTA:
-	./config.sh US282A_BTBOX_EVB 1 0 2>&1 | tee ./config.log
+	./config.sh ./config_txt/US282A_BTBOX_EVB_OTA.ini 2>&1 | tee ./config.log
 	./make.sh 2 2>&1 | tee ./make.log
-	./build.sh US282A_BTBOX_EVB US282A_BTBOX_EVB_OTA 2>&1 | tee ./build.log	
+	./build.sh ./config_txt/US282A_BTBOX_EVB_OTA.ini 2>&1 | tee ./build.log	
 	
 DVB_ATS2825_OTA:
-	./config.sh US282A_BTBOX_DVB_ATS2825 1 0 2>&1 | tee ./config.log
+	./config.sh ./config_txt/US282A_BTBOX_DVB_ATS2825_OTA.ini 2>&1 | tee ./config.log
 	./make.sh 2 2>&1 | tee ./make.log
-	./build.sh US282A_BTBOX_DVB_ATS2825 US282A_BTBOX_DVB_ATS2825_OTA 2>&1 | tee ./build.log	
-
-#DVB_ATS2823_OTA:
-#	./config.sh US282A_BTBOX_DVB_ATS2823 1 0 2>&1 | tee ./config.log
-#	./make.sh 2 2>&1 | tee ./make.log
-#	./build.sh US282A_BTBOX_DVB_ATS2823 US282A_BTBOX_DVB_ATS2823_OTA 2>&1 | tee ./build.log
-
+	./build.sh ./config_txt/US282A_BTBOX_DVB_ATS2825_OTA.ini 2>&1 | tee ./build.log	
 EVB_TWS:
-	./config.sh US282A_BTBOX_EVB 0 1 2>&1 | tee ./config.log
+	./config.sh ./config_txt/US282A_BTBOX_EVB_TWS.ini 2>&1 | tee ./config.log
 	./make.sh 2 2>&1 | tee ./make.log
-	./build.sh US282A_BTBOX_EVB US282A_BTBOX_EVB_TWS 2>&1 | tee ./build.log
+	./build.sh ./config_txt/US282A_BTBOX_EVB_TWS.ini 2>&1 | tee ./build.log
 
 DVB_ATS2825_TWS:
-	./config.sh US282A_BTBOX_DVB_ATS2825 0 1 2>&1 | tee ./config.log
+	./config.sh ./config_txt/US282A_BTBOX_DVB_ATS2825_TWS.ini 2>&1 | tee ./config.log
 	./make.sh 2 2>&1 | tee ./make.log
-	./build.sh US282A_BTBOX_DVB_ATS2825 US282A_BTBOX_DVB_ATS2825_TWS 2>&1 | tee ./build.log	
+	./build.sh ./config_txt/US282A_BTBOX_DVB_ATS2825_TWS.ini 2>&1 | tee ./build.log	
 	
-#DVB_ATS2825_1016_TWS:
-#	cp -f ./config_txt/US282A_BTBOX_DVB_ATS2825_1016.txt ./config_txt/US282A_BTBOX_DVB_ATS2825.txt
-#	./config.sh US282A_BTBOX_DVB_ATS2825 0 1 2>&1 | tee ./config.log
-#	./make.sh 2 2>&1 | tee ./make.log
-#	./build.sh US282A_BTBOX_DVB_ATS2825 US282A_BTBOX_DVB_ATS2825_1016_TWS 2>&1 | tee ./build.log		
+DVB_ATS2825_TWS_ESD:
+	./config.sh ./config_txt/US282A_BTBOX_DVB_ATS2825_TWS_ESD.ini 2>&1 | tee ./config.log
+	./make.sh 2 2>&1 | tee ./make.log
+	./build.sh ./config_txt/US282A_BTBOX_DVB_ATS2825_TWS_ESD.ini 2>&1 | tee ./build.log	
 	
-#DVB_ATS2825_2119_TWS:
-#	cp -f ./config_txt/US282A_BTBOX_DVB_ATS2825_2119.txt ./config_txt/US282A_BTBOX_DVB_ATS2825.txt
-#
-#	./make.sh 2 2>&1 | tee ./make.log
-#	./build.sh US282A_BTBOX_DVB_ATS2825 US282A_BTBOX_DVB_ATS2825_2119_TWS 2>&1 | tee ./build.log		
-	
+DVB_ATS2825_TWS_48K:
+	./config.sh ./config_txt/US282A_BTBOX_DVB_ATS2825_TWS_48K.ini 2>&1 | tee ./config.log
+	./make.sh 2 2>&1 | tee ./make.log
+	./build.sh ./config_txt/US282A_BTBOX_DVB_ATS2825_TWS_48K.ini 2>&1 | tee ./build.log		
+			
 DVB_ATS2823_TWS:
-	./config.sh US282A_BTBOX_DVB_ATS2823 0 1 2>&1 | tee ./config.log
+	./config.sh ./config_txt/US282A_BTBOX_DVB_ATS2823_TWS.ini 2>&1 | tee ./config.log
 	./make.sh 2 2>&1 | tee ./make.log
-	./build.sh US282A_BTBOX_DVB_ATS2823 US282A_BTBOX_DVB_ATS2823_TWS 2>&1 | tee ./build.log
+	./build.sh ./config_txt/US282A_BTBOX_DVB_ATS2823_TWS.ini 2>&1 | tee ./build.log
+	
+DVB_ATS2823W:
+	./config.sh ./config_txt/US282A_BTBOX_DVB_ATS2823_W.ini 2>&1 | tee ./config.log
+	./make.sh 2 2>&1 | tee ./make.log
+	./build.sh ./config_txt/US282A_BTBOX_DVB_ATS2823_W.ini 2>&1 | tee ./build.log	
+
+DVB_ATS2825W:
+	./config.sh ./config_txt/US282A_BTBOX_DVB_ATS2825_W.ini 2>&1 | tee ./config.log
+	./make.sh 2 2>&1 | tee ./make.log
+	./build.sh ./config_txt/US282A_BTBOX_DVB_ATS2825_W.ini 2>&1 | tee ./build.log	
+
+EVB_W:
+	./config.sh ./config_txt/US282A_BTBOX_EVB_W.ini 2>&1 | tee ./config.log
+	./make.sh 2 2>&1 | tee ./make.log
+	./build.sh ./config_txt/US282A_BTBOX_EVB_W.ini 2>&1 | tee ./build.log		
+	
+DVB_ATS2825CW:
+	./config.sh ./config_txt/US282A_BTBOX_DVB_ATS2825_CW.ini 2>&1 | tee ./config.log
+	./make.sh 2 2>&1 | tee ./make.log
+	./build.sh ./config_txt/US282A_BTBOX_DVB_ATS2825_CW.ini 2>&1 | tee ./build.log	
+	
+DVB_ATS2825C_TWS:
+	./config.sh ./config_txt/US282A_BTBOX_DVB_ATS2825C_TWS.ini 2>&1 | tee ./config.log
+	./make.sh 2 2>&1 | tee ./make.log
+	./build.sh ./config_txt/US282A_BTBOX_DVB_ATS2825C_TWS.ini 2>&1 | tee ./build.log	
 	
 build_EVB:
-	./build.sh US282A_BTBOX_EVB US282A_BTBOX_EVB 2>&1 | tee ./build.log    	
-
+	./build.sh ./config_txt/US282A_BTBOX_EVB.ini 2>&1 | tee ./build.log    	
+build_EVB_W:
+	./build.sh ./config_txt/US282A_BTBOX_EVB_W.ini 2>&1 | tee ./build.log  
+	
 build_DVB_ATS2825:
-	./build.sh US282A_BTBOX_DVB_ATS2825 US282A_BTBOX_DVB_ATS2825 2>&1 | tee ./build.log	
+	./build.sh ./config_txt/US282A_BTBOX_DVB_ATS2825.ini 2>&1 | tee ./build.log	
+	
+build_DVB_ATS2825W:	
+	./build.sh ./config_txt/US282A_BTBOX_DVB_ATS2825_W.ini 2>&1 | tee ./build.log		
 
 build_DVB_ATS2823:
-	./build.sh US282A_BTBOX_DVB_ATS2823 US282A_BTBOX_DVB_ATS2823 2>&1 | tee ./build.log
+	./build.sh ./config_txt/US282A_BTBOX_DVB_ATS2823.ini 2>&1 | tee ./build.log
+	
+build_DVB_ATS2823W:	
+	./build.sh ./config_txt/US282A_BTBOX_DVB_ATS2823_W.ini 2>&1 | tee ./build.log			
 
+build_DVB_ATS2823T:	
+	./build.sh ./config_txt/US282A_BTBOX_DVB_ATS2823T.ini 2>&1 | tee ./build.log	
+	
+build_DVB_ATS2823B:	
+	./build.sh ./config_txt/US282A_BTBOX_DVB_ATS2823B.ini 2>&1 | tee ./build.log
+		
 build_EVB_OTA:
-	./build.sh US282A_BTBOX_EVB US282A_BTBOX_EVB_OTA 2>&1 | tee ./build.log	
+	./build.sh ./config_txt/US282A_BTBOX_EVB_OTA.ini 2>&1 | tee ./build.log	
 
 build_DVB_ATS2825_OTA:
-	./build.sh US282A_BTBOX_DVB_ATS2825 US282A_BTBOX_DVB_ATS2825_OTA 2>&1 | tee ./build.log
-
+	./build.sh ./config_txt/US282A_BTBOX_DVB_ATS2825_OTA.ini 2>&1 | tee ./build.log
 build_EVB_TWS:
-	./build.sh US282A_BTBOX_EVB US282A_BTBOX_EVB_TWS 2>&1 | tee ./build.log
+	./build.sh ./config_txt/US282A_BTBOX_EVB_TWS.ini 2>&1 | tee ./build.log
 
 build_DVB_ATS2825_TWS:
-	./build.sh US282A_BTBOX_DVB_ATS2825 US282A_BTBOX_DVB_ATS2825_TWS 2>&1 | tee ./build.log
+	./build.sh ./config_txt/US282A_BTBOX_DVB_ATS2825_TWS.ini 2>&1 | tee ./build.log
+	
+build_DVB_ATS2825_TWS_48K:
+	./build.sh ./config_txt/US282A_BTBOX_DVB_ATS2825_TWS_48K.ini 2>&1 | tee ./build.log
+	
+build_DVB_ATS2825CW:
+	./build.sh ./config_txt/US282A_BTBOX_DVB_ATS2825_CW.ini 2>&1 | tee ./build.log	
+	
+build_DVB_ATS2825C_TWS:
+	./build.sh ./config_txt/US282A_BTBOX_DVB_ATS2825C_TWS.ini 2>&1 | tee ./build.log		
 
 build_DVB_ATS2823_TWS:
-	./build.sh US282A_BTBOX_DVB_ATS2823 US282A_BTBOX_DVB_ATS2823_TWS 2>&1 | tee ./build.log	
-
+	./build.sh ./config_txt/US282A_BTBOX_DVB_ATS2823_TWS.ini 2>&1 | tee ./build.log	
+	
+all:
+	make clean;make EVB_TWS
+	make clean;make DVB_ATS2825
+	make clean;make DVB_ATS2825W	
+	make clean;make DVB_ATS2825_TWS
+	make clean;make DVB_ATS2823_TWS
+	#make clean;make DVB_ATS2823W_TWS	
+	make clean;make DVB_ATS2825_OTA		
+	make clean;make DVB_ATS2825_TWS_ESD	
+	make clean;make DVB_ATS2823T
+	make clean;make DVB_ATS2825_TWS_48K
+test:
+	#make clean;make EVB
+	#make clean;make DVB_ATS2825
+	#make clean;make DVB_ATS2823
+	#make clean;make EVB_OTA
+	make clean;make EVB_TWS
+	make clean;make DVB_ATS2825W
+	make clean;make DVB_ATS2823W		
+	make clean;make DVB_ATS2825_TWS
+	make clean;make DVB_ATS2823_TWS
+	#make clean;make DVB_ATS2823W_TWS	
+	make clean;make DVB_ATS2825_OTA
 build:
 	./build.sh  2>&1 | tee ./build.log  
 	  
@@ -124,5 +177,3 @@ clean:
 
 clean_target:
 	./make.sh 1 2>&1 | tee ./make.log
-			
-	

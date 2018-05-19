@@ -67,9 +67,15 @@ typedef enum
 
     /*! 设置播放参数(sample rate?) */
     MMM_PP_SET_PARAM,
+    /*! 设置dac sample rate */
+    MMM_PP_SET_DAC_RATE,
+    /*! 设置adc sample rate */
+    MMM_PP_SET_ADC_RATE,
+    
     /*! 获取媒体信息 */
     MMM_PP_MEDIA_INFO,
-
+    /*! 设置噪音衰减参数 */    
+    MMM_PP_SET_NOISE_REDUCTION_PARA,
     /*! 播放 */
     MMM_PP_PLAY,
     /*! 停止 */
@@ -101,6 +107,9 @@ typedef enum
 
     /*! 设置输出声道处理：左右声道互换，左右声道混合等 */
     MMM_PP_SET_OUTPUT_CHANNEL,
+
+    /*! 设置是否作采样率固定 */
+    MMM_PP_FIX_SAMPLE_RATE,
 } mmm_pp_cmd_e;
 
 /*!

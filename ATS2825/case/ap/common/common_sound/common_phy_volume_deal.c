@@ -26,7 +26,8 @@ static void _set_phy_volume_i2s_pa(uint16 reg_val_to);
 static void _set_phy_volume_inner_pa(uint32 vol_hard_pa_to, uint32 vol_hard_da_to);
 uint32 __section__(".BANK46") mdrc_comp_handle(uint32 vol_hard_da);
 static void _set_phy_volume_inner_pa_sm(uint32 vol_hard_pa_to, uint32 vol_hard_da_to);
-static void _set_ao_source_dac_sm(int tab_index,uint8 vol_from, uint8 vol_to);
+static void _set_ao_source_dac_sm(int tab_index, uint8 vol_to);
+static void adjust_input_signal(uint8 aout_mode); 
 
 
 
@@ -45,10 +46,10 @@ void com_set_phy_volume(uint8 set_vol)
 {
     int tab_index, tab_index_tmp;
     int db;
-    uint8 vol_from = sys_comval->volume_current_phy;
     uint8 vol_to = set_vol;
     bool vbass_enable_temp = sys_comval->dae_cfg.vbass_enable;
 
+    PRINT_INFO_INT("bypass",sys_comval->dae_cfg.bypass);
     PRINT_INFO_INT("set_vol",set_vol);
 
     if ((sys_comval->signal_energy_enable == 1)
@@ -87,28 +88,15 @@ void com_set_phy_volume(uint8 set_vol)
     }
 
     sys_comval->volume_current_phy = set_vol;
-    if (STANDARD_MODE == sys_comval->dae_cfg.audiopp_type)
-    {      
-        if (vol_to == VOLUME_VALUE_MAX)
-        {
-            tab_index = 0;
-        }
-        else if (0 == vol_to)
-        {
-            tab_index = 31;
-        }
-        else
-        {
-            tab_index = 30 - vol_to + 2;
-        }
+ 
+    tab_index = VOLUME_VALUE_MAX - vol_to;
+    
+    if (TRUE == sys_comval->w_input_enable)
+    {
+        adjust_input_signal(g_app_info_state.aout_mode);
+        return ;
     }
-    else  if (SMART_MODE == sys_comval->dae_cfg.audiopp_type)
-    {       
-        tab_index = VOLUME_VALUE_MAX - vol_to;
-    }
-
-    //tab_index = VOLUME_VALUE_MAX - vol_to;
-
+    
     switch (g_app_info_state.aout_mode)
     {
         case AO_SOURCE_I2S: //i2s
@@ -127,93 +115,6 @@ void com_set_phy_volume(uint8 set_vol)
             }
 
             _calc_keytone_precut_i2s_pa(vol_to, reg_val_to);
-
-            if ((sys_comval->dae_cfg_variable == 1) && (vol_from != 0xff))
-            {
-                uint16 reg_val_from;
-                uint16 tmp_reg_val_to;
-                int16 tmp_step;
-                bool last_set_flag = TRUE;
-
-                if (vol_from > VOLUME_VALUE_MAX)
-                {
-                    vol_from = VOLUME_VALUE_MAX;
-                }
-                tab_index = VOLUME_VALUE_MAX - vol_from;
-
-                reg_val_from = g_hard_volume_table_i2s_pa[tab_index];
-
-                PRINT_DBG_INT("val_from:", reg_val_from);
-                PRINT_DBG_INT("val_to:", reg_val_to);
-
-                if (reg_val_from < reg_val_to)
-                {
-                    if ((reg_val_from + 0x20) >= reg_val_to) //TO MODIFY CASE BY CASE
-                    {
-                        tmp_step = 4; //TO MODIFY CASE BY CASE
-                    }
-                    else
-                    {
-                        tmp_step = (int16)((reg_val_to - reg_val_from) / 8);
-                    }
-
-                    tmp_reg_val_to = reg_val_from + tmp_step;
-                    for (; tmp_reg_val_to <= reg_val_to; tmp_reg_val_to += tmp_step)
-                    {
-                        PRINT_DBG_INT("tmp_to:", tmp_reg_val_to);
-                        _set_phy_volume_i2s_pa(tmp_reg_val_to);
-                        if (tmp_reg_val_to == reg_val_to)
-                        {
-                            last_set_flag = FALSE;
-                            break;
-                        }
-                    }
-                    if (last_set_flag == TRUE)
-                    {
-                        PRINT_DBG_INT("tmp_to:", reg_val_to);
-                        _set_phy_volume_i2s_pa(reg_val_to);
-                    }
-                    break;
-                }
-                else if (reg_val_from > reg_val_to)
-                {
-                    if (reg_val_from <= (reg_val_to + 0x20)) //TO MODIFY CASE BY CASE 大概为4db
-                    {
-                        tmp_step = 4; //TO MODIFY CASE BY CASE 大概步进为0.5db
-                    }
-                    else
-                    {
-                        tmp_step = (int16)((reg_val_from - reg_val_to) / 8);
-                    }
-
-                    tmp_reg_val_to = reg_val_from - tmp_step;
-                    for (; tmp_reg_val_to >= reg_val_to; tmp_reg_val_to -= tmp_step)
-                    {
-                        PRINT_DBG_INT("tmp_to:", tmp_reg_val_to);
-                        _set_phy_volume_i2s_pa(tmp_reg_val_to);
-
-                        if (tmp_reg_val_to == reg_val_to)
-                        {
-                            last_set_flag = FALSE;
-                            break;
-                        }
-                        if ((tmp_reg_val_to - reg_val_to) < tmp_step) //规避算术运算溢出问题
-                        {
-                            break;
-                        }
-                    }
-                    if (last_set_flag == TRUE)
-                    {
-                        PRINT_DBG_INT("tmp_to:", reg_val_to);
-                        _set_phy_volume_i2s_pa(reg_val_to);
-                    }
-                    break;
-                }
-                else
-                {
-                    ;//for qac
-                }
-            }
 
             _set_phy_volume_i2s_pa(reg_val_to);
         }
@@ -263,108 +164,15 @@ void com_set_phy_volume(uint8 set_vol)
                 }
 
                 _calc_keytone_precut_inner_pa(vol_to, vol_hard_pa_to, vol_hard_da_to);
-#if ((CASE_LINEIN_CHANNEL_SEL == 1) && (CASE_FM_CHANNEL_SEL == 1))
-                    if ((sys_comval->dae_cfg_variable == 1) && (vol_from != 0xff))
-                    {
-                        uint32 vol_hard_da_from;
-                        uint32 tmp_vol_hard_da_to;
-                        int16 tmp_step;
-                        bool last_set_flag = TRUE;
-
-                        if (vol_from > VOLUME_VALUE_MAX)
-                        {
-                            vol_from = VOLUME_VALUE_MAX;
-                        }
-                        tab_index = VOLUME_VALUE_MAX - vol_from;
-
-                        vol_hard_da_from = g_hard_volume_table[tab_index].vol_da;
-
-                        if (vol_hard_da_from < vol_hard_da_to)
-                        {
-                            if ((vol_hard_da_from + 10) >= vol_hard_da_to)
-                            {
-                                tmp_step = 2;
-                            }
-                            else if ((vol_hard_da_from + 26) >= vol_hard_da_to)
-                            {
-                                tmp_step = 1;
-                            }
-                            else if ((vol_hard_da_from + 28) >= vol_hard_da_to)
-                            {
-                                tmp_step = 2;
-                            }
-                            else
-                            {
-                                tmp_step = (int16)((vol_hard_da_to - vol_hard_da_from) / 5);
-                            }
-
-                            tmp_vol_hard_da_to = vol_hard_da_from + (uint32)tmp_step;
-                            for (; tmp_vol_hard_da_to <= vol_hard_da_to; tmp_vol_hard_da_to += (uint32)tmp_step)
-                            {
-                                _set_phy_volume_inner_pa(vol_hard_pa_to, tmp_vol_hard_da_to);
-                                if (tmp_vol_hard_da_to == vol_hard_da_to)
-                                {
-                                    last_set_flag = FALSE;
-                                    break;
-                                }
-                            }
-                            if (last_set_flag == TRUE)
-                            {
-                                _set_phy_volume_inner_pa(vol_hard_pa_to, vol_hard_da_to);
-                            }
-                            break;
-                        }
-                        else if (vol_hard_da_from > vol_hard_da_to)
-                        {
-                            if (vol_hard_da_from <= (vol_hard_da_to + 10))
-                            {
-                                tmp_step = 2;
-                            }
-                            else if (vol_hard_da_from <= (vol_hard_da_to + 26))
-                            {
-                                tmp_step = 1;
-                            }
-                            else if (vol_hard_da_from <= (vol_hard_da_to + 28))
-                            {
-                                tmp_step = 2;
-                            }
-                            else
-                            {
-                                tmp_step = (int16)((vol_hard_da_from - vol_hard_da_to) / 5);
-                            }
-
-                            tmp_vol_hard_da_to = (uint32)vol_hard_da_from - (uint32)tmp_step;
-                            for (; tmp_vol_hard_da_to >= vol_hard_da_to; tmp_vol_hard_da_to -= (uint32)tmp_step)
-                            {
-                                _set_phy_volume_inner_pa(vol_hard_pa_to, tmp_vol_hard_da_to);
-
-                                if (tmp_vol_hard_da_to == vol_hard_da_to)
-                                {
-                                    last_set_flag = FALSE;
-                                    break;
-                                }
-                                if ((tmp_vol_hard_da_to - vol_hard_da_to) < (uint32)tmp_step) //规避算术运算溢出问题
-                                {
-                                    break;
-                                }
-                            }
-                            if (last_set_flag == TRUE)
-                            {
-                                _set_phy_volume_inner_pa(vol_hard_pa_to, vol_hard_da_to);
-                            }
-                            break;
-                        }
-                        else
-                        {
-                            ;//for qac
-                        }
-                    }
-#endif
-                    _set_phy_volume_inner_pa(vol_hard_pa_to, vol_hard_da_to);       
-                }
+                _set_phy_volume_inner_pa(vol_hard_pa_to, vol_hard_da_to);       
+            }
             else if (STANDARD_MODE == sys_comval->dae_cfg.audiopp_type)
             {
-                _set_ao_source_dac_sm(tab_index, vol_from, vol_to);
+                _set_ao_source_dac_sm(tab_index, vol_to);
+            }
+            else
+            {
+                ;//nothing
             }
 
         }
@@ -374,6 +182,8 @@ void com_set_phy_volume(uint8 set_vol)
 }
 void com_update_volume_limit(int8 vol_limit)
 {
+    PRINT_INFO_INT("vol_limit",vol_limit);
+    
     sys_comval->volume_limit = vol_limit;
     if(get_mute_enable() == FALSE)//静音时不能调音量
     {
@@ -472,7 +282,8 @@ static void _set_phy_volume_i2s_pa(uint16 reg_val_to)
 {
     uint16 reg_val = reg_val_to;
     int db;
-
+    uint8 tab_index = 0;
+        
     db = (int16) g_hard_volume_table_i2s_pa[0] - (int16) reg_val_to; //TO MODIFY CASE BY CASE
     db = db * 10 / 8; //TO MODIFY CASE BY CASE
     sys_comval->volume_relative = (int16)db;
@@ -482,11 +293,11 @@ static void _set_phy_volume_i2s_pa(uint16 reg_val_to)
         reg_val += ((uint16) sys_comval->volume_gain * 8); //TO MODIFY CASE BY CASE
     }
 
-    if (sys_comval->dae_cfg_variable == 1)
+    if (FALSE == sys_comval->dae_cfg.bypass)
     {
         com_set_dae_config_dynamic();
 
-        if (sys_comval->dae_cfg.mdrc_enable == 1)
+        if ((SMART_MODE == sys_comval->dae_cfg.audiopp_type) && (sys_comval->dae_cfg.mdrc_enable == 1)) 
         {
             int16 limit_threshold;
             int16 vol_offset, tmp_vol_offset;
@@ -526,9 +337,23 @@ static void _set_phy_volume_i2s_pa(uint16 reg_val_to)
                 reg_val = g_hard_volume_table_i2s_pa[0];
             }
         }
+        else if(STANDARD_MODE == sys_comval->dae_cfg.audiopp_type)
+        {
+            //标准模式不根据音效参数修改PA寄存器值
+        }
+        else
+        {
+            ;//nothing
+        }
     }
-
-    ccd_i2s_pa_set_volume(reg_val);
+    
+    if (0 == sys_comval->volume_current_phy)
+    {
+        reg_val = 0; //避免使用智能模式音效时，当音量为0，由于对PA的补偿，使得PA数字音量不为0
+    }
+    
+    PRINT_INFO_INT("i2s_reg_val",reg_val);
+    ccd_i2s_pa_set_volume(reg_val);        
 }
 
 static void _set_phy_volume_inner_pa(uint32 vol_hard_pa_to, uint32 vol_hard_da_to)
@@ -536,6 +361,7 @@ static void _set_phy_volume_inner_pa(uint32 vol_hard_pa_to, uint32 vol_hard_da_t
     uint32 vol_hard_pa, vol_hard_da;
     uint32 vol_hard_pa_tmp, vol_hard_da_tmp;
     int db;
+
 
     vol_hard_pa = vol_hard_pa_to;
     vol_hard_da = vol_hard_da_to;
@@ -554,16 +380,15 @@ static void _set_phy_volume_inner_pa(uint32 vol_hard_pa_to, uint32 vol_hard_da_t
 
     db = ((int16) vol_hard_da_to - (int16) g_hard_volume_table[0].vol_da) * 15 / 4;
     sys_comval->volume_relative = (int16)db;
-
-    if (sys_comval->dae_cfg_variable == 1)
+    
+    if (FALSE == sys_comval->dae_cfg.bypass)
     {
         com_set_dae_config_dynamic();
-        if(SMART_MODE == sys_comval->dae_cfg.audiopp_type)
+        
+        if (sys_comval->dae_cfg.mdrc_enable == 1)
         {
-             if (sys_comval->dae_cfg.mdrc_enable == 1)
-            {
-                int16 limit_threshold;
-                int16 vol_offset, tmp_vol_offset;
+            int16 limit_threshold;
+            int16 vol_offset, tmp_vol_offset;
 
             limit_threshold = sys_comval->dae_cfg.mdrc_threshold_base_max;
             if (sys_comval->dae_cfg.limiter_enable == 1)
@@ -599,24 +424,25 @@ static void _set_phy_volume_inner_pa(uint32 vol_hard_pa_to, uint32 vol_hard_da_t
             {
                 vol_hard_da = g_hard_volume_table[0].vol_da;
             }
-            }
         }
-        else if(STANDARD_MODE == sys_comval->dae_cfg.audiopp_type)
-        {
-           vol_hard_da = mdrc_comp_handle(vol_hard_da);
-        }
-        
     }
-
+  
 #endif
+
+    if (0 == sys_comval->volume_current_phy)
+    {
+        vol_hard_da = 0; //避免使用智能模式音效时，当音量为0，由于对PA的补偿，使得PA数字音量不为0
+    }
+    
+    PRINT_INFO_INT("vol_hard_da",vol_hard_da);   
     while(set_pa_volume(vol_hard_pa, vol_hard_da) != 0)
     {
         sys_os_time_dly(10);
-    }
+    }    
 }
 
 //小米模型DAC输出 音量处理
-static void _set_ao_source_dac_sm(int tab_index,uint8 vol_from, uint8 vol_to)
+static void _set_ao_source_dac_sm(int tab_index, uint8 vol_to)
 {
     uint32 vol_hard_pa_to, vol_hard_da_to;  
     uint32 vol_hard_pa_tmp, vol_hard_da_tmp;
@@ -646,10 +472,7 @@ static void _set_ao_source_dac_sm(int tab_index,uint8 vol_from, uint8 vol_to)
 
     _calc_keytone_precut_inner_pa(vol_to, vol_hard_pa_to, vol_hard_da_to);
     
-    if (vol_from != 0xff)
-    {
-         _set_phy_volume_inner_pa_sm(vol_hard_pa_to, vol_hard_da_to);
-    }
+    _set_phy_volume_inner_pa_sm(vol_hard_pa_to, vol_hard_da_to);
 }
 
 static void _set_phy_volume_inner_pa_sm(uint32 vol_hard_pa_to, uint32 vol_hard_da_to)
@@ -665,17 +488,16 @@ static void _set_phy_volume_inner_pa_sm(uint32 vol_hard_pa_to, uint32 vol_hard_d
     db = ((int16) vol_hard_da_to - (int16) g_hard_volume_table_sm[0].vol_da) * 15 / 4;
     sys_comval->volume_relative = (int16)db;
 
-    if (sys_comval->dae_cfg_variable == 1)
+    if (FALSE == sys_comval->dae_cfg.bypass)
     {
         com_set_dae_config_dynamic();
         
-        if(STANDARD_MODE == sys_comval->dae_cfg.audiopp_type)
-        {
-           vol_hard_da = mdrc_comp_handle(vol_hard_da);
-        }        
+        vol_hard_da = mdrc_comp_handle(vol_hard_da);        
     }
 
 #endif
+
+    PRINT_INFO_INT("vol_hard_da_standard_mode",vol_hard_da);
 
     while(set_pa_volume(vol_hard_pa, vol_hard_da) != 0)
     {
@@ -686,44 +508,122 @@ static void _set_phy_volume_inner_pa_sm(uint32 vol_hard_pa_to, uint32 vol_hard_d
 uint32 __section__(".BANK46") mdrc_comp_handle(uint32 vol_hard_da)
 {
         
-       uint32 vol_hard_da_temp = 0;
+    uint32 vol_hard_da_temp = 0;
 
-       vol_hard_da_temp = vol_hard_da;
-             
-       if (sys_comval->dae_cfg.mdrc_enable_standard_mode == 1)
+    vol_hard_da_temp = vol_hard_da;
+         
+    if (sys_comval->dae_cfg.mdrc_enable_standard_mode == 1)
+    {
+        int16 compressor_threshold;
+        int16 vol_offset, tmp_vol_offset;
+
+        vol_offset = 0;
+
+        vol_offset += sys_comval->mdrc_vol_adjust_standard_mode;            
+
+        if (vol_offset > 0)
         {
-            int16 compressor_threshold;
-            int16 vol_offset, tmp_vol_offset;
-       
-            vol_offset = 0;
+            vol_hard_da_temp += (uint32)(vol_offset * 4 / 15);
+        }
+        else
+        {
+            vol_hard_da_temp -= (uint32)(((int16) 0 - vol_offset) * 4 / 15);
+        }
 
-            vol_offset += sys_comval->mdrc_vol_adjust_standard_mode;            
+        //保证PA音量递增
+        tmp_vol_offset = vol_offset * 4 / 15;
+        tmp_vol_offset = tmp_vol_offset * 15 / 4;
 
-            if (vol_offset > 0)
+        if (vol_offset != tmp_vol_offset)
+        {
+            vol_hard_da_temp++;
+        }
+
+        if (vol_hard_da_temp > 0xbf)
+        {
+            vol_hard_da_temp = 0xbf;
+        }
+    }
+   
+    return vol_hard_da_temp;
+}
+
+
+/************按下音量调节音量时，实际调节的是信号大小**************
+ ***********需要算法的支持，方案中只有使用WAVES音效时才会用*******/
+static void adjust_input_signal(uint8 aout_mode) 
+{
+    uint8  tab_index = 0;
+    uint32 vol_hard_da = 0;
+    uint16 w_reg_val = 0;
+    
+    //为避免按键音太大，对按键音做衰减
+    sys_comval->mdrc_percent = sys_comval->volume_current + 2;
+
+    switch (aout_mode)
+    {
+        case AO_SOURCE_I2S: 
+        {
+            if (0 == sys_comval->volume_current)
             {
-                vol_hard_da_temp += (uint32)(vol_offset * 4 / 15);
+                ccd_i2s_pa_set_volume(0x03ff);   
             }
             else
-            {
-                vol_hard_da_temp -= (uint32)(((int16) 0 - vol_offset) * 4 / 15);
-            }
-
-            //保证PA音量递增
-            tmp_vol_offset = vol_offset * 4 / 15;
-            tmp_vol_offset = tmp_vol_offset * 15 / 4;
-
-            if (vol_offset != tmp_vol_offset)
-            {
-                vol_hard_da_temp++;
-            }
-
-            if (vol_hard_da_temp > 0xbf)
-            {
-                vol_hard_da_temp = 0xbf;
+            {       
+                if (TTS_STATUS_PLAYING == g_tts_play_info.status)
+                {
+                    //避免TTS音量过大
+                    tab_index = 31 - sys_comval->volume_current;
+                    w_reg_val = g_hard_volume_table_i2s_pa[tab_index];
+                }
+                else
+                {
+                    w_reg_val = 0x00aa;
+                }
+                
+                ccd_i2s_pa_set_volume(w_reg_val);
             }
         }
-  
-       return vol_hard_da_temp;
+        break;
+
+        //internel dac & i2s or spdif and external dac both chanel
+        case AO_SOURCE_DACI2S: //i2s + internel dac
+        case AO_SOURCE_DACSPDIF: //spdif +internel dac
+        default:
+        {
+            if (0 == sys_comval->volume_current)
+            {
+                while(set_pa_volume(VOL_HARD_PA, 0) != 0)
+                {
+                    sys_os_time_dly(10);
+                }   
+            }
+            else
+            {       
+                if (TTS_STATUS_PLAYING == g_tts_play_info.status)
+                {
+                    //避免TTS音量过大
+                    tab_index = 31 - sys_comval->volume_current;
+                    vol_hard_da = g_hard_volume_table[tab_index].vol_da;
+                }
+                else
+                {
+                    vol_hard_da = 0xbf;
+                }
+                
+                while(set_pa_volume(VOL_HARD_PA, vol_hard_da) != 0)
+                {
+                    sys_os_time_dly(10);
+                }
+            }
+        }
+        break;
+    }  
+     
+    sys_disable_mem_use(0x37000,0x37000 + 0x650);
+    waves_set_effect_param(SET_WAVES_INPUT_PARAM, &sys_comval->volume_current);
+    sys_comval->dae_cfg.volume_current = sys_comval->volume_current;
+    __set_dae_config(&(sys_comval->dae_cfg));
 }
 
 /*! \endcond */

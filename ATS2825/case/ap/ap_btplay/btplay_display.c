@@ -156,18 +156,20 @@ void btplay_main_view(view_update_e mode)
             {    
                 g_btplay_flag = g_btplay_cur_info.status;
 
-                reg_val = (act_readl(RTC_BAK0) & (~(0x7 << MY_RTC_BTPLAY_FLAG)));
+                //del  reg_val = (act_readl(RTC_BAK0) & (~(0x7 << MY_RTC_BTPLAY_FLAG)));
 
-                reg_val |= ((uint32)(g_btplay_flag) << MY_RTC_BTPLAY_FLAG);
+                //del  reg_val |= ((uint32)(g_btplay_flag) << MY_RTC_BTPLAY_FLAG);
      
-                act_writel(reg_val , RTC_BAK0);
+                //del  act_writel(reg_val , RTC_BAK0);
 
                 //rtc register
-                act_writel(0xA596, RTC_REGUPDATA);
-                while (act_readl(RTC_REGUPDATA) != 0x5A69)
+                //del  act_writel(0xA596, RTC_REGUPDATA);
+                //del  while (act_readl(RTC_REGUPDATA) != 0x5A69)
                 {
                     ;//wait for register update
-                }                 
+                }
+                g_config_var.engine_state = g_btplay_flag;
+                sys_vm_write(&g_config_var,VM_AP_CONFIG,sizeof(g_config_var_t));
                 
             } 
         }
@@ -215,19 +217,40 @@ void btplay_main_view(view_update_e mode)
             {    
                 g_btplay_flag = g_btplay_cur_info.status;
                 //sys_vm_write(&g_comval, VM_AP_SETTING, sizeof(comval_t));
-                reg_val = (act_readl(RTC_BAK0) & (~(0x7 << MY_RTC_BTPLAY_FLAG)));
+                //del  reg_val = (act_readl(RTC_BAK0) & (~(0x7 << MY_RTC_BTPLAY_FLAG)));
 
-                reg_val |= ((uint32)(g_btplay_flag) << MY_RTC_BTPLAY_FLAG);
+                //del  reg_val |= ((uint32)(g_btplay_flag) << MY_RTC_BTPLAY_FLAG);
      
-                act_writel(reg_val , RTC_BAK0);
+                //del  act_writel(reg_val , RTC_BAK0);
 
                 //rtc register
-                act_writel(0xA596, RTC_REGUPDATA);
-                while (act_readl(RTC_REGUPDATA) != 0x5A69)
+                //del  act_writel(0xA596, RTC_REGUPDATA);
+                //del  while (act_readl(RTC_REGUPDATA) != 0x5A69)
                 {
                     ;//wait for register update
-                }                
+                } 
+                g_config_var.engine_state = g_btplay_flag;
+                sys_vm_write(&g_config_var,VM_AP_CONFIG,sizeof(g_config_var_t));
             } 
+#ifdef __ESD_MODE_
+            //esd后，需要上报信息，才能发现异常，因此发送快进退消息
+            if(g_btplay_cur_info.status == BTPLAY_PAUSE)
+            {
+                if (fast_play_flag != BTPLAY_FAST_FORWARD)
+                {
+                    if (com_btmanager_avrcp_op(BTPLAY_AVRCP_FFORWARD) == 0)
+                    {
+                        fast_play_flag = BTPLAY_FAST_NORMAL;
+                    }
+                }
+                sys_os_time_dly(100); 
+                com_btmanager_avrcp_op(BTPLAY_AVRCP_FFORWARD);
+                sys_os_time_dly(100); 
+                com_btmanager_avrcp_op(BTPLAY_AVRCP_FFORWARD);
+                sys_os_time_dly(100); 
+                com_btmanager_avrcp_op(BTPLAY_AVRCP_FFORWARD);
+            }
+ #endif           
         }
         break;
 

@@ -307,6 +307,9 @@ static void find_album_jpg(id3_info_t *id3_info)
 {
     uint8 result = 1;
     //save current path
+
+    sys_os_sched_lock();
+    
     vfs_file_dir_offset(eh_vfs_mount, bank_temp_buf, bank_temp_buf + 76, 0);
 
     if (0 == vfs_dir(eh_vfs_mount, DIR_HEAD, album_jpg_name, EXT_NAME_JPG))
@@ -328,5 +331,6 @@ static void find_album_jpg(id3_info_t *id3_info)
     // recover path
     vfs_file_dir_offset(eh_vfs_mount, bank_temp_buf, bank_temp_buf + 76, 1);
 
+    sys_os_sched_unlock();
 }
 

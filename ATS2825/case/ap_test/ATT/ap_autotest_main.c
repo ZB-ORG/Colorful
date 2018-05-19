@@ -32,11 +32,17 @@ uint32 g_write_file_len;
 uint32 g_epc_addr[2];
 uint8 g_skip_product_test;
 uint8 g_att_version;
-uint8 g_app_func_id;
-
+uint32 g_app_func_id;
+uint8 g_support_norflash_wp;
 autotest_test_info_t g_test_info;
+test_ap_info_t g_r_test_ap_info;
+test_ap_old_info_t g_r_old_test_info;
 
-uint8 att_cmd_temp_buffer[80] __attribute__((aligned(4)));
+test_ap_info_t *g_p_test_ap_info_bak;
+
+uint32 g_test_base_time;
+
+//uint8 att_cmd_temp_buffer[64] __attribute__((aligned(4)));
 
 const uint8 g_ap_name[] =
 {
@@ -310,17 +316,22 @@ void test_init(test_ap_info_t *test_ap_info)
     //初始化线程互斥信号量
     libc_sem_init(&thread_mutex, 1);
 
-    GLOBAL_CARD_BANK_SWITCH_HANDLER = load_ap_bank;
+    GLOBAL_CARD_BANK_SWITCH_HANDLER = load_ap_bank;  
 
     if (g_att_version == 0)
     {
-        g_old_test_info = (test_ap_old_info_t *) test_ap_info;
+        libc_memcpy(&g_r_old_test_info, test_ap_info, sizeof(test_ap_old_info_t));
+        g_old_test_info = (test_ap_old_info_t *) &g_r_old_test_info;
     }
     else
     {
-        g_test_ap_info = test_ap_info;
+        libc_memcpy(&g_r_test_ap_info, test_ap_info, sizeof(test_ap_info_t));
+        
+        g_p_test_ap_info_bak = test_ap_info;
+        
+        g_test_ap_info = &g_r_test_ap_info;
     }
-
+    
     g_test_info.test_id = 0;
 
     //默认扫描512M,加快文件的创建速度
@@ -387,7 +398,6 @@ void test_init(test_ap_info_t *test_ap_info)
     {
         ;//nothing for QAC
     }
-
     // test_ap_info->base_type = 0;
 
     //while(1);
@@ -429,6 +439,10 @@ void test_set_share_data(void)
 void main(test_ap_info_t *test_ap_info)
 {
     DEBUG_ATT_PRINT("  \r\ntest ap running...", 0, 0);
+    
+    sys_set_sys_info(1, SYS_PRINT_ONOFF);
+    
+    DISABLE_WATCH_DOG;
 
     /* 当前固件与测试程序不兼容时,
      * 需要重新从卡启动并烧录新固件.

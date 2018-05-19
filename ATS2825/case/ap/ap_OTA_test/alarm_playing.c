@@ -153,7 +153,7 @@ bool __section__(".bank") set_SDD_file_IO(uint8 mode,bool playing)
     storage_io_t io; 
     msg_apps_t msg;
     bool ret ;
-   if(mode == 16)
+    if(mode == 16)
     {    
         libc_memcpy(g_sdd_open_parm.file_name, "zen.mp3", 11);
         if(g_sdd_open_parm.id == 16)
@@ -247,7 +247,7 @@ bool __section__(".bank") set_SDD_file_IO(uint8 mode,bool playing)
     {
         g_sdd_open_parm.id = 0;
     }
-    g_sdd_open_parm.file_name = g_alarm_path.file_path.dirlocation.filename;
+    g_sdd_open_parm.file_name = g_alarm_path.file_path.dirlocation.file_info.file_name_info.file_name;
     g_sdd_open_parm.loop_interval_ms = 0;//为0是无缝播放
     io.open_arg = (void*)&g_sdd_open_parm;
     io.file_type = FILE_SOURCE_SD;
@@ -258,38 +258,38 @@ bool __section__(".bank") set_SDD_file_IO(uint8 mode,bool playing)
     io.handel = NULL;
     if(g_sdd_open_parm.id != 0)
     {
-       g_display_sec = 0;
-       if(playing == TRUE)
-       {
+        g_display_sec = 0;
+        if(playing == TRUE)
+        {
             alarm_stop();
-       }
-       msg.type = MSG_MENGINE_SET_FIO_SYNC;
-       msg.content.addr = &io;
-       //发送同步消息
-       ret = send_sync_msg(APP_ID_MENGINE, &msg, NULL, 0);
-       libc_print("set-sdd-io(f-id&ret):", (g_sdd_open_parm.id<<8)+ret, 2);
-       if(playing == TRUE)
-       {
-           alarm_play();
-       }
+        }
+        msg.type = MSG_MENGINE_SET_FIO_SYNC;
+        msg.content.addr = &io;
+        //发送同步消息
+        ret = (bool)send_sync_msg(APP_ID_MENGINE, &msg, NULL, 0);
+        libc_print("set-sdd-io(f-id&ret):", (g_sdd_open_parm.id<<8)+ret, 2);
+        if(playing == TRUE)
+        {
+            alarm_play();
+        }
     }
     else
     {
-       g_display_sec = 0;
-       if(playing == TRUE)
-       {
+        g_display_sec = 0;
+        if(playing == TRUE)
+        {
             alarm_stop();
-       }
-       libc_memcpy(g_sdd_open_parm.file_name, "alarm1.mp3", 11);
-       msg.type = MSG_MENGINE_SET_FIO_SYNC;
-       msg.content.addr = &io;
-       //发送同步消息
-       ret = send_sync_msg(APP_ID_MENGINE, &msg, NULL, 0);
-       libc_print("set-sdd-io(f-id&ret):", (g_sdd_open_parm.id<<8)+ret, 2);
-       if(playing == TRUE)
-       {
-           alarm_play();
-       }
+        }
+        libc_memcpy(g_sdd_open_parm.file_name, "alarm1.mp3", 11);
+        msg.type = MSG_MENGINE_SET_FIO_SYNC;
+        msg.content.addr = &io;
+        //发送同步消息
+        ret = (bool)send_sync_msg(APP_ID_MENGINE, &msg, NULL, 0);
+        libc_print("set-sdd-io(f-id&ret):", (g_sdd_open_parm.id<<8)+ret, 2);
+        if(playing == TRUE)
+        {
+            alarm_play();
+        }
     }
     return ret;
 }
@@ -310,21 +310,21 @@ uint8 choice_ring_song(void)
         g_display_sec = 0;
         if(get_gui_msg(&gui_msg) == TRUE)
         {
-             if(gui_msg.data.kmsg.val == KEY_NEXT)//
-             {
-                 ret = 16;
-                 break;
-             }
-             if(gui_msg.data.kmsg.val == KEY_PREV)//
-             {
+            if(gui_msg.data.kmsg.val == KEY_NEXT)//
+            {
+                ret = 16;
+                break;
+            }
+            if(gui_msg.data.kmsg.val == KEY_PREV)//
+            {
                 ret = 17;
                 break;
-             }
-             if(gui_msg.data.kmsg.val == KEY_MODE)
-             {
+            }
+            if(gui_msg.data.kmsg.val == KEY_MODE)
+            {
                 ret = 1;
                 break;
-             }
+            }
         }
         if(com_view_loop() > RESULT_COMMON_RESERVE)
         {
@@ -386,7 +386,7 @@ bool alarm_play_init(alarm_ring_var_t *alarm_ring_var)
             g_alarm_path.file_source = FSEL_TYPE_SDFILE;
             plocation = &(g_alarm_path.file_path.dirlocation);
             sys_sd_fclose(alarm_handle);
-            libc_memcpy(plocation->filename, tmp_ring_file, 12);//默认文件名
+            libc_memcpy(plocation->file_info.file_extend_info.file_ext, tmp_ring_file, 12);//默认文件名
             goto alarm_fsel_init_ok;
         }
     }

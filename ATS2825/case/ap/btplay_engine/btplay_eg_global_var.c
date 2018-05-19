@@ -25,5 +25,5 @@ bt_stack_twsinfo_t *g_p_tws_info;
 btplay_info_t g_btplay_info[2];
 btplay_info_t *g_p_btplay_info;
 #ifdef WAVES_ASET_TOOLS
-uint8 support_waves_pc_tools_bt;
+    waves_t  g_waves;
 #endif

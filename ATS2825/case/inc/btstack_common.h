@@ -30,22 +30,10 @@
 // !!! 由 Makefile 传入 gcc 的宏定义
 #ifndef OTA_VERSION
 // !!! OTA版本不能打开
-//#define ENABLE_TRUE_WIRELESS_STEREO
-
+#define ENABLE_TRUE_WIRELESS_STEREO
 #endif
-
-#ifdef ENABLE_TRUE_WIRELESS_STEREO
 
 #define RMT_DEV_NUM 2
-//#define ENABLE_PLAY_PAUSE_TTS //使能播放暂停tts
-#undef  SUPPORT_RCP_FUNC 
-#define SUPPORT_RCP_FUNC  0
-
-#else
-
-#define RMT_DEV_NUM 1
-
-#endif
 
 #define MGR_MAX_REMOTE_NAME_LEN         16
 #define BD_ADDR_LEN                     6
@@ -112,6 +100,20 @@ typedef struct
     uint8 name[PB_MAX_NAME_LEN];
 } pb_data_t; //32byte
 
+#ifdef __SUPPORT_3_WAY_CALL_
+/* Used By +CLCC */
+struct HFP_CLCCInfo {
+    uint8   idx;                /* The numbering (start with 1) of the call given by the sequence of setting up or receiving the calls */
+    uint8   dir;                /* Direction, 0=outgoing, 1=incoming */
+    uint8   status;             /* 0=active, 1=held, 2=dialling(outgoing), 3=alerting(outgoing), 4=incoming(incoming), 5=waiting(incoming) */
+    uint8   mode;               /* 0=voice, 1=data, 2=fax */
+    uint8   mpty;               /* 0=not multiparty, 1=multiparty */
+    uint8   type;               /* The format of the phone number provided */
+    uint8   num_len;            /* the length of the phone number provided, not including ending 0 */   
+    uint8   number[1];          /* Endby 0, Phone number */
+};
+#endif  //__SUPPORT_3_WAY_CALL_
+
 typedef struct
 {
     uint32 enable_a2dp :1;
@@ -131,6 +133,9 @@ typedef struct
     uint32 enable_ancs :1;
     uint32 enable_tip :1;
     uint32 enable_siri :1;
+#ifdef __SUPPORT_3_WAY_CALL_    	
+    struct HFP_CLCCInfo hfp_clcc_info[2]; //add by Ian,15.04.16, for three_way_status.
+#endif     
 } btstack_config_t;
 
 typedef enum
@@ -207,6 +212,9 @@ typedef struct
         uint8 sco_link :1; //0, 未建立SCO链路；1,已建立SCO链路
         uint8 batt_supported :1; //0, 不支持电池电量上报；1,支持
         uint8 pb_result :2; //当前来电电话本播报类型，见 pb_result_e 定义
+#ifdef __SUPPORT_3_WAY_CALL_
+        bt_3way_status three_way_status : 2;   // 3方通话状态 0：没有3方通话，1：存在3方通话
+#endif    
         uint8 old_sco_link :1; //用来标记SCO的变化
         uint16 air_pkt_len;	
     } hfp_attr;
@@ -232,6 +240,8 @@ typedef struct
     uint8 hfp_active_id;
     uint8 hfp_established;//用于标志HFP建立完成
     uint8 dev_discon_lock;//用于刚连接成功上一个服务后锁一段时间，这段时间内不允许主动断开连接
+    uint8 spp_con_flag;//0 no con;1 spp con;
+    uint8 ble_con_flag;//0 no con;1 ble con;    
 #ifdef ENABLE_TRUE_WIRELESS_STEREO
     uint8 dev_role; //用于区分主箱,从箱
     uint8 pair;//用来区分是否进入组对状态
@@ -244,7 +254,9 @@ typedef struct
     uint8 sd_lis_ov;
     uint8 sim_a_en;//pmu 仿真加速模式使能
     uint8 dev_disconnecting;
+    uint8 tws_pair_status;
 #endif
+    uint8 esd_reset_fla;
 } bt_stack_info_t;
 
 #ifdef ENABLE_TRUE_WIRELESS_STEREO
@@ -277,7 +289,12 @@ extern bt_stack_pipe_t *g_p_rcp_in_data_ctl;
 #define PIPE_OP_CLEAR_LIST    0x10 //清除sendlist
 #define PIPE_OP_PLAY 0x20 //更正底层态为play
 #define PIPE_OP_PAUSE 0x04 //更正底层状态pause
+#define PIPE_OP_MMM_FILTER 0x08 //区别加载中间件中间的丢数情况
 
+//tws 通用命令定义
+#define VOLUME_VALUE_FLAG  0x00  //音量值
+#define MUTE_STATE_FLAG         0x03  //mute状态
+#define DISCON_TWS_FLAG         0x04  //discon tws acl handle flag
 
 
 #define BATTERY_REPORT_CMD_ID_ENABLE  0
@@ -367,6 +384,18 @@ typedef struct
     uint8 remote_addr[6];
     uint8 support_profile;
 } bt_paired_dev_info_t;
+
+typedef struct
+{
+	uint8    remote_addr[6];
+	uint8    support_profile;	
+	uint8    linkkey_type;
+	uint8    linkkey[16];
+	uint8    local_addr[6];
+    uint8    remote_name[16];
+	uint8    reserved[6];
+} bt_paired_dev_info2_t;
+
 
 typedef enum
 {

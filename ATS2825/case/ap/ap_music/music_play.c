@@ -74,7 +74,7 @@ MUS_STATIC void _play_create_view(void);
 
 MUS_STATIC  app_result_e _audiopp_update(void *ev_param);
 MUS_STATIC __section__(".text.BANK20") void update_sound_mode(void);
-
+void __section__(".text.BANK20")  update_waves_bin_para(void);
 
 MUS_STATIC const key_event_map_t __section__(".rodata.ke_maplist") music_play_key_map_list[] =
 {
@@ -186,12 +186,6 @@ app_result_e music_scene_play(void)
     //场景循环
     ret_vals = get_message_loop();
 
-#ifdef SUPPORT_ASET_TEST
-    if ((g_app_info_state.stub_tools_type == STUB_PC_TOOL_WAVES_ASET_MODE) || (g_app_info_state.stub_tools_type == STUB_PC_TOOL_ASET_EQ_MODE))
-    {
-        aset_test_exit();
-    }
-#endif
     //关闭扫描线程
     music_close_scan();
 
@@ -209,6 +203,11 @@ MUS_STATIC void _play_check_status(void)
     if (1 == sys_comval->dae_cfg.audiopp_type_update_flag)
     {
         update_sound_mode();
+    }
+
+    if (1 == g_app_info_state_all.waves_dae_para_update_flag)
+    {
+        update_waves_bin_para();
     }
     
     //正常播放,没有错误
@@ -257,6 +256,10 @@ MUS_STATIC void _play_check_status(void)
         if((play_ok_falg == FALSE) && (s_eg_err_status == EG_ERR_NO_FILE))
         {
             sta_ret = RESULT_NEXT_FUNCTION;//空卡
+        }
+        else if(s_eg_err_status == EG_ERR_RAED_CARD_TIMEOUT)
+        {
+            sta_ret = RESULT_NEXT_FUNCTION;//读卡超时
         }
         else
         {
@@ -309,18 +312,19 @@ MUS_STATIC app_result_e get_message_loop(void)
         //检查是否扫描完成
         if (g_scan_handle != NULL)
         {
-            music_scan_cmd(g_scan_handle, MUSIC_SCAN_GET_STATUS, (unsigned int) &scan_flag);
+            music_scan_cmd(g_scan_handle, MUSIC_SCAN_GET_STATUS, (unsigned int) &g_scan_flag);
             //关闭扫描线程
-            if ((scan_flag & 0x81) != 0)
+            if ((g_scan_flag & 0x81) != 0)
             {
                 //出错或正常结束
                 music_close_scan();
             }
             //正确扫描结束
-            if ((scan_flag & 0x81) == 1)
+            if ((g_scan_flag & 0x81) == 1)
             {
                 PRINT_DBG("scan over!");
-                if((scan_flag & 0x02) != 0)
+                update_dir_list_random();//更新随机数
+                if((g_scan_flag & 0x02) != 0)
                 {
                     //文件系统有改动,刷新apk播放列表
                     music_upload_music_plist();
@@ -328,7 +332,7 @@ MUS_STATIC app_result_e get_message_loop(void)
                 //发送消息给引擎
                 music_send_msg(NULL, NULL, MSG_MENGINE_LIST_ACCESS_ALLOW_SYNC);
             }
-            else if((scan_flag & 0x80) == 0x80)
+            else if((g_scan_flag & 0x80) == 0x80)
             {
                 //出错了
                 PRINT_ERR("scan err!");
@@ -346,7 +350,8 @@ MUS_STATIC app_result_e get_message_loop(void)
         }
 
 #ifdef SUPPORT_ASET_TEST
-        if ((g_app_info_state.stub_tools_type == STUB_PC_TOOL_WAVES_ASET_MODE) || (g_app_info_state.stub_tools_type == STUB_PC_TOOL_ASET_EQ_MODE))
+        if ((g_app_info_state.stub_tools_type == STUB_PC_TOOL_WAVES_ASET_MODE) 
+            || (g_app_info_state.stub_tools_type == STUB_PC_TOOL_ASET_EQ_MODE))
         {
             aset_test_loop_deal();
         }
@@ -446,6 +451,7 @@ MUS_STATIC app_result_e __section__(".text.BANK2") _play_key_number(void)
     return RESULT_NULL;
 }
 
+#ifdef AB_SUPPORT
 MUS_STATIC app_result_e __section__(".text.BANK2") _play_key_ab(void)
 {
     if (g_musicplay_init_flag == TRUE)
@@ -456,6 +462,7 @@ MUS_STATIC app_result_e __section__(".text.BANK2") _play_key_ab(void)
     com_filter_key_hold();
     return create_view_ab();
 }
+#endif
 
 MUS_STATIC app_result_e __section__(".text.BANK2") _play_key_repeat(void)
 {
@@ -567,8 +574,7 @@ MUS_STATIC __section__(".text.BANK2") app_result_e _play_key_foldersub(void)
 MUS_STATIC __section__(".text.BANK2") app_result_e _play_card_out(void *ev_param)
 {
     //app_result_e ret;
-
-	 //U盘模式下拔卡，不做处理
+    //U盘模式下拔卡，不做处理
     if (g_file_path_info.file_path.dirlocation.disk == DISK_U)
     {
         return RESULT_NULL;
@@ -587,8 +593,7 @@ MUS_STATIC __section__(".text.BANK2") app_result_e _play_card_out(void *ev_param
 MUS_STATIC __section__(".text.BANK2") app_result_e _play_uhost_out(void *ev_param)
 {
     //app_result_e ret;
-	
-	//卡模式下拔U盘，不做处理
+    //卡模式下拔U盘，不做处理
     if (g_file_path_info.file_path.dirlocation.disk == DISK_H)
     {
         return RESULT_NULL;
@@ -650,15 +655,18 @@ MUS_STATIC __section__(".text.BANK20") void sound_mode_handle(void)
 
 
 
- MUS_STATIC __section__(".text.BANK20") void update_sound_mode(void)
+MUS_STATIC __section__(".text.BANK20") void update_sound_mode(void)
 {
-
     sys_comval->dae_cfg.audiopp_type_update_flag = 0;
+    sound_mode_handle();
+    music_sound_mode_timer_id = set_single_shot_app_timer(APP_TIMER_ATTRB_CONTROL,1000, sound_mode_handle);
+}
 
+void __section__(".text.BANK20")  update_waves_bin_para(void)
+{
+    g_app_info_state_all.waves_dae_para_update_flag = 0;
     sound_mode_handle();
 
     music_sound_mode_timer_id = set_single_shot_app_timer(APP_TIMER_ATTRB_CONTROL,1000, sound_mode_handle);
 }
-
-
 

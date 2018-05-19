@@ -24,15 +24,18 @@
 
 void __section__(".text.dma_dac_start_transfer") dma_dac_start_transfer(void)
 {
-    //reload enable
-    act_writel(act_readl(DMA3CTL) | (1 << DMA3CTL_reload), DMA3CTL);
-    //enable transfer
-    act_writel(act_readl(DMA3CTL) | (1 << DMA3CTL_DMA3START), DMA3CTL);
     while ((act_readl(DMAIP) & 0x00000808) != 0)
     {
         //clear pending，注意不能使用读-或-写这种方式，避免清掉其他pending位
         act_writel(0x00000808, DMAIP);
     }
+    if(0 == g_app_info_state_all.fix_sample_rate_flag)
+    {
+        //reload enable
+        act_writel(act_readl(DMA3CTL) | (1 << DMA3CTL_reload), DMA3CTL);
+    }
+    //enable transfer
+    act_writel(act_readl(DMA3CTL) | (1 << DMA3CTL_DMA3START), DMA3CTL);
 }
 
 
@@ -52,20 +55,30 @@ void callring_dac_dma_config(void)
     //    act_writel(act_readl(DAC_FIFOCTL) | (~(1<<DAC_FIFOCTL_DAF0RT)), DAC_FIFOCTL);
     
     act_writel(0, DMA3CTL);
+    //enable IRQ
+    sys_request_irq(IRQ_DMA3, ring_dma_isr);
     //data width 16bit
     act_writel(act_readl(DMA3CTL) | (1 << DMA3CTL_DATAWIDTH_SHIFT), DMA3CTL);
     //source addr type:memory
     act_writel(act_readl(DMA3CTL) | (0 << DMA3CTL_SRCTYPE_SHIFT), DMA3CTL);
     //dest addr type:dac fifo0
-    act_writel(act_readl(DMA3CTL) | (11 << DMA3CTL_DSTTYPE_SHIFT), DMA3CTL);
+    if(1 == g_app_info_state_all.fix_sample_rate_flag)
+    {
+        act_writel(act_readl(DMA3CTL) | (13 << DMA3CTL_DSTTYPE_SHIFT), DMA3CTL);
+    }
+    else
+    {
+        act_writel(act_readl(DMA3CTL) | (11 << DMA3CTL_DSTTYPE_SHIFT), DMA3CTL);
+    }
     //reload enable
-    act_writel(act_readl(DMA3CTL) | (1 << DMA3CTL_reload), DMA3CTL);
+    //act_writel(act_readl(DMA3CTL) | (1 << DMA3CTL_reload), DMA3CTL);
     //source address
     act_writel((uint32)g_btcall_callring_dac_buf, DMA3SADDR0);
     //dma length
     act_writel(CALLRING_DAC_BUFFER_LENGTH / 2, DMA3FrameLen);
     //enable dma0 half & full trans interupt
-    //act_writel(act_readl(DMAIE)|0x00000011, DMAIE);
+    act_writel(act_readl(DMAIP)|0x00000808, DMAIP);
+    act_writel(act_readl(DMAIE)|0x00000808, DMAIE);
     
     //enalbe DAC FIFO Empty DRQ
     act_writel(act_readl(DAC_FIFOCTL) | (1 << DAC_FIFOCTL_DAF0EDE), DAC_FIFOCTL);

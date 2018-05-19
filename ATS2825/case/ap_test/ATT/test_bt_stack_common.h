@@ -69,6 +69,16 @@ typedef struct
 	uint8    support_profile;		
 } bt_paired_dev_info_t;
 
+typedef struct
+{
+	uint8    remote_addr[6];
+	uint8    support_profile;	
+	uint8    linkkey_type;
+	uint8    linkkey[16];
+	uint8    local_addr[6];
+    uint8    remote_name[16];
+	uint8    reserved[6];
+} bt_paired_dev_info2_t;
 
 typedef enum
 {

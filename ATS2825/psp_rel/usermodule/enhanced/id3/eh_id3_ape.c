@@ -226,6 +226,8 @@ char ape_v2_parse(void)
 
     //pos_item_stream=0;
 
+    sys_os_sched_lock();
+
     while ((t_itemcount > 0) && (id3_pos_file < file_len))
     {
         t_itemcount--;
@@ -274,6 +276,8 @@ char ape_v2_parse(void)
         }
 
     }
+
+    sys_os_sched_unlock();
 
     if (find_count > 0)
     {

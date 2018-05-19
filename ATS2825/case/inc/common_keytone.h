@@ -36,9 +36,13 @@ typedef struct
     uint8 count;
     dac_chenel_e dac_chan;
     uint8 dac_sample;
-    bool enable;
-    bool playing;
+    uint8 enable:1;
+    uint8 playing:1;
+    uint8 thread_eixt:1;
+    uint8 kt_mute:1;
+    uint8 reserved:4;
     uint8 kt_fifo[KEYTONE_FIFO_DEPTH];
+    uint8 *keytone_thread_addr;
 } keytone_infor_t;
 
 extern keytone_infor_t g_keytone_infor;

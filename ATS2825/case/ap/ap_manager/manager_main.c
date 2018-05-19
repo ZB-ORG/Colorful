@@ -24,6 +24,16 @@ OS_STK *ptos = (OS_STK *) AP_PROCESS_MANAGER_STK_POS;
 INT8U prio = AP_PROCESS_MANAGER_PRIO;
 test_share_info_t *g_p_test_share_info;
 
+mem_use_info_t *g_mem_use_info;
+
+uint8 prev_back_ap_id;
+
+uint8 prev_front_ap_id;
+
+uint8 *pa_thread_task_addr;
+
+uint8 support_dev_num;
+
 extern app_result_e manager_message_loop(void)__FAR__;
 extern bool globe_data_init(void) __FAR__;
 
@@ -43,7 +53,15 @@ typedef void (*handler_ker)(void);
  *******************************************************************************/
 static void _read_var(void)
 {
-
+    g_app_info_state_all.fix_sample_rate_flag = (uint8)com_get_config_default(SETTING_AUDIO_SAMPLE_RATE_FIXED);
+    if(com_get_config_default(SETTING_AUDIO_POW_SAVING_MODE) != 0)
+    {
+        GLOBAL_KERNEL_BACKDOOR_FLAG |= BACKDOOR_AUDIO_POW_SAVING;
+    }
+    else
+    {
+        GLOBAL_KERNEL_BACKDOOR_FLAG &= (~BACKDOOR_AUDIO_POW_SAVING);
+    }
 }
 
 #ifdef FT_MODE
@@ -64,7 +82,6 @@ void delay_ms(uint8 dly_ms)
 }
 #endif
 
-
 /******************************************************************************/
 /*!
  * \par  Description:
@@ -83,18 +100,22 @@ void delay_ms(uint8 dly_ms)
  *******************************************************************************/
 int main(int argc, const char *argv[])
 {
-    system_config();
+    uint8 dc5v_flag = 0;
 
-    //安装NOR UD驱动
-    sys_drv_install(DRV_GROUP_STG_BASE, 0, "nor_ud.drv");
+    system_config();
 
     //初始化globe全局数据，并加载配置脚本 config.bin
     globe_data_init_applib();
     
-	ft_test_mode();
+    //初始化应用变量
+    _read_var();
+    
+    ft_test_mode();
 
 #ifdef FT_MODE
-        //act_writel((act_readl(HOSC_CTL) & 0xffff0000), HOSC_CTL);
+        //act_writel((act_readl(HOSC_CTL) & 0xffff0000), HOSC_CTL);        
+        act_writel((act_readl(AD_Select1) & (~AD_Select1_GPIOA22_MASK)), AD_Select1);
+
         delay_ms(20);
         //act_writel((act_readl(HOSC_CTL) | 0x4646), HOSC_CTL);
         delay_ms(10);
@@ -109,6 +130,11 @@ int main(int argc, const char *argv[])
 #else 
   
     PRINT_INFO_INT("WAKE_TYPE:", argc);
+
+    if ((act_readl(CHG_DET) & (1 << CHG_DET_UVLO)) != 0)
+    {
+        dc5v_flag = 1;
+    }
 
     //config_hosc_freq();
     //config pcmram1 to cpu
@@ -130,6 +156,10 @@ int main(int argc, const char *argv[])
     //锁定频率为：MIPS -> 85M, DSP -> 180
     sys_lock_adjust_freq(85 | (180 << 8));
     
+    g_app_info_state_all.stub_pc_tools_type = STUB_PC_TOOL_UNKOWN;
+    g_app_info_state_all.bin_number = (uint8) com_get_config_default(SETTING_APP_WAVES_BIN_NUMBER);
+    g_app_info_state_all.waves_dae_para_update_flag = 0;
+        
 #endif
 
     pa_thread_open(NULL);
@@ -140,11 +170,12 @@ int main(int argc, const char *argv[])
     //初始化 applib 消息模块
     sys_mq_flush(MQ_ID_MNG);
 
-    //初始化应用变量
-    _read_var();
-
+    //sys_exec_ap为字符串参数接口，rodata数据要注意不被刷掉
+    //所以要先锁掉度
+    sys_os_sched_lock();
+    
     //创建config应用
-    if(argc)
+    if((argc != 0) || (dc5v_flag == 1))
     {
         sys_exece_ap("config.ap", 0, 0);    //软件开机、唤醒
     }
@@ -153,10 +184,12 @@ int main(int argc, const char *argv[])
         sys_exece_ap("config.ap", 0, 5);    //上电开机
     }
 
+    sys_os_sched_unlock();
+
     manager_message_loop();
 
     return 0;
-#endif	
+#endif    
 }
 
 #if 0
@@ -272,7 +305,7 @@ void system_config(void)
 
     /*系统调频时，不再调整VCC电压，系统初始化为3.1V，应用可以根据需求，
      将其调整到合适档位，比如，为了EJTAG调试，设为3.3V.*/
-	//根据哈曼案子需求，将VDD电压调整到3.2V
+    //根据哈曼案子需求，将VDD电压调整到3.2V
     act_writel((0xFFFFFF8F & act_readl(VOUT_CTL)) | 0x50, VOUT_CTL);
 
     /*for EMI setting.  */

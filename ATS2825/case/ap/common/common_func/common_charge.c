@@ -79,6 +79,28 @@ void __section__(".bank") com_battery_charge_change_deal(uint8 cur_charge_state,
     g_app_info_state.bat_value = cur_bat_val;
 }
 
+void __section__(".bank") com_battery_charge_full_check(uint32 real_charge_state)
+{
+    uint16 msg;
+
+    g_sys_counter.charge_full_cnt++;
+    if (g_sys_counter.charge_full_cnt > 4)//2秒后，检测电压是否满
+    {
+        if (real_charge_state < (BATTERY_GRADE_MAX + 1))//BATTERY_GRADE_MAX = 4.20V
+        {
+            g_sys_counter.charge_full_cnt = 0;
+            key_battery_charge_open(0, 0);//打开充电，用上一次参数
+        }
+    }
+    if (g_sys_counter.charge_full_cnt >= BAT_FULL_WARNING_CYCLE)
+    {
+        g_sys_counter.charge_full_cnt = 0;
+
+        //充电已满
+        msg = MSG_FULL_CHARGE;
+        sys_mq_send(MQ_ID_SYS, &msg);
+    }    
+}
 /******************************************************************************/
 /*!
  * \par  Description:
@@ -92,10 +114,11 @@ void __section__(".bank") com_battery_charge_change_deal(uint8 cur_charge_state,
 void com_battery_charge_deal(void)
 {
     uint16 msg;
-    uint8 tmp_battery_value; //当前电池电量
-    uint8 tmp_charge_state; //当前充电状态，分无充电，正在充电，充电已满，无电池
-    uint8 real_charge_state;
+    uint32 tmp_battery_value; //当前电池电量
+    uint32 tmp_charge_state; //当前充电状态，分无充电，正在充电，充电已满，无电池
+    uint32 real_charge_state;
     int8 volume_limit;
+    uint8 app_id = 0;//g_app_info_vector[1].app_id;//linein不作特殊处理
 
 #if (SUPPORT_OUTER_CHARGE == 1)
     if (sys_comval->bat_charge_mode == BAT_CHARGE_MODE_OUTER)
@@ -128,7 +151,8 @@ void com_battery_charge_deal(void)
     }
 #endif
 
-    tmp_charge_state = key_battery_get_status(&real_charge_state, &volume_limit);
+    tmp_charge_state = key_battery_get_status(&real_charge_state, &volume_limit, &app_id);
+
     if (real_charge_state < BATTERY_GRADE_MAX)
     {
         tmp_battery_value = real_charge_state;
@@ -140,10 +164,11 @@ void com_battery_charge_deal(void)
     //PRINT_DBG_INT("bat charge:", (tmp_charge_state << 8) | tmp_battery_value);
 
     volume_limit *= 10;
+    
     if (volume_limit != sys_comval->volume_limit)
     {
         com_update_volume_limit(volume_limit);
-    }
+    }       
 
     if ((tmp_charge_state == BAT_CHECKING) || (tmp_charge_state == BAT_NO_EXIST))
     {
@@ -157,11 +182,23 @@ void com_battery_charge_deal(void)
     {
         tmp_battery_value = g_app_info_state.bat_value;
     }
-
+    
+    //libc_print("bat:",g_app_info_state.bat_value,2);
+    
+    if (g_sys_counter.bat_change_cnt >= 10)
+    {
+        com_battery_charge_change_deal((uint8)tmp_charge_state, (uint8)tmp_battery_value);
+        g_sys_counter.bat_change_cnt = 0;
+        return;
+    }
+    
     if ((g_app_info_state.charge_state != tmp_charge_state) || (g_app_info_state.bat_value != tmp_battery_value))
     {
-        com_battery_charge_change_deal(tmp_charge_state, tmp_battery_value);
-        return;
+        g_sys_counter.bat_change_cnt ++;
+    }
+    else
+    {
+        g_sys_counter.bat_change_cnt = 0;
     }
 
     if ((g_app_info_state.charge_state == BAT_NORMAL) && (g_app_info_state.bat_value <= 1))
@@ -178,23 +215,7 @@ void com_battery_charge_deal(void)
     }
     else if (g_app_info_state.charge_state == BAT_FULL)
     {
-        g_sys_counter.charge_full_cnt++;
-        if (g_sys_counter.charge_full_cnt > 4)//2秒后，检测电压是否满
-        {
-            if (real_charge_state < (BATTERY_GRADE_MAX + 1))//BATTERY_GRADE_MAX = 4.20V
-            {
-                g_sys_counter.charge_full_cnt = 0;
-                key_battery_charge_open(0, 0);//打开充电，用上一次参数
-            }
-        }
-        if (g_sys_counter.charge_full_cnt >= BAT_FULL_WARNING_CYCLE)
-        {
-            g_sys_counter.charge_full_cnt = 0;
-
-            //充电已满
-            msg = MSG_FULL_CHARGE;
-            sys_mq_send(MQ_ID_SYS, &msg);
-        }
+        com_battery_charge_full_check(real_charge_state);
     }
     else
     {

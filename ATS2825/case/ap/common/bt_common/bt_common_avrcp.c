@@ -56,6 +56,18 @@ int com_btmanager_avrcp_op(btplay_avrcp_opid_e opid)
     return 0;
 }
 
+#ifdef __BQB_TEST_PROFILE_
+void com_btmanager_delay_report(void)
+{
+    msg_apps_t msg;
+
+    msg.type = MSG_BTSTACK_DELAY_REPORT_SYNC;
+
+    //发送同步消息
+    send_sync_msg_btmanager(g_bt_stack_cur_info.rmt_dev[g_bt_stack_cur_info.a2dp_active_id].addr.bytes, &msg, NULL, 0);
+}
+#endif
+
 app_result_e com_btmanager_avrcp_ind(uint8 op_id, bool tts_flag)
 {
     app_result_e result = RESULT_NULL;
@@ -85,7 +97,12 @@ app_result_e com_btmanager_avrcp_set_volume_to_soundbox(uint8 vol, bool tts_flag
     app_result_e result = RESULT_NULL;
     uint16 tmp_volume, tmp_volume_remainder;
 
+#ifndef ENABLE_TRUE_WIRELESS_STEREO
     if ((g_this_app_info->app_id == APP_ID_BTPLAY) && (g_btmanager_gl_var.avrcp_timer_id == -1))
+#else    	
+    if (((g_this_app_info->app_id == APP_ID_BTPLAY) || (g_this_app_info->app_id == APP_ID_LINEIN)) 
+    	     && (g_btmanager_gl_var.avrcp_timer_id == -1))
+#endif    	     
     {
         tmp_volume = (uint16) vol * VOLUME_VALUE_MAX;
         tmp_volume_remainder = tmp_volume % AVRCP_ABSOLUTE_VOLUME_MAX;
@@ -99,12 +116,15 @@ app_result_e com_btmanager_avrcp_set_volume_to_soundbox(uint8 vol, bool tts_flag
 
         if (tts_flag == FALSE)
         {
+          //  libc_print("tts flag F",0,0);
             com_volume_set((uint8) tmp_volume, SET_VOLUME_VIEW | SET_VOLUME_TTS);
         }
         else
         {
+           //  libc_print("tts flag T",0,0);
             //TTS正在播放的过程中，不更新系统音量，避免TTS在播报的过程中音量被修改
-            if (g_tts_play_info.status == TTS_STATUS_PLAYING)
+           // if (g_tts_play_info.status == TTS_STATUS_PLAYING)
+            if (g_tts_play_info.status >= TTS_STATUS_READY)
             {
                 
             }
@@ -142,11 +162,14 @@ static int __avrcp_update_volume_to_phone(uint8 vol, uint8 *bd)
 }
 
 #ifdef ENABLE_TRUE_WIRELESS_STEREO
-int com_btmanager_tws_send(uint8 data, uint8 *bd)
+
+//master to slave interface
+#if 0
+int com_btmanager_tws_send(uint8 data, uint8 *bd,uint32 type)
 {
 	msg_apps_t  tws_msg;
 	
-	  tws_msg.type = MSG_BTSTACK_TWS_SEND_MSG_SYNC;
+	  tws_msg.type = type;
 	  data=com_btmanager_avrcp_volume2avrcp_volume(data);
 	  tws_msg.content.data[0] = data;
 	  libc_print("data:",data,2);
@@ -155,6 +178,35 @@ int com_btmanager_tws_send(uint8 data, uint8 *bd)
 	  return 0;
 
 }
+
+#endif
+
+/*
+    parameters:
+    data:cmd flag
+    data1~data3:cmd value
+*/
+int com_btmanager_tws_send(uint8 data,uint8 data1, uint8 data2,uint8 data3,uint32 type)
+{
+    
+      msg_apps_t  tws_msg;
+      tws_msg.type = type;
+      //tws_msg.type = MSG_BTSTACK_TWS_SEND_MSG_
+      if(data==VOLUME_VALUE_FLAG)
+      {
+        data1=com_btmanager_avrcp_volume2avrcp_volume(data1);       
+      }
+      tws_msg.content.data[0] = data;
+      tws_msg.content.data[1] = data1;
+      tws_msg.content.data[2] = data2;
+      tws_msg.content.data[3] = data3;
+      libc_print("data1:",data1,2);
+      send_sync_msg_btmanager(NULL, &tws_msg, NULL, 0);
+
+      return 0;
+
+}
+
 #endif
 int com_btmanager_avrcp_update_volume_to_phone(uint8 vol)
 {
@@ -164,10 +216,18 @@ int com_btmanager_avrcp_update_volume_to_phone(uint8 vol)
 
 //支持主副箱同步音量，而不同步手机端音量
 #ifdef ENABLE_TRUE_WIRELESS_STEREO
-	if(g_bt_stack_cur_info.dev_role!=0)
-	{
-	    com_btmanager_tws_send(vol, NULL);	
-	}
+#if 0
+            if(g_bt_stack_cur_info.dev_role!=0)
+            {
+                com_btmanager_tws_send(vol, NULL);  
+            }
+#else
+        if(g_bt_stack_cur_info.dev_role!=0)
+        {
+            com_btmanager_tws_send(VOLUME_VALUE_FLAG, vol,NULL,NULL,MSG_BTSTACK_TWS_SEND_MSG_SYNC);  
+        }
+#endif
+
 
 #endif
         return 0;

@@ -17,6 +17,7 @@
 #define MSG_SYS_POWER_OFF            0x0084  /*! 关机消息, 等待前台应用和后台应用退出后启动 config 应用进入关机流程 */
 #define MSG_SYS_RECLAIM              0x0085
 #define MSG_SYS_DSP_RESET            0x0086
+#define MSG_SYS_MPU_ERROR            0x0087
 
 #define MSG_SYS_USB_STICK            0x0090
 #define MSG_SYS_USB_UNSTICK          0x0091

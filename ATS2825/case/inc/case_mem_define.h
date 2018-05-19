@@ -8,12 +8,13 @@
 #ifndef __CASE_MEM_DEFINE_H
 #define __CASE_MEM_DEFINE_H
 
-#define ASET_READ_DATA_BUF         		(0x9fc20208)
+#define ASET_READ_DATA_BUF         		(g_aset_rw_buffer)
 
-#define ASET_WRITE_DATA_BUF_WITH_HEAD 	(0x9fc20200)
+#define ASET_WRITE_DATA_BUF_WITH_HEAD 	(g_aset_rw_buffer)
 #define ASET_WRITE_DATA_BUF        		(ASET_WRITE_DATA_BUF_WITH_HEAD + 8)
 
-#define ASET_RW_DATA_BUF_WITH_HEAD      (0x9fc20200)
+#define ASET_RW_DATA_BUF_WITH_HEAD      (g_aset_rw_buffer)
 #define ASET_RW_DATA_BUF                (ASET_RW_DATA_BUF_WITH_HEAD + 8)
+
 
 #endif

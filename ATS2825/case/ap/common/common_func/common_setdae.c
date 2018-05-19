@@ -15,8 +15,8 @@
 
 extern void com_inner_load_mdrc_param(dae_config_t *p_dae_cfg, bool aux_flag) __FAR__;
 
-static bool  __set_dae_config(dae_config_t *p_dae_cfg);
-static uint8 __calc_dae_freq(dae_config_t *p_dae_cfg);
+bool  __set_dae_config(dae_config_t *p_dae_cfg);
+uint8 __section__(".BANK47")__calc_dae_freq(dae_config_t *p_dae_cfg);
 static void  __update_precut_factor(dae_config_t *p_dae_cfg);
 static void  __update_dew_setting(dae_config_t *p_dae_cfg, int16 volume_relative);
 static void  __update_mdrc_setting(dae_config_t *p_dae_cfg, int16 volume_relative, \
@@ -90,7 +90,7 @@ bool com_load_mdrc_config(dae_config_t *p_dae_cfg, bool load_bin, bool update_si
  * \retval           FALSE 设置EQ失败
  * \note
 *******************************************************************************/
-bool com_set_dae_config(daemode_param_t *daemode_param)
+bool __section__(".bank") com_set_dae_config(daemode_param_t *daemode_param)
 {
     dae_config_t *p_dae_cfg = &(sys_comval->dae_cfg);
     bool bret = TRUE;
@@ -193,53 +193,36 @@ bool com_set_dae_config(daemode_param_t *daemode_param)
 }
 
 //动态开关DAE模块，用于带耳机输出的音箱方案；该接口仅仅修改sys_comval的参数，仍然没有其作用
-bool com_set_dae_onoff(bool onoff)
+bool __section__(".bank") com_set_dae_onoff(bool onoff)
 {
     dae_config_t *p_dae_cfg = &(sys_comval->dae_cfg);
     bool bret = TRUE;
 
-    if (onoff == FALSE)
-    {
-        if (sys_comval->dae_off_nest == 0)
+    if (FALSE == onoff) 
+    {     
+        //关闭数字音效
+        if (TRUE == p_dae_cfg->bypass)
         {
-            sys_comval->dae_cfg.bypass = TRUE;
-            sys_comval->dae_off_nest++;
+            //不直接返回，需要重新计算所需要的DSP频率
+            //return bret;                    //数字音效已经关闭直接返回
         }
         else
         {
-            sys_comval->dae_off_nest++;
-            return bret;
+            p_dae_cfg->bypass = TRUE;       //数字音效没关闭，将数字音效关闭
         }
     }
-    else
+    else  
     {
-        if (sys_comval->dae_off_nest > 0)
+         //打开数字音效
+        if (FALSE == p_dae_cfg->bypass)
         {
-            //sys_comval->dae_off_nest--;
-            sys_comval->dae_off_nest = 0;
-        }
-
-        if (sys_comval->dae_off_nest == 0)
-        {
-#ifdef SUPPORT_ASET_TEST
-            if (g_app_info_state.stub_tools_type == STUB_PC_TOOL_ASET_EQ_MODE)
-            {
-                sys_comval->dae_cfg.bypass = FALSE; //ASET调试模式下不启用BYPASS
-            }
-            else
-#endif
-            {
-#ifdef WAVES_ASET_TOOLS    
-                p_dae_cfg->bypass = 1;   //使用WAVES pc tools，actions dae bypass模式 
-#else
-                p_dae_cfg->bypass = (uint8) com_get_config_default(DAE_BYPASS_ENABLE);
-#endif
-            }
+            //不直接返回，需要重新计算所需要的DSP频率
+            //return bret;                    //数字音效已经打开直接返回
         }
         else
         {
-            return bret;
-        }
+            p_dae_cfg->bypass = FALSE;      //数字音效没打开，将数字音效打开
+        }     
     }
 
     bret = __load_update_set_dae_config(p_dae_cfg, TRUE);
@@ -248,7 +231,7 @@ bool com_set_dae_onoff(bool onoff)
 }
 
 //使能/禁止DAE，如果禁止就加载空DAE库以释放DAE库空间
-bool com_set_dae_enable(bool enable)
+bool __section__(".bank") com_set_dae_enable(bool enable)
 {
     dae_config_t *p_dae_cfg = &(sys_comval->dae_cfg);
     bool bret = TRUE;
@@ -261,7 +244,7 @@ bool com_set_dae_enable(bool enable)
 }
 
 //设置DAE通道属性，分为AUX通道属性和信号可变通道属性
-bool com_set_dae_chan(bool aux_flag, bool variable_mode)
+bool __section__(".bank") com_set_dae_chan(bool aux_flag, bool variable_mode)
 {
     dae_config_t *p_dae_cfg = &(sys_comval->dae_cfg);
     bool bret = TRUE;
@@ -297,6 +280,9 @@ void com_update_dae_config(dae_config_t *p_dae_cfg)
         goto update_last;
     }
 
+    PRINT_INFO_INT("volume_relative",volume_relative);
+    PRINT_INFO_INT("signal_energy",signal_energy);
+    
     //更新音效增强减弱设置
     __update_dew_setting(p_dae_cfg, volume_relative + signal_energy);
 
@@ -326,28 +312,47 @@ void com_update_dae_config(dae_config_t *p_dae_cfg)
     {
         __update_mdrc_setting(p_dae_cfg, volume_relative, signal_energy, vol_adjust_gain_max);
     }
-
-    if (p_dae_cfg->mdrc_enable_standard_mode == 1)
+  
+    if (STANDARD_MODE == p_dae_cfg->audiopp_type)
     {
-       p_dae_cfg->max_vol_flag = 1;
-       
-       if (g_aset_run_state.run_state == ASET_TOOLS_WORK)
-       {
-             //标准模式下，连接ASET工具时，直接将ASET参数传递给DSP
-       }
-       else
-       {
-           //标准模式下，打包成固件时，根据不同音量级别动态更新预衰减 压缩器阈值
-           //信号微调 音量微调 增益补偿 补偿滤波器阈值  三段MDRC阈值
-           update_dae_vol_table();  
-       }    
+        if (STUB_PC_TOOL_ASET_EQ_MODE == g_app_info_state.stub_tools_type)
+        {
+            //标准模式下，连接ASET工具时，直接将ASET参数传递给DSP
+        }
+        else
+        {
+            //标准模式下，打包成固件时，根据不同音量级别动态更新预衰减 压缩器阈值
+            //信号微调 音量微调 增益补偿 补偿滤波器阈值  三段MDRC阈值
+            update_dae_vol_table();  
+        }  
     }
+  
     update_last:
 
     __update_precut_factor(p_dae_cfg);
     __calc_dae_freq(p_dae_cfg);
 }
-
+#if 0
+void __section__(".rcode")multi_band_multi_freq_test(void)
+{
+    short *p_signal_energy_inner_band;//多频段起始地址
+    short *p_signal_energy_inner_freq;//多频点起始地址
+    uint8 i = 0;
+    
+    p_signal_energy_inner_band = g_app_info_state_all.p_energy_value_bands;
+    p_signal_energy_inner_freq = g_app_info_state_all.p_energy_value_freqs;
+    //PRINT_INFO_INT("ad0",p_signal_energy_inner_band);
+    //PRINT_INFO_INT("ad1",p_signal_energy_inner_freq);
+    for (i=0; i<10;i++)
+    {
+       PRINT_INFO_INT("freq ",i); 
+       PRINT_INFO_INT("f",*(p_signal_energy_inner_freq + i)); 
+       PRINT_INFO_INT("b",*(p_signal_energy_inner_band + i));
+    }
+    
+    PRINT_INFO("\n");
+}
+#endif
 //实时能量检测
 void __section__(".rcode") com_detect_energy_realtime(void)
 {
@@ -394,7 +399,15 @@ void __section__(".rcode") com_detect_energy_realtime(void)
     if (sys_comval->signal_energy_used != sys_comval->signal_energy)
     {
         sys_comval->signal_energy_used = sys_comval->signal_energy;
+#ifdef SUPPORT_ASET_TEST
+   g_aset_sync_volume = 1;
+#endif
         com_set_dae_config_dynamic();
+
+#ifdef SUPPORT_ASET_TEST
+   g_aset_sync_volume = 0;
+#endif
+
     }
 
     p_dae_cfg->vbass_enable = vbass_enable;
@@ -425,7 +438,7 @@ static void __update_precut_factor(dae_config_t *p_dae_cfg)
 }
 
 //加载mdrc参数
-static void __load_mdrc_param(dae_config_t *p_dae_cfg, bool aux_flag)
+static __section__(".bank") void __load_mdrc_param(dae_config_t *p_dae_cfg, bool aux_flag)
 {
     uint16 config_id;
     uint8 i;
@@ -641,6 +654,14 @@ static void __update_dew_setting(dae_config_t *p_dae_cfg, int16 volume_relative)
         }
     }
 
+#if 0
+    for (i =0; i < MAX_DEW_SEG; i++)
+    {
+        PRINT_INFO_INT("cutoff",p_dae_cfg->dew_bands[i].cutoff);
+        PRINT_INFO_INT("gain",p_dae_cfg->dew_bands[i].gain);
+    }
+#endif  
+  
     sys_free(p_dew_band);
     p_dew_band = NULL;
 }
@@ -737,7 +758,7 @@ static void __update_mdrc_setting(dae_config_t *p_dae_cfg, int16 volume_relative
     }
 }
 
-static bool __set_dae_config(dae_config_t *p_dae_cfg)
+bool __set_dae_config(dae_config_t *p_dae_cfg)
 {
     msg_apps_t seteq_msg;
     dae_config_t *p_dae_cfg_shm;
@@ -807,6 +828,7 @@ static void __set_signal_variable_mode(bool variable_mode)
     if (sys_comval->signal_energy_enable == 0)
     {
         variable_mode = 0;
+        sys_comval->signal_energy = 0; 
     }
 
 #if (SUPPORT_DETECT_ENERGY == 1)
@@ -829,39 +851,35 @@ static void __set_signal_variable_mode(bool variable_mode)
     }
 }
 
-static uint8 __calc_dae_freq(dae_config_t *p_dae_cfg)
+uint8 __section__(".BANK47")__calc_dae_freq(dae_config_t *p_dae_cfg)
 {
     uint8 dae_freq = 0;
     uint8 band_freq_flag = 0;
     engine_type_e engine_type;
+    
+#if (SUPPORT_MULTI_FREQ_MULTI_BAND == 1)
+    if (p_dae_cfg->MultiFreqBandEnergy_enable == 1)
+    {
+        dae_freq += 1; //频段能量计算基础频率
+        dae_freq += (p_dae_cfg->dae_attributes->num_band*21)/10;
+    }
 
+    if (p_dae_cfg->FreqSpetrumDisplay_enable == 1)
+    {
+        dae_freq += 1; //频点能量计算基础频率
+        dae_freq += p_dae_cfg->dae_attributes->num_freq_point*6/10;
+    }
+#endif
+    if(1 == p_dae_cfg->noise_reduction_enable) 
+    {
+        dae_freq += 5;
+    }
+        
     if (p_dae_cfg->enable == FALSE)
     {
         p_dae_cfg->run_freq = 0;
         return 0;
     }
-    
-#if (SUPPORT_MULTI_FREQ_MULTI_BAND == 1)
-    if (p_dae_cfg->MultiFreqBandEnergy_enable == 1)
-    {
-        if (band_freq_flag == 0)
-        {
-            dae_freq += 6; //频段能量计算基础频率
-            band_freq_flag = 1;
-        }
-        dae_freq += (p_dae_cfg->dae_attributes->num_band*5)/2;
-    }
-
-    if (p_dae_cfg->FreqSpetrumDisplay_enable == 1)
-    {
-        if (band_freq_flag == 0)
-        {
-            dae_freq += 6; //频点能量计算基础频率
-            band_freq_flag = 1;
-        }
-        dae_freq += p_dae_cfg->dae_attributes->num_freq_point*1;
-    }
-#endif
 
     if (p_dae_cfg->bypass == TRUE)
     {
@@ -869,7 +887,7 @@ static uint8 __calc_dae_freq(dae_config_t *p_dae_cfg)
         return 0;
     }
 
-    dae_freq += 9; //DAE基本频率
+    dae_freq += 2; //DAE基本频率
 
     //避免小米手机蓝牙推歌场景下，在小音量下进行音量调节，性能不足问题
     engine_type = get_engine_type();
@@ -893,7 +911,7 @@ static uint8 __calc_dae_freq(dae_config_t *p_dae_cfg)
             }
         }
 
-        dae_freq += (uint8) (((uint16) peq_band_cnt*18)/10);
+        dae_freq += (uint8) (((uint16) peq_band_cnt*5)/10);
     }
 
     if (p_dae_cfg->spk_compensation_enable == 1)
@@ -904,18 +922,7 @@ static uint8 __calc_dae_freq(dae_config_t *p_dae_cfg)
     //VBASS
     if (p_dae_cfg->vbass_enable == 1)
     {
-        if (p_dae_cfg->vbass_type == 1)
-        {
-            dae_freq += 12;            
-        }
-        else if (p_dae_cfg->vbass_type == 2)
-        {
-            dae_freq += 29;
-        }
-        else
-        {
-            ;//for qac
-        }
+        dae_freq += 12;            
     }
 
     //TREBLE
@@ -929,17 +936,38 @@ static uint8 __calc_dae_freq(dae_config_t *p_dae_cfg)
     {
         dae_freq += 17;
     }
-
-    //MDRC
-    if (p_dae_cfg->mdrc_enable == 1)
+    if (SMART_MODE == p_dae_cfg->audiopp_type)
     {
-        dae_freq += 45;
+        //MDRC
+        if (p_dae_cfg->mdrc_enable == 1)
+        {
+            dae_freq += 43;
+        }
+    }
+    else 
+    {
+         //MDRC增强
+        if (p_dae_cfg->mdrc_enable_standard_mode == 1)
+        {
+            dae_freq += 57;
+        }
     }
 
-    //LIMITER
-    if (p_dae_cfg->limiter_enable == 1)
+    if (SMART_MODE == p_dae_cfg->audiopp_type)
     {
-        dae_freq += 6;
+        //LIMITER
+        if (p_dae_cfg->limiter_enable == 1)
+        {
+            dae_freq += 6;
+        }
+    }
+    else 
+    {
+         //compressor
+        if (p_dae_cfg->compressor_enable_standard_mode == 1)
+        {
+            dae_freq += 10;
+        }
     }
 
     p_dae_cfg->run_freq = dae_freq;
@@ -953,66 +981,113 @@ uint32 __section__(".BANK47") update_dae_vol_table(void)
     vol_dae_para_temp_standard_mode_t vol_dae_para_temp_standard_mode;
     uint16 index = 0;
     uint16 tab_index = 0;
+    dae_compressor_temp_standard_mode_t    compressor_temp_standard_mode;
     
     if (1 == sys_comval->aux_flag)
     {
-        if (VOLUME_VALUE_MAX == sys_comval->volume_current)
-        {
-            index = VOL_16_DAE_AUX;           
-        }
-        else
-        {
-            index = (16 - sys_comval->volume_current/2) + VOL_16_DAE_AUX;    
-        }
+        //设置压缩器(AUX)模式下参数
+        com_get_config_struct((uint16) (DAE_COMPRESSOR_AUX_SETTING), (uint8 *)&compressor_temp_standard_mode ,  \
+        sizeof(dae_compressor_temp_standard_mode_t));
+        libc_memcpy(&(sys_comval->dae_cfg.compressor_standard_mode), &compressor_temp_standard_mode.compressor,      \
+        sizeof(dae_compressor_standard_mode_t));
 
+        index = (31 - (uint16)sys_comval->volume_current) + VOL_31_DAE_AUX;
+        PRINT_INFO_INT("index_aux",index);
+        
         com_get_config_struct(index , (uint8 *)&vol_dae_para_temp_standard_mode ,  \
         sizeof(vol_dae_para_temp_standard_mode_t));
     
-        sys_comval->dae_cfg.precut_standard_mode                = vol_dae_para_temp_standard_mode.vol_dae_para_sm.precut_standard_mode;
-        sys_comval->dae_cfg.compressor_standard_mode.threshold1 = vol_dae_para_temp_standard_mode.vol_dae_para_sm.compressor_th1;
-        sys_comval->dae_cfg.compressor_standard_mode.threshold2 = vol_dae_para_temp_standard_mode.vol_dae_para_sm.compressor_th2;
+        sys_comval->dae_cfg.precut_standard_mode                = \
+        (int8)vol_dae_para_temp_standard_mode.vol_dae_para_sm.precut_standard_mode;
+        
+        sys_comval->dae_cfg.compressor_standard_mode.threshold1 = \
+        vol_dae_para_temp_standard_mode.vol_dae_para_sm.compressor_th1;
+        
+        sys_comval->dae_cfg.compressor_standard_mode.threshold2 = \
+        vol_dae_para_temp_standard_mode.vol_dae_para_sm.compressor_th2;
 
-        sys_comval->dae_cfg.mdrc_extend_para_standard_mode.signal_adjust        = vol_dae_para_temp_standard_mode.vol_dae_para_sm.signal_fine_tune;
-        sys_comval->mdrc_vol_adjust_standard_mode                               = vol_dae_para_temp_standard_mode.vol_dae_para_sm.vol_fine_tune;
-        sys_comval->dae_cfg.mdrc_extend_para_standard_mode.makeup_gain          = vol_dae_para_temp_standard_mode.vol_dae_para_sm.gain_compensation;
-        sys_comval->dae_cfg.mdrc_peak_standard_mode.MDRC_compensation_threshold = vol_dae_para_temp_standard_mode.vol_dae_para_sm.compensation_filter_threshold;
+        sys_comval->dae_cfg.mdrc_extend_para_standard_mode.signal_adjust        = \
+        vol_dae_para_temp_standard_mode.vol_dae_para_sm.signal_fine_tune;
+        
+        sys_comval->mdrc_vol_adjust_standard_mode                               = \
+        (int8)vol_dae_para_temp_standard_mode.vol_dae_para_sm.vol_fine_tune;
+        
+        sys_comval->dae_cfg.mdrc_extend_para_standard_mode.makeup_gain          = \
+        vol_dae_para_temp_standard_mode.vol_dae_para_sm.gain_compensation;
+        
+        sys_comval->dae_cfg.mdrc_peak_standard_mode.MDRC_compensation_threshold = \
+        vol_dae_para_temp_standard_mode.vol_dae_para_sm.compensation_filter_threshold;
                                      
-        sys_comval->dae_cfg.p_mdrc_band_standard_mode[0].threshold1 = vol_dae_para_temp_standard_mode.vol_dae_para_sm.mdrc_low_freq_th1;
-        sys_comval->dae_cfg.p_mdrc_band_standard_mode[0].threshold2 = vol_dae_para_temp_standard_mode.vol_dae_para_sm.mdrc_low_freq_th2;
-        sys_comval->dae_cfg.p_mdrc_band_standard_mode[1].threshold1 = vol_dae_para_temp_standard_mode.vol_dae_para_sm.mdrc_middle_freq_th1;
-        sys_comval->dae_cfg.p_mdrc_band_standard_mode[1].threshold2 = vol_dae_para_temp_standard_mode.vol_dae_para_sm.mdrc_middle_freq_th2;
-        sys_comval->dae_cfg.p_mdrc_band_standard_mode[2].threshold1 = vol_dae_para_temp_standard_mode.vol_dae_para_sm.mdrc_high_freq_th1;
-        sys_comval->dae_cfg.p_mdrc_band_standard_mode[2].threshold2 = vol_dae_para_temp_standard_mode.vol_dae_para_sm.mdrc_high_freq_th2;
+        sys_comval->dae_cfg.p_mdrc_band_standard_mode[0].threshold1 = \
+        vol_dae_para_temp_standard_mode.vol_dae_para_sm.mdrc_low_freq_th1;
+        
+        sys_comval->dae_cfg.p_mdrc_band_standard_mode[0].threshold2 = \
+        vol_dae_para_temp_standard_mode.vol_dae_para_sm.mdrc_low_freq_th2;
+        
+        sys_comval->dae_cfg.p_mdrc_band_standard_mode[1].threshold1 = \
+        vol_dae_para_temp_standard_mode.vol_dae_para_sm.mdrc_middle_freq_th1;
+        
+        sys_comval->dae_cfg.p_mdrc_band_standard_mode[1].threshold2 = \
+        vol_dae_para_temp_standard_mode.vol_dae_para_sm.mdrc_middle_freq_th2;
+        
+        sys_comval->dae_cfg.p_mdrc_band_standard_mode[2].threshold1 = \
+        vol_dae_para_temp_standard_mode.vol_dae_para_sm.mdrc_high_freq_th1;
+        
+        sys_comval->dae_cfg.p_mdrc_band_standard_mode[2].threshold2 = \
+        vol_dae_para_temp_standard_mode.vol_dae_para_sm.mdrc_high_freq_th2;
     }
     else
     {
-        if (VOLUME_VALUE_MAX == sys_comval->volume_current)
-        {
-            index = VOL_16_DAE;           
-        }
-        else
-        {
-            index = (16 - sys_comval->volume_current/2) + VOL_16_DAE;    
-        }
-    
+        //设置压缩器(非AUX)模式下参数
+        com_get_config_struct((uint16) (DAE_COMPRESSOR_SETTING), (uint8 *)&compressor_temp_standard_mode ,  \
+        sizeof(dae_compressor_temp_standard_mode_t));
+        libc_memcpy(&(sys_comval->dae_cfg.compressor_standard_mode), &compressor_temp_standard_mode.compressor,      \
+        sizeof(dae_compressor_standard_mode_t));
+
+        index = (31 - (uint16)sys_comval->volume_current) + VOL_31_DAE;
+        PRINT_INFO_INT("index_unaux",index);
+        
         com_get_config_struct(index , (uint8 *)&vol_dae_para_temp_standard_mode ,  \
         sizeof(vol_dae_para_temp_standard_mode_t));
     
-        sys_comval->dae_cfg.precut_standard_mode                = vol_dae_para_temp_standard_mode.vol_dae_para_sm.precut_standard_mode;
-        sys_comval->dae_cfg.compressor_standard_mode.threshold1 = vol_dae_para_temp_standard_mode.vol_dae_para_sm.compressor_th1;
-        sys_comval->dae_cfg.compressor_standard_mode.threshold2 = vol_dae_para_temp_standard_mode.vol_dae_para_sm.compressor_th2;
+        sys_comval->dae_cfg.precut_standard_mode                = \
+        (int8)vol_dae_para_temp_standard_mode.vol_dae_para_sm.precut_standard_mode;
+        
+        sys_comval->dae_cfg.compressor_standard_mode.threshold1 = \
+        vol_dae_para_temp_standard_mode.vol_dae_para_sm.compressor_th1;
+        
+        sys_comval->dae_cfg.compressor_standard_mode.threshold2 = \
+        vol_dae_para_temp_standard_mode.vol_dae_para_sm.compressor_th2;
 
-        sys_comval->dae_cfg.mdrc_extend_para_standard_mode.signal_adjust        = vol_dae_para_temp_standard_mode.vol_dae_para_sm.signal_fine_tune;
-        sys_comval->mdrc_vol_adjust_standard_mode                                             = vol_dae_para_temp_standard_mode.vol_dae_para_sm.vol_fine_tune;
-        sys_comval->dae_cfg.mdrc_extend_para_standard_mode.makeup_gain          = vol_dae_para_temp_standard_mode.vol_dae_para_sm.gain_compensation;
-        sys_comval->dae_cfg.mdrc_peak_standard_mode.MDRC_compensation_threshold = vol_dae_para_temp_standard_mode.vol_dae_para_sm.compensation_filter_threshold;
+        sys_comval->dae_cfg.mdrc_extend_para_standard_mode.signal_adjust        = \
+        vol_dae_para_temp_standard_mode.vol_dae_para_sm.signal_fine_tune;
+        
+        sys_comval->mdrc_vol_adjust_standard_mode                               = \
+        (int8)vol_dae_para_temp_standard_mode.vol_dae_para_sm.vol_fine_tune;
+        
+        sys_comval->dae_cfg.mdrc_extend_para_standard_mode.makeup_gain          = \
+        vol_dae_para_temp_standard_mode.vol_dae_para_sm.gain_compensation;
+        
+        sys_comval->dae_cfg.mdrc_peak_standard_mode.MDRC_compensation_threshold = \
+        vol_dae_para_temp_standard_mode.vol_dae_para_sm.compensation_filter_threshold;
                                      
-        sys_comval->dae_cfg.p_mdrc_band_standard_mode[0].threshold1 = vol_dae_para_temp_standard_mode.vol_dae_para_sm.mdrc_low_freq_th1;
-        sys_comval->dae_cfg.p_mdrc_band_standard_mode[0].threshold2 = vol_dae_para_temp_standard_mode.vol_dae_para_sm.mdrc_low_freq_th2;
-        sys_comval->dae_cfg.p_mdrc_band_standard_mode[1].threshold1 = vol_dae_para_temp_standard_mode.vol_dae_para_sm.mdrc_middle_freq_th1;
-        sys_comval->dae_cfg.p_mdrc_band_standard_mode[1].threshold2 = vol_dae_para_temp_standard_mode.vol_dae_para_sm.mdrc_middle_freq_th2;
-        sys_comval->dae_cfg.p_mdrc_band_standard_mode[2].threshold1 = vol_dae_para_temp_standard_mode.vol_dae_para_sm.mdrc_high_freq_th1;
-        sys_comval->dae_cfg.p_mdrc_band_standard_mode[2].threshold2 = vol_dae_para_temp_standard_mode.vol_dae_para_sm.mdrc_high_freq_th2;
+        sys_comval->dae_cfg.p_mdrc_band_standard_mode[0].threshold1 = \
+        vol_dae_para_temp_standard_mode.vol_dae_para_sm.mdrc_low_freq_th1;
+        
+        sys_comval->dae_cfg.p_mdrc_band_standard_mode[0].threshold2 = \
+        vol_dae_para_temp_standard_mode.vol_dae_para_sm.mdrc_low_freq_th2;
+        
+        sys_comval->dae_cfg.p_mdrc_band_standard_mode[1].threshold1 = \
+        vol_dae_para_temp_standard_mode.vol_dae_para_sm.mdrc_middle_freq_th1;
+        
+        sys_comval->dae_cfg.p_mdrc_band_standard_mode[1].threshold2 = \
+        vol_dae_para_temp_standard_mode.vol_dae_para_sm.mdrc_middle_freq_th2;
+        
+        sys_comval->dae_cfg.p_mdrc_band_standard_mode[2].threshold1 = \
+        vol_dae_para_temp_standard_mode.vol_dae_para_sm.mdrc_high_freq_th1;
+        
+        sys_comval->dae_cfg.p_mdrc_band_standard_mode[2].threshold2 = \
+        vol_dae_para_temp_standard_mode.vol_dae_para_sm.mdrc_high_freq_th2;
     }
 }
 

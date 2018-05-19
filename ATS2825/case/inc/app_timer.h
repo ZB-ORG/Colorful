@@ -13,7 +13,7 @@
 #include "case_type.h"
 
 /*! 公共定时器数目，用于系统功能定时，USB检测切换 */
-#define COMMON_TIMER_COUNT      3
+#define COMMON_TIMER_COUNT      4
 
 /*! 
  * \brief

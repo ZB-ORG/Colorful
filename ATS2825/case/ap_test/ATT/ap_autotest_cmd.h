@@ -58,5 +58,10 @@
 #define STUB_CMD_ATT_READ_TRIM_CAP      0x0455
 
 #define STUB_CMD_ATT_RETRUN_CFO_VAL     0x0456
+
+#define STUB_CMD_ATT_BER_TX_BEGIN       0x0458
+
+#define STUB_CMD_ATT_BER_TX_STOP        0x0459
+
 #endif
 

@@ -41,9 +41,11 @@
 #define NOR_8M_LFI_MAX_SIZE         (0x1000)//2M,单位为扇区
 #define NOR_8M_LFI_MAX_HALF_SIZE    (0x800) 
 
-#define NOR_4M_LFI_MAX_SIZE         (0xe00) 
-#define NOR_4M_LFI_MAX_HALF_SIZE    (0x700) //最大大小的一半
+#define NOR_4M_LFI_MAX_SIZE         (0xe80) 
+#define NOR_4M_LFI_MAX_HALF_SIZE    (0x740) //最大大小的一半
 
+#define NOR_2M_LFI_MAX_SIZE         (0x680)
+#define NOR_2M_LFI_MAX_HALF_SIZE    (0x340)
 
 #define LFI_MAX_BYTE_SIZE    (2 * 1024 * 1024) //lFI最大扇区大小为2M
 
@@ -150,6 +152,7 @@ typedef enum
     CONFIG_ID_80_CHARGE_MODE = 0,
     CONFIG_ID_110_CYRSTAL_CAP = 1,
     CONFIG_ID_121_DEBUG_MODE = 2,
+    CONFIG_ID_124_UART_PRINT_ENABLE = 3,
 }config_id_for_app_e;
 
 

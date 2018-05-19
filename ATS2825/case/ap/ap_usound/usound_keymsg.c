@@ -91,7 +91,7 @@ app_result_e _key_play_deal(void)
         }
         #endif
         
-        g_last_time_count = g_play_key_timer;
+        g_last_time_count = (uint32)g_play_key_timer;
 
     }
     else
@@ -193,8 +193,8 @@ app_result_e _key_prev_deal(void)
 /******************************************************************************/
 /*!
  * \par  Description:
- * \app_result_e _key_prev_deal(void)
- * \«–ªª…œ“ª«˙
+ * \app_result_e _key_vol_add_deal(void)
+ * \“Ù¡øºı
  * \param[in]    status  para1
  * \param[in]
  * \param[out]   none
@@ -205,12 +205,39 @@ app_result_e _key_prev_deal(void)
  * \note
  */
 /*******************************************************************************/
-app_result_e _key_vol_deal(void)
+app_result_e _key_vol_add_deal(void)
 {
 
     g_manual_set = 1;
+    
+    usound_volume_add();
 
     //for flag
     return RESULT_KEY_EVENT_REDEAL_BY_COMMON;
 }
 
+/******************************************************************************/
+/*!
+ * \par  Description:
+ * \app_result_e _key_vol_sub_deal(void)
+ * \“Ù¡øºı
+ * \param[in]    status  para1
+ * \param[in]
+ * \param[out]   none
+ * \return       void the result
+ * \retval       none
+ * \retval       none
+ * \ingroup      usound_keymsg.c
+ * \note
+ */
+/*******************************************************************************/
+app_result_e _key_vol_sub_deal(void)
+{
+
+    g_manual_set = 1;
+    
+    usound_volume_sub();
+
+    //for flag
+    return RESULT_KEY_EVENT_REDEAL_BY_COMMON;
+}

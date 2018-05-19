@@ -158,12 +158,17 @@ void _convert_string(const uint8 * src_name, uint8 * dest_name)
  *******************************************************************************/
 bool _config_disk_label(void)
 {
-    bool ret_val;
+    bool ret_val = FALSE;
+
+    bool label_flag = 0;
+    
     int32 file_sys_id;
 
-    uint8 volume_label_src[12];
+    uint8 volume_label_src[12] = {0};
 
     uint8 volume_label_dst[28];
+
+    uint8 i;
 
     if (sys_detect_disk(DRV_GROUP_STG_CARD) == -1)
     {
@@ -187,14 +192,26 @@ bool _config_disk_label(void)
     //量产升级后，卷标不存在,写入配置项卷标
     //从配置项读取卷标名字,最多支持11个英文字符
     com_get_config_struct(INF_UDISK_LABEL, volume_label_src, 11);
+    for(i = 0;i<11;i++)
+    {
+        //不为全0；全F；全f；空
+        if(((volume_label_src[i] != '0')&&(volume_label_src[i] != 'F')&&(volume_label_src[i] != 'f')\
+            &&(volume_label_src[i] != 0))||(volume_label_src[i] != volume_label_src[0]))
+        {
+            label_flag = 1;
+            break;
+        }
+    }
+    if(label_flag == 1)
+    {
+        //短名转换成长名形式
+        //com_ansi_to_unicode(volume_label);
+        _convert_string(volume_label_src, volume_label_dst);
 
-    //短名转换成长名形式
-    //com_ansi_to_unicode(volume_label);
-    _convert_string(volume_label_src, volume_label_dst);
-
-    //统一由长名创建卷标名
-    ret_val = vfs_create_volume(file_sys_id, volume_label_dst);
-    //}
+        //统一由长名创建卷标名
+        ret_val = vfs_create_volume(file_sys_id, volume_label_dst);
+        //}
+    }
     _label_fs_deinit(DISK_H, file_sys_id);
 
     return ret_val;

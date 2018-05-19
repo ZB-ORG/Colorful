@@ -67,12 +67,15 @@ extern uint8 flag_ph_dis_master;
 extern uint8 flag_dis_tws_dev;
 extern uint8 tws_con_flag;
 extern uint8 tws_discon_flag;
+extern uint8 tws_volume;
+extern uint8 tws_swith_flag;
 
 extern void tws_btplay_ui_display(void);
 extern void btplay_tws_tts_play(void);
 extern void btplay_tws_tts_play1(void);
 
 extern void tws_timer_kill(int8 *timer_id);
+extern void btplay_tws_sync_deal(uint8 sync_val);
 #endif
 extern uint32 g_last_change_state_time;
 extern uint32  g_second_change_state_flag;

@@ -6,7 +6,7 @@ void flush_rtc_reg(void)
     act_writel(0xA596, RTC_REGUPDATA);
     while (act_readl(RTC_REGUPDATA) != 0x5A69)
     {
-        ;
+        ;//qac
     }
 }
 
@@ -43,8 +43,8 @@ bool get_bk_info(void)
     bool ret = FALSE;
     if (is_esd_restart() == TRUE)
     {
-        g_eg_cfg_p->bk_infor.bp_file_offset = act_readl(RTC_BAK1);
-        g_eg_cfg_p->bk_infor.bp_time_offset = act_readl(RTC_BAK2);
+        g_eg_cfg_p->bk_infor.bp_file_offset = (int)act_readl(RTC_BAK1);
+        g_eg_cfg_p->bk_infor.bp_time_offset = (int)act_readl(RTC_BAK2);
         ret = TRUE;
         libc_print("re-bk-info", g_eg_cfg_p->bk_infor.bp_file_offset, 2);
     }

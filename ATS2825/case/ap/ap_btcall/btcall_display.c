@@ -1,44 +1,40 @@
-
 /*******************************************************************************
-*                              US282A
-*                 Copyright(c) 2014-2015 Actions (Zhuhai) Microelectronics Co., Limited,
-*                            All Rights Reserved.
-*        brief    打电话显示模块
-*      <author>       <time>      
-*       Wekan   2015-3-27
-*******************************************************************************/
-
+ *                              US282A
+ *                 Copyright(c) 2014-2015 Actions (Zhuhai) Microelectronics Co., Limited,
+ *                            All Rights Reserved.
+ *        brief    打电话显示模块
+ *      <author>       <time>
+ *       Wekan   2015-3-27
+ *******************************************************************************/
 
 #include  "ap_btcall.h"
 
 #if (SUPPORT_LED_DRIVER == 1)
-
-
 
 /******************************************************************************
  * \par  Description:   显示蓝牙连接状态
  * \param[in]     null0
  * \param[out]   none
  * \return           none
- * \note     
- *   <author>    <time> 
- *    Wekan   2015-3-27  
+ * \note
+ *   <author>    <time>
+ *    Wekan   2015-3-27
  *******************************************************************************/
 
 void wait_link_display(void)
 {
     if (g_btcall_cur_info.status != BTCALL_IDLE)
     {
-        return ;
+        return;
     }
-    
+
     if (g_display_flag == TRUE)
     {
         led_display(NUMBER2, NUM_b, 1);
         led_display(NUMBER3, NUM_L, 1);
-        #if 1
+#if 1
         led_display(LCD_AUX, 0xff, 1);
-        #endif
+#endif
         g_display_flag = FALSE;
     }
     else
@@ -48,15 +44,14 @@ void wait_link_display(void)
     }
 }
 
-
 /******************************************************************************
  * \par  Description:   显示蓝牙当前状态,BL,  C in,  C out,  AG,  GH
  * \param[in]     null0
  * \param[out]   none
  * \return           none
- * \note     
- *   <author>    <time> 
- *    Wekan   2015-3-27  
+ * \note
+ *   <author>    <time>
+ *    Wekan   2015-3-27
  *******************************************************************************/
 
 void btcall_ui_display(void)
@@ -90,57 +85,55 @@ void btcall_ui_display(void)
         led_display(NUMBER3, NUM_A, 1);
         led_display(NUMBER4, NUM_G, 1);
         break;
-#if (__SUPPORT_SIRI_ == 1)        
+#if (__SUPPORT_SIRI_ == 1)
         case BTCALL_SIRI:
         led_display(NUMBER1, NUM_S, 1);
         led_display(NUMBER2, NUM_I, 1);
         led_display(NUMBER3, NUM_R, 1);
         led_display(NUMBER4, NUM_I, 1);
         break;
-#endif //#if (__SUPPORT_SIRI_ == 1)        
-        
+#endif //#if (__SUPPORT_SIRI_ == 1)
         default:
         led_display(NUMBER2, NUM_b, 1);
         led_display(NUMBER3, NUM_L, 1);
-        #if 1
+#if 1
         led_display(LCD_AUX, 0xff, 1);
-        #endif
+#endif
         break;
     }
 }
 #endif
-
 
 /******************************************************************************
  * \par  Description:   显示蓝牙主视图
  * \param[in]     mode 显示模式，参照view_update_e
  * \param[out]   none
  * \return           none
- * \note     
- *   <author>    <time> 
- *    Wekan   2015-3-27  
+ * \note
+ *   <author>    <time>
+ *    Wekan   2015-3-27
  *******************************************************************************/
 
 void btcall_main_view(view_update_e mode)
 {
     switch (mode)
     {
-    case VIEW_UPDATE_CREATE:
+        case VIEW_UPDATE_CREATE:
         {
-            #if (SUPPORT_LED_DRIVER == 1)
+#if (SUPPORT_LED_DRIVER == 1)
             if (g_comval.support_led_display == 1)
             {
-                btcall_ui_display();
+                //btcall_ui_display();
                 g_display_timer_id = set_app_timer(APP_TIMER_ATTRB_UI, 500, (timer_proc) wait_link_display);
                 g_display_flag = FALSE;
             }
-            #endif
+#endif
         }
         break;
 
-    case VIEW_UPDATE_DESTROY:
+        case VIEW_UPDATE_DESTROY:
         {
-            #if (SUPPORT_LED_DRIVER == 1)
+#if (SUPPORT_LED_DRIVER == 1)
             if (g_comval.support_led_display == 1)
             {
                 if (g_display_timer_id != -1)
@@ -148,42 +141,41 @@ void btcall_main_view(view_update_e mode)
                     kill_app_timer(g_display_timer_id);
                 }
             }
-            #endif
+#endif
         }
         break;
 
-    case VIEW_UPDATE_REDRAW:
-    case VIEW_UPDATE_STATUS:
+        case VIEW_UPDATE_REDRAW:
+        case VIEW_UPDATE_STATUS:
         {
-            #if (SUPPORT_LED_DRIVER == 1)
+#if (SUPPORT_LED_DRIVER == 1)
             if (g_comval.support_led_display == 1)
             {
                 btcall_ui_display();
             }
-            #endif
+#endif
         }
         break;
 
-    default:
+        default:
         break;
     }
 }
-
 
 /******************************************************************************
  * \par  Description:   创建显示蓝牙主视图
  * \param[in]     none
  * \param[out]   none
  * \return           none
- * \note     
- *   <author>    <time> 
- *    Wekan   2015-3-27  
+ * \note
+ *   <author>    <time>
+ *    Wekan   2015-3-27
  *******************************************************************************/
 
 void btcall_create_main_view(void)
 {
     create_view_param_t create_view_param;
-    
+
     create_view_param.type = VIEW_TYPE_MAIN;
     create_view_param.unknown_key_deal = UNKNOWN_KEY_IGNORE;
     create_view_param.overtime = 0;

@@ -20,19 +20,15 @@ void com_load_dae_config(comval_t *setting_comval)
 {
     dae_config_t *p_dae_cfg;
     uint8 i;
-    dae_compressor_temp_standard_mode_t    compressor_temp_standard_mode;
-
+    noise_reduction_config_t noise_reduction_temp;
+    
     p_dae_cfg = &(setting_comval->dae_cfg);
             
     //音效库类型 
     p_dae_cfg->audiopp_type = (uint8) com_get_config_default(DAE_DEFAULT_TYPE);  
     
     p_dae_cfg->compressor_enable_standard_mode = (uint8) com_get_config_default(DAE_COMPRESSOR_ENABLE); 
-    com_get_config_struct((uint16) (DAE_COMPRESSOR_SETTING), (uint8 *)&compressor_temp_standard_mode ,  \
-        sizeof(dae_compressor_temp_standard_mode_t));
-    libc_memcpy(&(p_dae_cfg->compressor_standard_mode), &compressor_temp_standard_mode.compressor,      \
-        sizeof(dae_compressor_standard_mode_t));
-    
+   
     p_dae_cfg->mdrc_enable_standard_mode = (uint8) com_get_config_default(DAE_MDRC_ENABLE_STANDARD_MODE);
 
     p_dae_cfg->precut_standard_mode = (int8) com_get_config_default(DAE_PRECUT_RATIO);
@@ -50,6 +46,7 @@ void com_load_dae_config(comval_t *setting_comval)
 
 #ifdef WAVES_ASET_TOOLS    
     p_dae_cfg->bypass = 1;   //使用WAVES pc tools，actions dae bypass模式 
+    setting_comval->w_input_enable = (uint8) com_get_config_default(SETTING_APP_SUPPORT_WAVES_INPUT_PARAM);
 #else
     p_dae_cfg->bypass = (uint8) com_get_config_default(DAE_BYPASS_ENABLE);
 #endif
@@ -151,10 +148,9 @@ void com_load_dae_config(comval_t *setting_comval)
 
     p_dae_cfg->vbass_enable            = (uint8) com_get_config_default(DAE_VIRTUAL_BASS_ENABLE);
     p_dae_cfg->vbass_cut_freq          =         com_get_config_default(DAE_VIRTUAL_BASS_CUTOFF_FREQ);
-    p_dae_cfg->vbass_ratio             = (int16) com_get_config_default(DAE_VIRTUAL_BASS_RATIO);
+    p_dae_cfg->vbass_ratio             = (int16) com_get_config_default(DAE_VIRTUAL_BASS_RATIO) - 120;
     p_dae_cfg->original_bass_ratio     = (int8)  com_get_config_default(DAE_ORIGINAL_BASS_RATIO);
-    p_dae_cfg->vbass_type              = (int8)  com_get_config_default(DAE_VIRTUAL_BASS_TYPE);
-    
+ 
     p_dae_cfg->vsurround_enable        = (uint8) com_get_config_default(DAE_VIRTUAL_SURROUND_ENABLE);
     p_dae_cfg->vsurround_angle         = (uint8) com_get_config_default(DAE_VIRTUAL_SURROUND_ANGLE);
     p_dae_cfg->vsurround_ratio         = (int8)  com_get_config_default(DAE_VIRTUAL_SURROUND_RATIO);
@@ -175,15 +171,22 @@ void com_load_dae_config(comval_t *setting_comval)
         p_dae_cfg->limiter_release_time = (uint16)tmp_limiter_config.mdrc_data.release_time;
     }
 
+    p_dae_cfg->enable_2823T            = (uint8) com_get_config_default(SETTING_APP_SUPPORT_2823T);
+
+    com_get_config_struct((uint16) NOISE_AUX_REDUCTION, (uint8 *) &noise_reduction_temp, sizeof(noise_reduction_config_t));
+    p_dae_cfg->noise_reduction_enable = noise_reduction_temp.noise_reduction.enable;
+
+    p_dae_cfg->dae_print_enable        = (uint8) com_get_config_default(DAE_PRINT_ENABLE);
 }
 
 //每次开机都重新某些DAE配置项及参数
 void com_reset_dae_config(comval_t *setting_comval)
 {
-    dae_config_t *p_dae_cfg;
-
-    //DAE关闭嵌套层级
-    setting_comval->dae_off_nest = 0;
+    dae_config_t *p_dae_cfg;  
+ #if (SUPPORT_MULTI_FREQ_MULTI_BAND == 1)    
+    dae_attributes_t*  dae_attributes = (dae_attributes_t*)sys_malloc(sizeof(dae_attributes_t));
+ #endif
+ 
     setting_comval->signal_variable_mode = 0;
     setting_comval->signal_energy_used = 0;
     setting_comval->aux_flag = FALSE;
@@ -197,7 +200,7 @@ void com_reset_dae_config(comval_t *setting_comval)
 
     if (NULL == p_dae_cfg->p_mdrc_band_standard_mode)
     {
-        PRINT_ERR("set mdrc_band_standard_mode malloc fail!!");
+        PRINT_ERR("mb_malloc_fail");
     }
    
     //默认使能DAE
@@ -209,58 +212,46 @@ void com_reset_dae_config(comval_t *setting_comval)
     p_dae_cfg->bypass = (uint8) com_get_config_default(DAE_BYPASS_ENABLE);
 #endif
 
-#if (SUPPORT_MULTI_FREQ_MULTI_BAND == 1)
-    dae_attributes_t*  dae_attributes = (dae_attributes_t*)sys_malloc(sizeof(dae_attributes_t));
-
+#if (SUPPORT_MULTI_FREQ_MULTI_BAND == 1)   
     if (NULL == dae_attributes)
     {
-        PRINT_ERR("set dae_attributes malloc fail!!");
+        PRINT_ERR("attri_malloc_fail");
     }
-
-    p_dae_cfg->MultiFreqBandEnergy_enable = 0;
+    else
     {
-        dae_attributes->num_band = 1;
-        dae_attributes->duration_ms = 10;
+        p_dae_cfg->MultiFreqBandEnergy_enable = (uint8) com_get_config_default(MULTI_FREQ_BAND_ENABLE);
+        {
+            dae_attributes->num_band = 10;
+            dae_attributes->duration_ms = 10;
 
-        dae_attributes->f_low[0]  = 0;
-        dae_attributes->f_high[0] = 200;//63
-        dae_attributes->f_low[1]  = 63;
-        dae_attributes->f_high[1] = 125;
-        dae_attributes->f_low[2]  = 125;
-        dae_attributes->f_high[2] = 250;
-        dae_attributes->f_low[3]  = 250;
-        dae_attributes->f_high[3] = 500;
-        dae_attributes->f_low[4]  = 500;
-        dae_attributes->f_high[4] = 1000;
-        dae_attributes->f_low[5]  = 1000;
-        dae_attributes->f_high[5] = 2000;
-        dae_attributes->f_low[6]  = 2000;
-        dae_attributes->f_high[6] = 4000;
-        dae_attributes->f_low[7]  = 4000;
-        dae_attributes->f_high[7] = 8000;
-        dae_attributes->f_low[8]  = 8000;
-        dae_attributes->f_high[8] = 16000;
-        dae_attributes->f_low[9]  = 16000;
-        dae_attributes->f_high[9] = 20000;
+            dae_attributes->f_c[0]  = 100;
+            dae_attributes->f_c[1]  = 200;
+            dae_attributes->f_c[2]  = 300;
+            dae_attributes->f_c[3]  = 400;
+            dae_attributes->f_c[4]  = 500;
+            dae_attributes->f_c[5]  = 1000;
+            dae_attributes->f_c[6]  = 2000;
+            dae_attributes->f_c[7]  = 4000;
+            dae_attributes->f_c[8]  = 8000;
+            dae_attributes->f_c[9]  = 16000;
+        }
+
+        p_dae_cfg->FreqSpetrumDisplay_enable = (uint8) com_get_config_default(MULTI_FREQ_SPETRUM_ENABLE);
+        {
+            dae_attributes->num_freq_point = 10;
+            
+            dae_attributes->freq_point[0] = 100;
+            dae_attributes->freq_point[1] = 200;
+            dae_attributes->freq_point[2] = 300;
+            dae_attributes->freq_point[3] = 400;
+            dae_attributes->freq_point[4] = 500;
+            dae_attributes->freq_point[5] = 1000;
+            dae_attributes->freq_point[6] = 2000;
+            dae_attributes->freq_point[7] = 4000;
+            dae_attributes->freq_point[8] = 8000;
+            dae_attributes->freq_point[9] = 16000;
+        }  
     }
-
-    p_dae_cfg->FreqSpetrumDisplay_enable = 0;
-    {
-        dae_attributes->num_freq_point = 2;
-        dae_attributes->freq_point[0] = 500;//31
-        dae_attributes->freq_point[1] = 1000;//63
-        dae_attributes->freq_point[2] = 125;
-        dae_attributes->freq_point[3] = 250;
-        dae_attributes->freq_point[4] = 500;
-        dae_attributes->freq_point[5] = 800;
-        dae_attributes->freq_point[6] = 1000;
-        dae_attributes->freq_point[7] = 1500;
-        dae_attributes->freq_point[8] = 2000;
-        dae_attributes->freq_point[9] = 4000;
-        dae_attributes->freq_point[10] = 8000;
-        dae_attributes->freq_point[11] = 16000;
-    }  
-
     p_dae_cfg->dae_attributes = dae_attributes;
 #endif
 
@@ -389,8 +380,10 @@ void __section__(".text.bank")load_standard_mode_mdrc_param(dae_config_t *p_dae_
      
         for (i = 0; i < MAX_MDRC_SEG_STANDARD; i++)
         {
-            com_get_config_struct((uint16) (config_id + i), (uint8 *)&mdrc_temp , sizeof(mdrc_para_temp_standard_mode_t));
-            libc_memcpy((p_dae_cfg->p_mdrc_band_standard_mode) + i, &(mdrc_temp.mdrc_band), sizeof(dae_mdrc_band_standard_mode_t));
+            com_get_config_struct((uint16) (config_id + i), (uint8 *)&mdrc_temp , \
+                sizeof(mdrc_para_temp_standard_mode_t));
+            libc_memcpy((p_dae_cfg->p_mdrc_band_standard_mode) + i, &(mdrc_temp.mdrc_band),\
+                sizeof(dae_mdrc_band_standard_mode_t));
         }      
              
         //MDRC峰值检测相关参数
@@ -414,8 +407,10 @@ void __section__(".text.bank")load_standard_mode_mdrc_param(dae_config_t *p_dae_
    
         for (i = 0; i < MAX_MDRC_SEG_STANDARD; i++)
         {
-           com_get_config_struct((uint16) (config_id + i), (uint8 *)&mdrc_temp , sizeof(mdrc_para_temp_standard_mode_t));
-           libc_memcpy((p_dae_cfg->p_mdrc_band_standard_mode) + i, &(mdrc_temp.mdrc_band), sizeof(dae_mdrc_band_standard_mode_t));
+            com_get_config_struct((uint16) (config_id + i), (uint8 *)&mdrc_temp , \
+                sizeof(mdrc_para_temp_standard_mode_t));
+            libc_memcpy((p_dae_cfg->p_mdrc_band_standard_mode) + i, &(mdrc_temp.mdrc_band), \
+                sizeof(dae_mdrc_band_standard_mode_t));
         }
                     
         //MDRC峰值检测相关参数
@@ -426,3 +421,30 @@ void __section__(".text.bank")load_standard_mode_mdrc_param(dae_config_t *p_dae_
             sizeof(mdrc_peak_detect_standard_mode_t));
     }       
 }
+
+void __section__(".text.bank") update_peq_para(comval_t *setting_comval,uint16 enable_id,uint16 para_id)
+{
+    dae_config_t *p_dae_cfg;
+    uint8 i;
+    p_dae_cfg = &(setting_comval->dae_cfg);
+    
+    p_dae_cfg->peq_enable = (uint8) com_get_config_default(enable_id);
+    for (i = 0; i < MAX_PEQ_SEG; i++)
+    {
+        peq_config_t tmp_peq_config;
+
+        com_get_config_struct((uint16) (para_id + i), (uint8 *) &tmp_peq_config,          \
+            sizeof(peq_config_t));
+        libc_memcpy(&(p_dae_cfg->peq_bands[i]), &(tmp_peq_config.eq_data), sizeof(peq_band_t));
+
+        if ((p_dae_cfg->peq_bands[i].type == 2) && (p_dae_cfg->peq_bands[i].gain != 0))
+        {
+            setting_comval->highpass_cutoff = (uint8)p_dae_cfg->peq_bands[i].cutoff;
+        }
+
+        p_dae_cfg->peq_band_enable_type[i] = (uint8)tmp_peq_config.default_value;
+    }
+
+    com_update_dae_config(p_dae_cfg);
+}
+

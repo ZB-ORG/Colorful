@@ -5,7 +5,7 @@
 #define APP_TIMER_COUNT     3
 
 #ifdef WAVES_ASET_TOOLS
-    uint8 g_support_waves_pc_tools;
+waves_t  g_waves;
 #endif
 
 //globle variable
@@ -239,6 +239,22 @@ void _save_cfg(void)
     }
 }
 
+#ifdef WAVES_ASET_TOOLS
+void waves_init(void)
+{
+    if (STUB_PC_TOOL_WAVES_ASET_MODE == g_app_info_state_all.stub_pc_tools_type)
+    {
+        g_waves.tuning_status = TUNING;
+    }
+    else if (STUB_PC_TOOL_UNKOWN == g_app_info_state_all.stub_pc_tools_type)
+    {
+        g_waves.tuning_status = NO_TUNING;
+    }
+    g_waves.bin_number = g_app_info_state_all.bin_number;
+    g_waves.input_para_enable = (uint8) com_get_config_default(SETTING_APP_SUPPORT_WAVES_INPUT_PARAM); 
+}
+#endif
+
 //初始化引擎、读取配置信息、初始化文件选择器、中间件
 int _app_init(void)
 {
@@ -269,8 +285,13 @@ int _app_init(void)
 
     //初始化中间件库
     app_init_ret = mmm_mp_cmd(&g_mp_handle, MMM_MP_OPEN, (unsigned int) NULL);
+
     if (app_init_ret == 0)
     {
+        if(1 == g_app_info_state_all.fix_sample_rate_flag)
+        {
+            mmm_mp_cmd(&g_mp_handle, MMM_MP_FIX_SAMPLE_RATE, NULL);
+        }
         g_mmm_opened = TRUE;
         com_set_sound_out(SOUND_OUT_START);
 
@@ -308,10 +329,10 @@ int _app_init(void)
 
     //降频
     adjust_freq_set_level(AP_BACK_LOW_PRIO, FREQ_LEVEL2, FREQ_NULL);
-    g_eg_playinfo_p->cur_time = g_eg_cfg_p->bk_infor.bp_time_offset;
+    g_eg_playinfo_p->cur_time = (uint32)g_eg_cfg_p->bk_infor.bp_time_offset;
 
 #ifdef WAVES_ASET_TOOLS
-    g_support_waves_pc_tools = (uint8) com_get_config_default(SETTING_APP_SUPPORT_WAVES_PC_TOOLS);
+    waves_init();
 #endif   
 
     return app_init_ret;

@@ -17,6 +17,7 @@
  *******************************************************************************/
 #include  "manager.h"
 
+extern void dump_cache_info(void) __FAR__;
 /******************************************************************************/
 /*!
  * \par  Description:
@@ -28,6 +29,7 @@
  *******************************************************************************/
 app_result_e manager_message_loop(void)
 {
+    uint32 i = 0;
     private_msg_t pri_msg;
 //    uint8 null_gui_app_count = 0;
 
@@ -42,5 +44,13 @@ app_result_e manager_message_loop(void)
 
         //挂起10ms，多任务调度
         sys_os_time_dly(1);
+
+        i++;
+
+        if(i == 500)
+        {
+            i = 0;
+            //dump_cache_info();
+        }
     }
 }

@@ -1,12 +1,11 @@
-
 /*******************************************************************************
-*                              US282A
-*                 Copyright(c) 2014-2015 Actions (Zhuhai) Microelectronics Co., Limited,
-*                            All Rights Reserved.
-*        brief   处理tts播报
-*      <author>       <time>      
-*       Wekan   2015-3-27
-*******************************************************************************/
+ *                              US282A
+ *                 Copyright(c) 2014-2015 Actions (Zhuhai) Microelectronics Co., Limited,
+ *                            All Rights Reserved.
+ *        brief   处理tts播报
+ *      <author>       <time>
+ *       Wekan   2015-3-27
+ *******************************************************************************/
 
 #include "ap_btcall.h"
 
@@ -20,43 +19,43 @@ pb_result_e g_pb_result = PB_RESULT_NULL;//电话本播报类型
 
 
 /******************************************************************************
-* \par  Description:   处理电话本非数字的电话信息
-* \param[in]    str_info :需要转换的字符串内容
-* \param[out]   null
-* \return       bool the result
-* \retval           1 sucess
-* \retval           0 failed
-*   <author>    <time> 
-*    Wekan   2015-3-27  
-*******************************************************************************/
+ * \par  Description:   处理电话本非数字的电话信息
+ * \param[in]    str_info :需要转换的字符串内容
+ * \param[out]   null
+ * \return       bool the result
+ * \retval           1 sucess
+ * \retval           0 failed
+ *   <author>    <time>
+ *    Wekan   2015-3-27
+ *******************************************************************************/
 bool btcall_pb_tts_deal_name(uint8 *str_info)
 {
     bool ret;
-    
+
     utf8_to_unicode(str_info);
-    
+
     ret = unicode_to_char(str_info);
-    
+
     return ret;
 }
 
 /******************************************************************************
-* \par  Description:   处理电话号码信息
-* \param[in]   str_info :需要转换的字符串内容
-* \param[out]   null
-* \return       bool the result
-* \retval           1 sucess
-* \retval           0 failed
-*   <author>    <time> 
-*    Wekan   2015-3-27  
-*******************************************************************************/
+ * \par  Description:   处理电话号码信息
+ * \param[in]   str_info :需要转换的字符串内容
+ * \param[out]   null
+ * \return       bool the result
+ * \retval           1 sucess
+ * \retval           0 failed
+ *   <author>    <time>
+ *    Wekan   2015-3-27
+ *******************************************************************************/
 
 uint8 btcall_pb_tts_deal_num(uint8 *str_info)
 {
     uint8 *p_str_info_tts = str_info;
     uint8 pb_num;
     uint8 pb_num_len = 0;
-    
+
     while (1)
     {
         pb_num = *str_info;
@@ -74,36 +73,36 @@ uint8 btcall_pb_tts_deal_num(uint8 *str_info)
             pb_num_len++;
         }
     }
-    
+
     *p_str_info_tts = 0xff;
-    
+
     return pb_num_len;
 }
 
 /******************************************************************************
-* \par  Description:   处理电话本的语音播报信息
-* \param[in]   null
-* \param[out]   null
-* \return       bool the result
-* \retval           1 sucess
-* \retval           0 failed
-*   <author>    <time> 
-*    Wekan   2015-3-27  
-*******************************************************************************/
+ * \par  Description:   处理电话本的语音播报信息
+ * \param[in]   null
+ * \param[out]   null
+ * \return       bool the result
+ * \retval           1 sucess
+ * \retval           0 failed
+ *   <author>    <time>
+ *    Wekan   2015-3-27
+ *******************************************************************************/
 
 bool btcall_pb_tts_init(void)
 {
     msg_apps_t msg;
     pb_data_t pb_content;
     uint8 str_len;
-    
+
     libc_memset(&pb_content, 0x00, sizeof(pb_data_t));
-    
-    msg.content.addr = &pb_content;   
+
+    msg.content.addr = &pb_content;
     msg.type = MSG_BTSTACK_GET_PB_CONTENT_SYNC;
-      
+
     send_sync_msg_btmanager(NULL, &msg, NULL, 0);
-    
+
     libc_memset(tts_info_buf, 0x0, MAX_TTS_INFO_LENGTH);
     if (g_pb_result == PB_RESULT_NAME)
     {
@@ -120,7 +119,7 @@ bool btcall_pb_tts_init(void)
             libc_memcpy(&tts_info_buf[str_len], pb_info_ext, sizeof(pb_info_ext));
         }
     }
-    
+
     if (g_pb_result == PB_RESULT_NUM)
     {
         //对电话号码进行检测
@@ -130,18 +129,18 @@ bool btcall_pb_tts_init(void)
             return FALSE;
         }
     }
-    
+
     return TRUE;
 }
 
 /******************************************************************************
-* \par  Description:   播报电话本信息函数
-* \param[in]   null
-* \param[out]   null
-* \return      null
-*   <author>    <time> 
-*    Wekan   2015-3-27  
-*******************************************************************************/
+ * \par  Description:   播报电话本信息函数
+ * \param[in]   null
+ * \param[out]   null
+ * \return      null
+ *   <author>    <time>
+ *    Wekan   2015-3-27
+ *******************************************************************************/
 
 void btcall_pb_tts_play(void)
 {
@@ -153,7 +152,7 @@ void btcall_pb_tts_play(void)
     else if (g_pb_result == PB_RESULT_NAME)
     {
         tts_info_t pb_info;
-        
+
         //有电话本信息时使用Package.dat语音库播报
         pb_info.str_buf = tts_info_buf;
         com_tts_state_play(TTS_MODE_STRING | TTS_MODE_PB_PLAY, &pb_info);

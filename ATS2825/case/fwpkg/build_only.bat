@@ -4,13 +4,34 @@
 
 ::以下几个配置项只能从中选择一个，不能同时生成
 ::make build_DVB_ATS2825用于生成2825普通固件
-make build_DVB_ATS2825
+::make build_DVB_ATS2825
+
+::make build_DVB_ATS2825W 用于生成2825带W音效固件
+::make build_DVB_ATS2825W
 
 ::make build_DVB_ATS2825_OTA用于生成2825含OTA功能的固件
 ::make build_DVB_ATS2825_OTA
 
 ::make build_DVB_ATS2825_TWS用于生成2825含TWS功能的固件
-::make build_DVB_ATS2825_TWS
+make build_DVB_ATS2825_TWS
+
+::make build_DVB_ATS2823T用于生成2823T固件
+::make build_DVB_ATS2823T
 
 ::make build_DVB_ATS2823_TWS用于生成2823的固件
-:make build_DVB_ATS2823_TWS
+::make build_DVB_ATS2823_TWS
+
+::make build_DVB_ATS2823W用于生成2823带W音效固件
+::make build_DVB_ATS2823W
+
+::make build_EVB用于生成EVB固件
+::make build_EVB
+
+::make build_EVB_TWS用于生成EVB_TWS固件
+::make build_EVB_TWS
+
+::make build_EVB_W用于生成EVB带W音效固件
+::make build_EVB_W
+
+::make build_EVB_W_TWS用于生成EVB对箱带W音效固件
+::make build_EVB_W_TWS

@@ -52,6 +52,10 @@ int32 g_play_key_timer = -1;
 //for counter
 uint32 g_last_time_count;
 
+uint8 g_usound_cfg;
+
+uint8 g_eq_temp;
+
 /******************************************************************************/
 /*!
  * \par  Description:
@@ -66,6 +70,8 @@ void _read_var(void)
 {
     //读取common VM公共变量信息
     com_setting_comval_init(&g_comval);
+    
+    g_usound_cfg = (uint8)com_get_config_default(USOUND_TYPE);
 }
 
 /******************************************************************************/
@@ -87,7 +93,7 @@ void _app_init(void)
     /*初始化applib库，前台AP*/
     applib_init(APP_ID_USOUND, APP_TYPE_GUI);
 
-    sys_enter_high_powered(1);
+    //sys_enter_high_powered(1);
     /*初始化软定时器*/
     init_app_timers(g_mainmenu_timer_vector, COMMON_TIMER_COUNT + APP_TIMER_COUNT);
 
@@ -103,8 +109,16 @@ void _app_init(void)
     com_view_manager_init();
 
     keytone_set_on_off(FALSE);
+    
+    sys_set_sys_info(0, SYS_PRINT_ONOFF);
 
+    if(g_usound_cfg != 0)
+    {
+        g_eq_temp = sys_comval->dae_cfg.bypass;
+        com_set_dae_onoff(0);//关音效
+    }
     //g_key_play = FALSE;
+    com_set_dae_chan(FALSE, FALSE);
 }
 
 /******************************************************************************/
@@ -119,8 +133,20 @@ void _app_init(void)
  *******************************************************************************/
 void _app_exit(void)
 {
+    uint8 uart_enable = 0;
+    
     keytone_set_on_off(TRUE);
-        
+    
+    g_tts_play_info.option &= (~IGNORE_PLAY_TTS);
+    
+    if((g_usound_cfg != 0)&&(g_eq_temp == 0))
+    {
+        com_set_dae_onoff(1);//开音效
+    }   
+    
+    uart_enable = (uint8) com_get_config_default(SETTING_UART_PRINT_ENABLE);
+    sys_set_sys_info(uart_enable, SYS_PRINT_ONOFF);
+    
     usound_rcp_var_exit();
 
     com_view_manager_exit();
@@ -134,7 +160,7 @@ void _app_exit(void)
 
     /*执行applib库的注销操作*/
     applib_quit();
-    sys_exit_high_powered();
+    //sys_exit_high_powered();
 }
 
 /******************************************************************************/
@@ -224,6 +250,7 @@ bool usound_open_engine(uint8 engine_id)
 
     //无消息内容
     msg.content.data[0] = engine_id;
+    msg.content.data[1] = sys_comval->volume_current;
 
     //消息类型(即消息名称)
     msg.type = MSG_CREAT_APP_SYNC;
@@ -287,9 +314,6 @@ int main(int argc, const char *argv[])
     app_result_e result = RESULT_NULL;
     //void (*p_adfu_launcher)(void) = 0xbfc004b9;
 	
-	//解除静音模式
-	com_set_mute(FALSE);
-
     /*ap初始化*/
     _app_init();
 
@@ -301,7 +325,9 @@ int main(int argc, const char *argv[])
             ud_paint_deal();
         }
 #endif
-
+        //解除静音模式
+        com_set_mute(FALSE);
+        
         //创建主视图
         usound_create_main_view();
 
@@ -331,6 +357,8 @@ int main(int argc, const char *argv[])
                 sys_os_time_dly(10); //等待100ms，以便短按抬起能够完成
             }
         }
+        
+        g_tts_play_info.option |= IGNORE_PLAY_TTS;        //播报完进入usb音箱后关闭按键音TTS
 
         //for key play record
         g_play_key_flag = 0;
@@ -356,7 +384,7 @@ int main(int argc, const char *argv[])
         g_usound_init_flag = FALSE;
 
         usound_open_engine(APP_ID_UENGINE);
-
+        
         //save volume for exit restore
         g_raw_volume = com_get_sound_volume();
 
@@ -378,8 +406,19 @@ int main(int argc, const char *argv[])
     {
         result = RESULT_NEXT_FUNCTION;
     }
+    usound_main_exit:     
+    
+    if (result == RESULT_ENTER_STUB_DEBUG)
+    {
+        //杀死蓝牙后台
+        com_btmanager_exit(FALSE, TRUE);
+        
+        libc_print("open stub", 0, 0);
 
-    usound_main_exit: com_ap_switch_deal(result);
+        result = com_sys_install_stub();
+    }    
+
+    com_ap_switch_deal(result);
 
     _app_exit();
 

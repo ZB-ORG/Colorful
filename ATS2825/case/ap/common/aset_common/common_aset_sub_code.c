@@ -9,7 +9,6 @@
 #include "common_aset_new_func.h"
 #include "common_aset_interface.h"
 
-static uint8 aset_cmd_data[256] _BANK_DATA_ATTR_;
 
 extern dae_config_t *g_p_dae_cfg;
 
@@ -20,12 +19,12 @@ int32 aset_write_data(uint16 cmd, void *data_buffer, uint32 data_len)
 
     stub_ext_param_t ext_param;
 
+    ext_param.rw_buffer = sys_malloc_large_data(256);
     try_again: timeout = 0;
     ext_param.opcode = cmd;
     ext_param.payload_len = (uint16)data_len;
-    ext_param.rw_buffer = aset_cmd_data;
 
-    libc_memcpy(&aset_cmd_data[6], data_buffer, data_len);
+    libc_memcpy(&(ext_param.rw_buffer[6]), data_buffer, data_len);
 
     ret_val = stub_ext_write(&ext_param);
 
@@ -40,7 +39,7 @@ int32 aset_write_data(uint16 cmd, void *data_buffer, uint32 data_len)
 
             if (ret_val == 0)
             {
-                if ((aset_cmd_data[1] == 0x03) && (aset_cmd_data[2] == 0xfe))
+                if ((ext_param.rw_buffer[1] == 0x03) && (ext_param.rw_buffer[2] == 0xfe))
                 {
                     break;
                 }
@@ -58,6 +57,8 @@ int32 aset_write_data(uint16 cmd, void *data_buffer, uint32 data_len)
         }
     }
 
+    sys_free_large_data(ext_param.rw_buffer);
+
     return ret_val;
 }
 
@@ -65,6 +66,7 @@ void config_pc_view(aset_interface_config_t *pCfg)
 {
 //用这个宏的目的:使用waves pc工具时，避免空间不够用
 #ifndef   WAVES_ASET_TOOLS
+    char fw_version[] = "282A104";
 
     pCfg->bEQ_v_1_0 = 0;
     pCfg->bVBass_v_1_0 = 0;
@@ -103,6 +105,7 @@ void config_pc_view(aset_interface_config_t *pCfg)
     {
         ;//for qac
     }
+    libc_memcpy(pCfg->szVerInfo, fw_version, sizeof(fw_version));
     
  #endif   
 }
@@ -111,8 +114,6 @@ void config_pc_view(aset_interface_config_t *pCfg)
 int32 aset_write_case_info(void)
 {
     aset_case_info_t *aset_case_info = (aset_case_info_t *) ASET_RW_DATA_BUF;
-
-    sys_os_task_suspend(AP_PROCESS_MANAGER_PRIO);
 
     libc_memset(aset_case_info, 0x00, sizeof(aset_case_info_t));
     aset_case_info->peq_point_num = EQMAXPOINTCOUNT_ALL;
@@ -123,10 +124,6 @@ int32 aset_write_case_info(void)
 #else
     aset_write_data(STUB_CMD_ASET_WRITE_STATUS, aset_case_info, sizeof(aset_case_info_t));          
 #endif
-
-    //使用了manager的bank空间
-    act_writel(0, PageAddr0 + (AP_BANK_MANAGER_PAGE_INDEX << 2));
-    sys_os_task_resume(AP_PROCESS_MANAGER_PRIO);
 
     return 0;
 }

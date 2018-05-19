@@ -48,13 +48,12 @@ void manager_msg_callback_sub(private_msg_t *pri_msg)
             uint8 ap_name[12];
             void * ap_param;
             
-			// OTA版本需要一个OTA版本的bt_stack
-			if ( (g_app_info_vector[APP_TYPE_GUI].app_id == APP_ID_OTA_UPGRADE)
-					&& (param->app_id == APP_ID_BTSTACK) )
-			{
-				param->app_id = APP_ID_BTSTACK_OTA;
-			}
-			
+            // OTA版本需要一个OTA版本的bt_stack
+            if ( (g_app_info_vector[APP_TYPE_GUI].app_id == APP_ID_OTA_UPGRADE) && (param->app_id == APP_ID_BTSTACK) )
+            {
+                param->app_id = APP_ID_BTSTACK_OTA;
+            }
+            
             _get_app_name(ap_name, param->app_id, APP_TYPE_BTSTACK);
             ap_param = (void *)param->data;
             
@@ -62,6 +61,9 @@ void manager_msg_callback_sub(private_msg_t *pri_msg)
             libc_waitpid(0, 1);
             
             sys_free_ap(AP_BTSTACK_FILE);
+
+            manager_mem_manager(param->app_id, TRUE);
+            
             if (sys_exece_ap(ap_name, AP_BTSTACK_FILE, (int32) ap_param) >= 0)
             {
                 pri_msg->reply->type = MSG_REPLY_SUCCESS;

@@ -152,7 +152,7 @@ void set_SDD_file_IO(void)
 {
     storage_io_t io; 
     msg_apps_t msg;
-    g_sdd_open_parm.file_name = g_alarm_path.file_path.dirlocation.filename;
+    g_sdd_open_parm.file_name = g_alarm_path.file_path.dirlocation.file_info.file_name_info.file_name;
     //为0是无缝播放
     g_sdd_open_parm.loop_interval_ms = (uint8) com_get_config_default(SETTING_TIMEALARM_LOOP_PLAY);
     io.open_arg = (void*)&g_sdd_open_parm;
@@ -229,7 +229,7 @@ bool alarm_play_init(alarm_ring_var_t *alarm_ring_var)
             plocation = &(g_alarm_path.file_path.dirlocation);
             plocation->disk = DISK_SD;
 
-            libc_memcpy(plocation->filename, tmp_ring_file, 12);
+            libc_memcpy(plocation->file_info.file_name_info.file_name, tmp_ring_file, 12);
 
             sys_sd_fclose(alarm_handle);
             goto alarm_fsel_init_ok;

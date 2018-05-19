@@ -29,10 +29,20 @@ void com_setting_comval_init(comval_t *setting_comval)
 
     if (setting_comval->magic == VRAM_MAGIC(VM_AP_SETTING))
     {
-        if(g_app_info_state.stub_tools_type == STUB_PC_TOOL_ATT_MODE)
+        if(g_app_info_state.stub_tools_type != 0)
         {
-            setting_comval->dae_cfg.enable = FALSE;  
+            //调试模式不支持led显示
+            setting_comval->support_led_display = FALSE;
+
+            //调试模式不保存setting VRAM，每次都从配置项读取
+            setting_comval->magic = 0x0;
+            
+            if(g_app_info_state.stub_tools_type == STUB_PC_TOOL_ATT_MODE)
+            {
+                setting_comval->dae_cfg.enable = FALSE;  
+            }        
         }
+
         return;
     }
 
@@ -97,11 +107,7 @@ void com_setting_comval_init(comval_t *setting_comval)
     setting_comval->hard_support_card = (uint8) com_get_config_default(SETTING_HARDWARE_SUPPORT_CARD);
     setting_comval->hard_support_uhost = (uint8) com_get_config_default(SETTING_HARDWARE_SUPPORT_UHOST);
     setting_comval->hard_support_headphone = (uint8) com_get_config_default(SETTING_HARDWARE_SUPPORT_HEADPHONE);
-#ifdef WAVES_ASET_TOOLS
-    setting_comval->stub_enable = (uint8) com_get_config_default(SETTING_APP_SUPPORT_WAVES_PC_TOOLS);
-#else
     setting_comval->stub_enable = (uint8) com_get_config_default(SETTING_STUB_TEST_DEBUG_ENABLE);
-#endif
     setting_comval->stub_print = (uint8) com_get_config_default(SETTING_STUB_PRINT_ENABLE);
 
     setting_comval->default_vbass_enable = (uint8) com_get_config_default(DAE_VIRTUAL_BASS_ENABLE);
@@ -109,6 +115,20 @@ void com_setting_comval_init(comval_t *setting_comval)
     //setting_comval->bt_play = 0;
     //DAE配置项
     com_load_dae_config(setting_comval);
+
+    if(g_app_info_state.stub_tools_type != 0)
+    {
+        //调试模式不支持led显示
+        setting_comval->support_led_display = FALSE;
+
+        //调试模式不保存setting VRAM，每次都从配置项读取
+        setting_comval->magic = 0x0;
+        
+        if(g_app_info_state.stub_tools_type == STUB_PC_TOOL_ATT_MODE)
+        {
+            setting_comval->dae_cfg.enable = FALSE;  
+        }        
+    }  
 
     //用config.bin的默认值写VRAM
     sys_vm_write(setting_comval, VM_AP_SETTING, sizeof(comval_t));

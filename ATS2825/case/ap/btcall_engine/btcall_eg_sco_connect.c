@@ -64,6 +64,10 @@ void btcalleg_load_hfp_mmm(void)
     {
         PRINT_ERR("hfp open fail!\n");
     }
+    if(1 == g_app_info_state_all.fix_sample_rate_flag)
+    {
+        mmm_hfp_cmd(&mp_handle, MMM_HFP_FIX_SAMPLE_RATE, 0);
+    }
 
     //must aout open first then ain open
 

@@ -31,12 +31,6 @@
 
 typedef struct
 {
-    uint16 magic;
-    bool esd_flag;
-} g_config_var_t;
-
-typedef struct
-{
     uint16 active; //此参数没用到，只是保持与config.bin中的数据结构一致
     uint16 total; //按键总数
     uint16 keyID[16]; //按键定义数组
@@ -83,6 +77,8 @@ extern bool g_config_standby_exit;
 extern bool g_config_bt_flag;
 extern bool g_config_esd_restart;
 extern bool g_config_volume_init;
+
+extern uint8 g_uhost_delay;
 
 extern app_result_e config_charging(int param) __FAR__;
 extern app_result_e check_enter_test_mode(void) __FAR__;

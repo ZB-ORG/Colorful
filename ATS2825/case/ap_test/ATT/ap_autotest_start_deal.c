@@ -16,16 +16,111 @@
  * \date  2011/9/05
  *******************************************************************************/
 #include "ap_manager_test.h"
+#include <sys_info.h>
+
+void read_bt_addr(uint8 *byte_buffer, uint32 read_mode)
+{
+    int ret_val;
+    nvram_param_rw_t param_rw;
+    bt_addr_vram_t bt_addr_vram;
+    uint32 i;
+    
+    if(g_support_norflash_wp == FALSE)
+    {
+        param_rw.logical_index = PARAM_BT_ADDR;
+        param_rw.rw_len = 6;
+        param_rw.rw_buffer = bt_addr_vram.bt_addr;
+
+        ret_val = base_param_read(&param_rw);
+
+        if (ret_val != 0)
+        {
+            sys_vm_read(&bt_addr_vram, VM_BTSTACK, sizeof(bt_addr_vram));
+        
+            if (bt_addr_vram.magic != VRAM_MAGIC(VM_BTSTACK))
+            { 
+                //没读到蓝牙地址，则设置log文件名为默认文件名
+                bt_addr_vram.bt_addr[0] = 0;
+                bt_addr_vram.bt_addr[1] = 0;
+                bt_addr_vram.bt_addr[2] = 0;
+                bt_addr_vram.bt_addr[3] = 0;
+                bt_addr_vram.bt_addr[4] = 0;
+                bt_addr_vram.bt_addr[5] = 0;                            
+            }       
+        }        
+    }
+    else
+    {
+        sys_vm_read(&bt_addr_vram, VM_BTSTACK, sizeof(bt_addr_vram));
+    
+        if (bt_addr_vram.magic != VRAM_MAGIC(VM_BTSTACK))
+        { 
+            param_rw.logical_index = PARAM_BT_ADDR;
+            param_rw.rw_len = 6;
+            param_rw.rw_buffer = bt_addr_vram.bt_addr;
+    
+            ret_val = base_param_read(&param_rw);
+    
+            if (ret_val != 0)
+            {
+                //没读到蓝牙地址，则设置log文件名为默认文件名
+                bt_addr_vram.bt_addr[0] = 0;
+                bt_addr_vram.bt_addr[1] = 0;
+                bt_addr_vram.bt_addr[2] = 0;
+                bt_addr_vram.bt_addr[3] = 0;
+                bt_addr_vram.bt_addr[4] = 0;
+                bt_addr_vram.bt_addr[5] = 0;                      
+            }                
+        }            
+    }
+
+    if (read_mode == 0)
+    {
+        for(i = 0; i < 6; i++)
+        {
+            byte_buffer[i] = bt_addr_vram.bt_addr[5 - i];
+        }
+    }
+    else
+    {
+        for(i = 0; i < 6; i++)
+        {
+            byte_buffer[i] = bt_addr_vram.bt_addr[i];
+        }        
+    }
+}
+
+uint32 get_sdk_version(uint8 *sdk_version_buffer)
+{
+    uint32 sdk_version;
+
+    sdk_version = ((sdk_version_buffer[0] - '0') << 8);
+    sdk_version |= ((sdk_version_buffer[2] - '0') << 4);
+    sdk_version |= ((sdk_version_buffer[3] - '0'));
+
+    return sdk_version;
+}
 
 int32 act_test_start_deal(void)
 {
     int32 ret_val;
-    int32 i;
+    uint8 sdk_version[4];
     att_start_arg_t *att_start_arg;
     att_pc_test_info_t *att_pc_test_info;
-    bt_addr_vram_t bt_addr_vram;
-    nvram_param_rw_t param_rw;
-
+       
+    sys_get_fw_info((void*) sdk_version, FW_INFO_SDK_VERSION_ADDR, FW_INFO_SDK_VERSION_LEN);
+    
+    if(get_sdk_version(sdk_version) == 0x360)
+    {
+        g_support_norflash_wp = TRUE;    
+    }    
+    else
+    {
+        g_support_norflash_wp = FALSE;    
+    }
+    
+    g_test_base_time = sys_get_ab_timer();
+    
     if (g_test_mode == TEST_MODE_CARD) // 卡模式?
         return TRUE;
 
@@ -73,33 +168,8 @@ int32 act_test_start_deal(void)
     {
         att_start_arg->dut_connect_mode = DUT_CONNECT_MODE_UDA;
     }
-
-    sys_vm_read(&bt_addr_vram, VM_BTSTACK, sizeof(bt_addr_vram));
-
-    if (bt_addr_vram.magic != VRAM_MAGIC(VM_BTSTACK))
-    {
-        param_rw.logical_index = PARAM_BT_ADDR;
-        param_rw.rw_len = 6;
-        param_rw.rw_buffer = bt_addr_vram.bt_addr;
-
-        ret_val = base_param_read(&param_rw);
-
-        if (ret_val != 0)
-        {
-            //没读到蓝牙地址，则设置log文件名为默认文件名
-            bt_addr_vram.bt_addr[0] = 0;
-            bt_addr_vram.bt_addr[1] = 0;
-            bt_addr_vram.bt_addr[2] = 0;
-            bt_addr_vram.bt_addr[3] = 0;
-            bt_addr_vram.bt_addr[4] = 0;
-            bt_addr_vram.bt_addr[5] = 0;
-        }
-    }
-
-    for (i = 0; i < 6; i++)
-    {
-        att_start_arg->bdaddr[i] = bt_addr_vram.bt_addr[5 - i];
-    }
+    
+    read_bt_addr(att_start_arg->bdaddr, 0);
 
     att_start_arg->dut_work_mode = DUT_WORK_MODE_NORMAL;
     //att_start_arg->dut_work_mode = DUT_WORK_MODE_SPECIAL;

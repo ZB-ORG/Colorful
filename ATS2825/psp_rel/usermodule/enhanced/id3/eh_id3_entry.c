@@ -4,16 +4,16 @@ typedef bool (*id3_func_f)(void);
 
 static const id3_func_f get_id3_func[ID3_TYPE_END] =
 { NULL, NULL, NULL, get_id3_ape, get_id3_flac, get_id3_mp3, NULL, get_id3_wma };
-id3_save_t id3_save_buf _BANK_DATA_ATTR_;
+id3_save_t id3_save_buf;
 
-uint8 id3_temp_buf[SECTOR_SIZE] _BANK_DATA_ATTR_;
-uint8 key_buf[KEY_BUF_LEN] _BANK_DATA_ATTR_;
-uint8 check_count _BANK_DATA_ATTR_;
-uint8 check_flag[8] _BANK_DATA_ATTR_; //查找ID3要素标记澹:0--为需要查找,1--为不需要查找
-uint16 id3_pos_buffer _BANK_DATA_ATTR_; //当前TempBuf未处理字符的索引
-uint32 id3_pos_file _BANK_DATA_ATTR_; //当前文件的精确指针
-id3_save_t *id3_save_p _BANK_DATA_ATTR_; //FrameID存储位置
-id3_info_t *id3_info_p _BANK_DATA_ATTR_; //ap层提供的存储结构
+uint8 *id3_temp_buf;
+uint8 *key_buf;
+uint8 check_count;
+uint8 check_flag[8]; //查找ID3要素标记澹:0--为需要查找,1--为不需要查找
+uint16 id3_pos_buffer; //当前TempBuf未处理字符的索引
+uint32 id3_pos_file; //当前文件的精确指针
+id3_save_t *id3_save_p; //FrameID存储位置
+id3_info_t *id3_info_p; //ap层提供的存储结构
 
 extern bool mp3_v2_parse(void) __FAR__;
 extern bool mp3_v1_parse(void) __FAR__;
@@ -38,6 +38,7 @@ bool fsel_get_id3_info(id3_info_t *id3_info, const char *filename, id3_type_e fi
     uint8 i;
     uint8 *pt;
     uint32 *str_buf;
+    int32 ret = TRUE;
     //id3_func_f id3_func_p;
 
     if (id3_info == NULL)
@@ -47,6 +48,10 @@ bool fsel_get_id3_info(id3_info_t *id3_info, const char *filename, id3_type_e fi
 
     id3_info_p = id3_info;
     id3_save_p = &id3_save_buf;
+
+    id3_temp_buf = sys_malloc_large_data(SECTOR_SIZE);
+
+    key_buf = sys_malloc(KEY_BUF_LEN);
 
     libc_memset(check_flag, 0, sizeof(check_flag));
     pt = (uint8*) id3_info_p + 24;
@@ -87,8 +92,9 @@ bool fsel_get_id3_info(id3_info_t *id3_info, const char *filename, id3_type_e fi
         id3_handle = vfs_file_open(eh_vfs_mount, filename, R_NORMAL_SEEK);
 
         if (0 == id3_handle)
-        {
-            return FALSE;
+        {          
+            ret = FALSE;
+            goto get_end;
         }
 
         if (get_id3_func[file_type - ID3_TYPE_AA] != NULL)
@@ -101,8 +107,12 @@ bool fsel_get_id3_info(id3_info_t *id3_info, const char *filename, id3_type_e fi
 
     //切bank1
     check_id3_buffer(id3_info, file_type);
+    get_end:
+    sys_free(key_buf);
 
-    return TRUE;
+    sys_free_large_data(id3_temp_buf);
+
+    return ret;
 
 }
 
@@ -278,7 +288,7 @@ bool get_id3_mp3(void)
 //检查字符串是有奇数个单字节内码
 void check_odd_char_in_str(uint8 *buf,uint8 length)
 {
-    uint8 offset=1,odd_count,even_count,i;
+    uint8 offset=1,odd_count = 0,even_count = 0,i = 0;
     for(i=0;i<length;i+=offset)
     {
         if(buf[i]<=0x80)

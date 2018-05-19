@@ -380,8 +380,8 @@ app_result_e play_err_deal(eg_err_e error_number)
 
         file_total_number = g_file_path_info.file_path.dirlocation.file_total;
 
-        if (((file_total_number != 0) && (g_error_num > file_total_number)) || ((file_total_number == 1)
-                && (g_error_num == file_total_number)))
+        if (((file_total_number != 0) && (g_error_num > file_total_number)) || ((file_total_number == 1)\
+                && (g_error_num == file_total_number) && (0 == g_music_info.eg_playinfo.cur_time)))
         {
             //切换到下一个应用
             err_ret = RESULT_NEXT_FUNCTION;
@@ -406,11 +406,11 @@ app_result_e play_err_deal(eg_err_e error_number)
             {        
                 if (disk == DISK_U)
                 {
-                     err_ret = RESULT_NEXT_FUNCTION;
+                    err_ret = RESULT_NEXT_FUNCTION;
                 }
                 else
                 {
-                     err_ret = RESULT_NULL;
+                    err_ret = RESULT_NULL;
                 }             
             }
         }
@@ -551,23 +551,23 @@ app_result_e __section__(".text.BANK2")play_init(void)
 
     g_musicplay_init_flag = TRUE;
 
-    if ((g_ap_switch_var.call_background_status != CALL_BACK_STATUS_BACK)
-            && (g_standby_exit_flag == FALSE)
-            && (g_esd_restart_flag == FALSE))
+    if ((g_ap_switch_var.call_background_status != CALL_BACK_STATUS_BACK) && (g_standby_exit_flag == FALSE))
     {
-        if ((g_enter_mode == PARAM_RECORD_CPLAY) || (g_enter_mode == PARAM_RECORD_UPLAY))
+        if(g_esd_restart_flag == FALSE)
         {
-            com_tts_state_play(TTS_MODE_ONLYONE | TTS_MODE_NOBLOCK, (void *) TTS_PLAY_RECORD);
+            if ((g_enter_mode == PARAM_RECORD_CPLAY) || (g_enter_mode == PARAM_RECORD_UPLAY))
+            {
+                com_tts_state_play(TTS_MODE_ONLYONE | TTS_MODE_NOBLOCK, (void *) TTS_PLAY_RECORD);
+            }
+            else if (g_enter_mode == PARAM_MUSIC_SDCARD)
+            {
+                com_tts_state_play(TTS_MODE_ONLYONE | TTS_MODE_NOBLOCK, (void *) TTS_PLAY_SDCARD);
+            }
+            else
+            {
+                com_tts_state_play(TTS_MODE_ONLYONE | TTS_MODE_NOBLOCK, (void *) TTS_PLAY_UHOST);
+            }
         }
-        else if (g_enter_mode == PARAM_MUSIC_SDCARD)
-        {
-            com_tts_state_play(TTS_MODE_ONLYONE | TTS_MODE_NOBLOCK, (void *) TTS_PLAY_SDCARD);
-        }
-        else
-        {
-            com_tts_state_play(TTS_MODE_ONLYONE | TTS_MODE_NOBLOCK, (void *) TTS_PLAY_UHOST);
-        }
-
         if (g_comval.support_bt_inback == 1)
         {
             //创建蓝牙后台

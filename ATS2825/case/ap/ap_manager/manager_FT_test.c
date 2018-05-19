@@ -16,7 +16,7 @@ void welcome_delay_ms(uint8 dly_ms)
     }
 }
 
-void ft_test_mode()
+void ft_test_mode(void)
 {
     testval_t test_mode = {0};
 
@@ -36,7 +36,7 @@ void ft_test_mode()
         act_writel((act_readl(WD_CTL) & (~0x10)), WD_CTL);
         while(1)
         {
-            ; 
+            ;//nothing 
         }
     }
 

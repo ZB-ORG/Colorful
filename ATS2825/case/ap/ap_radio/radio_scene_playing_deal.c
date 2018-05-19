@@ -25,13 +25,6 @@ app_result_e playing_loop_deal(void)
         sys_os_time_dly(1);
     }
 
-#ifdef SUPPORT_ASET_TEST
-    if ((g_app_info_state.stub_tools_type == STUB_PC_TOOL_WAVES_ASET_MODE) || (g_app_info_state.stub_tools_type == STUB_PC_TOOL_ASET_EQ_MODE))
-    {
-        aset_test_exit();
-    }
-#endif 
-
     return ret;
 }
 

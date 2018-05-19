@@ -16,7 +16,7 @@
 #define SUPPORT_MUSIC_DIR 204
 
 //最大文件个数
-#define SUPPORT_MUSIC_FILE 2048
+#define SUPPORT_MUSIC_FILE 5000
 
 //向前定位标志
 #define PREV_FLAG 0x80000000

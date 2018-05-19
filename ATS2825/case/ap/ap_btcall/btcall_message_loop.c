@@ -1,38 +1,36 @@
-
 /*******************************************************************************
-*                              US282A
-*                 Copyright(c) 2014-2015 Actions (Zhuhai) Microelectronics Co., Limited,
-*                            All Rights Reserved.
-*        brief   响应通话中的操作，处理消息事件
-*      <author>       <time>
-*       Wekan   2015-3-27
-*******************************************************************************/
+ *                              US282A
+ *                 Copyright(c) 2014-2015 Actions (Zhuhai) Microelectronics Co., Limited,
+ *                            All Rights Reserved.
+ *        brief   响应通话中的操作，处理消息事件
+ *      <author>       <time>
+ *       Wekan   2015-3-27
+ *******************************************************************************/
 
 #include  "ap_btcall.h"
 
 /******************************************************************************
-* \par  Description:   获取蓝牙后台引擎的状态
-* \param[in]    none
-* \param[out]   bg_info 引擎状态指针
-* \return       void the result
-* \retval           1 sucess
-* \retval           0 failed
-*   <author>    <time>
-*    Wekan   2015-3-27
-*******************************************************************************/
+ * \par  Description:   获取蓝牙后台引擎的状态
+ * \param[in]    none
+ * \param[out]   bg_info 引擎状态指针
+ * \return       void the result
+ * \retval           1 sucess
+ * \retval           0 failed
+ *   <author>    <time>
+ *    Wekan   2015-3-27
+ *******************************************************************************/
 
 bool get_engine_status(void)
 {
     if (sys_share_query_read(APP_ID_BTCALLEG, &g_btcall_cur_info) == -1)
     {
-		// rcode 空间不足， 关闭打印
+        // rcode 空间不足， 关闭打印
         //PRINT_ERR("btcall share query not exist!\n");
         return FALSE;
     }
 
     return TRUE;
 }
-
 
 /******************************************************************************
  * \par  Description: 根据后台蓝牙的状态进行处理
@@ -73,11 +71,9 @@ app_result_e bt_status_deal(void)
         }
     }
 
-    if ((g_btcall_cur_info.status == BTCALL_HFP)
-     || (g_btcall_cur_info.status == BTCALL_CALLIN)
-     || (g_btcall_cur_info.status == BTCALL_CALLOUT)
-     || (g_btcall_cur_info.status == BTCALL_PHONE)
-	 || (g_btcall_cur_info.status == BTCALL_SIRI))
+    if ((g_btcall_cur_info.status == BTCALL_HFP) || (g_btcall_cur_info.status == BTCALL_CALLIN)
+            || (g_btcall_cur_info.status == BTCALL_CALLOUT) || (g_btcall_cur_info.status == BTCALL_PHONE)
+            || (g_btcall_cur_info.status == BTCALL_SIRI))
     {
         g_state_call_phone = TRUE;
     }
@@ -90,13 +86,13 @@ app_result_e bt_status_deal(void)
 }
 
 /******************************************************************************
-* \par  Description: app线程处理消息事件
-* \param[in]    none
-* \param[out]   none
-* \return       需app响应的事件
-*   <author>    <time>
-*    Wekan   2015-3-27
-*******************************************************************************/
+ * \par  Description: app线程处理消息事件
+ * \param[in]    none
+ * \param[out]   none
+ * \return       需app响应的事件
+ *   <author>    <time>
+ *    Wekan   2015-3-27
+ *******************************************************************************/
 
 app_result_e get_message_loop(void)
 {
@@ -134,10 +130,10 @@ app_result_e get_message_loop(void)
         {
             break;
         }
-        if (g_btcall_cur_info.status != g_last_btcall_status)
+        if ((g_btcall_cur_info.status != g_last_btcall_status) && (g_state_call_phone == TRUE))
         {
-             // PRINT_INFO_INT("g_btcall_cur_info", g_btcall_cur_info.status);
-            //  PRINT_INFO_INT("hfp_status:", g_bt_stack_cur_info.rmt_dev[g_bt_stack_cur_info.hfp_active_id].hfp_status);        
+            // PRINT_INFO_INT("g_btcall_cur_info", g_btcall_cur_info.status);
+            //  PRINT_INFO_INT("hfp_status:", g_bt_stack_cur_info.rmt_dev[g_bt_stack_cur_info.hfp_active_id].hfp_status);
             g_need_draw = TRUE;
             g_need_tts_play = TRUE;
         }
@@ -157,7 +153,7 @@ app_result_e get_message_loop(void)
         if (g_need_tts_play == TRUE)
         {
             //后台方式，不播报断开和连接的tts
-           // if (g_background_call_flag == FALSE)
+            // if (g_background_call_flag == FALSE)
             {
                 btcall_tts_play();
             }
@@ -187,8 +183,7 @@ app_result_e get_message_loop(void)
 
         if (g_background_call_flag == TRUE)
         {
-            if ((g_btcall_cur_info.status == BTCALL_IDLE)
-             || (g_btcall_cur_info.status == BTCALL_STOP))
+            if ((g_btcall_cur_info.status == BTCALL_IDLE) || (g_btcall_cur_info.status == BTCALL_STOP))
             {
                 result = RESULT_LASTPLAY;
                 break;
@@ -218,15 +213,15 @@ app_result_e get_message_loop(void)
         //电话状态，只响应退出\关机\低电等特殊消息
         if (g_state_call_phone == TRUE)
         {
-            if (   (result != RESULT_APP_QUIT)  //退出
-                && (result != RESULT_POWER_OFF) //关机
-                && (result != RESULT_LOW_POWER) //低电
-               )
+            if ((result != RESULT_APP_QUIT) //退出
+                    && (result != RESULT_POWER_OFF) //关机
+                    && (result != RESULT_LOW_POWER) //低电
+            )
             {
-                if(result > RESULT_COMMON_RESERVE)
+                if (result > RESULT_COMMON_RESERVE)
                 {
                     PRINT_INFO_INT("btcall ignore retult:", result);
-                } 
+                }
                 result = RESULT_NULL;
             }
         }

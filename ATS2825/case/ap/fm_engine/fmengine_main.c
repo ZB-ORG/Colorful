@@ -1,5 +1,9 @@
 #include "App_fmengine.h"
 
+#ifdef WAVES_ASET_TOOLS
+    waves_t g_waves;
+#endif
+
 //globle variable
 //FM 引擎状态信息
 Engine_Status_t g_fmengine_status;
@@ -62,9 +66,24 @@ void get_fm_init_param(FM_init_parm_t *p_fm)
 {
     p_fm->freq_mode =  (uint8) com_get_config_default(FMENGINE_FREQ_32K_13M);
     p_fm->gpio_level = (uint8) com_get_config_default(FMENGINE_CLK_PAD_LEVEL);
-    libc_print("fm-init-parm:",(p_fm->freq_mode << 8) + p_fm->gpio_level, 2);
+    libc_print("fm-init-parm:",((uint16)p_fm->freq_mode << 8) + p_fm->gpio_level, 2);
 }
 
+#ifdef WAVES_ASET_TOOLS
+void waves_init(void)
+{
+    if (STUB_PC_TOOL_WAVES_ASET_MODE == g_app_info_state_all.stub_pc_tools_type)
+    {
+        g_waves.tuning_status = TUNING;
+    }
+    else if (STUB_PC_TOOL_UNKOWN == g_app_info_state_all.stub_pc_tools_type)
+    {
+        g_waves.tuning_status = NO_TUNING;
+    }
+    g_waves.bin_number = g_app_info_state_all.bin_number;
+    g_waves.input_para_enable = (uint8) com_get_config_default(SETTING_APP_SUPPORT_WAVES_INPUT_PARAM); 
+}
+#endif
 
 //读取配置信息，安装FM驱动, 安装中间件(如果是ADDA的方式)
 /*******************************************************************************/
@@ -74,6 +93,11 @@ int fmengine_init(void)
     FM_init_parm_t fm_arg;
     char *mmm_name =
     { "mmm_pp.al" };
+    
+#ifdef WAVES_ASET_TOOLS
+    waves_init();
+#endif
+
 
     //初始化applib库，后台AP
     applib_init(APP_ID_FMENGINE, APP_TYPE_CONSOLE);

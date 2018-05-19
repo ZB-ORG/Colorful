@@ -55,6 +55,8 @@ uint8 g_scan_dir_index;
 //record cur disk flag;
 uint8 g_scan_disk;
 
+uint8 *g_scan_thread_task_addr;
+
 static const uint8 card_drv_name[] = "card.drv";
 static const uint8 uhost_drv_name[] = "uhost.drv";
 
@@ -556,8 +558,8 @@ void __section__(".save") music_save_header(void)
 
     if(g_vm_file_newest_time < g_file_newest_time)
     {
-       g_vfs_changed = TRUE;
-       PRINT_INFO("music files changed.");
+        g_vfs_changed = TRUE;
+        PRINT_INFO("music files changed.");
     }
     
     s_phead->file_newest_time = g_file_newest_time;

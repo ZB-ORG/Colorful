@@ -204,7 +204,7 @@ void keytone_play_loop(void *param)
     int32 play_ret;
     uint8 kt_id = (uint8) (uint32) (param);
 
-    PRINT_DBG_INT("keytone enter:", kt_id);
+    //PRINT_DBG_INT("keytone enter:", kt_id);
 
     g_keytone_infor.playing = TRUE;
 
@@ -293,8 +293,15 @@ void keytone_play_thread(uint8 kt_id)
     //初始化创建线程的参数
     param.pthread_param.start_rtn = (void *) keytone_play_loop;
     param.pthread_param.arg = (void *) (uint32) kt_id;
-    param.pthread_param.ptos = (void *) KEYTONE_PLAY_STK_POS;/*实际使用0x190*/
+    //param.pthread_param.ptos = (void *) KEYTONE_PLAY_STK_POS;/*实际使用0x190*/
+    g_keytone_infor.keytone_thread_addr = sys_malloc_large_data(KEYTONE_PLAY_STK_SIZE);
+    param.pthread_param.ptos = (void *)(g_keytone_infor.keytone_thread_addr + KEYTONE_PLAY_STK_SIZE);
+
+    //libc_print("keytone addr", g_keytone_infor.keytone_thread_addr, 2);
+    
     param.stk_size = KEYTONE_PLAY_STK_SIZE;
+
+    g_keytone_infor.thread_eixt = TRUE;
 
     if (libc_pthread_create(&param, KEYTONE_PLAY_PRIO, CREATE_NOT_MAIN_THREAD) < 0)
     {
@@ -302,6 +309,28 @@ void keytone_play_thread(uint8 kt_id)
 
     return;
 }
+
+void keytone_thread_task_stack_free(void)
+{
+    if(g_keytone_infor.keytone_thread_addr != 0)
+    {
+        //libc_print("free keytone", g_keytone_infor.keytone_thread_addr, 2);
+        sys_free_large_data(g_keytone_infor.keytone_thread_addr);
+        g_keytone_infor.keytone_thread_addr = 0;
+        g_keytone_infor.thread_eixt = FALSE;
+    }
+}
+
+void keytone_play_deal_wait(void)
+{
+    while (g_keytone_infor.playing == TRUE)
+    {
+        sys_os_time_dly(1);
+    }
+
+    keytone_thread_task_stack_free();
+}
+
 
 void keytone_set_dac_chan(dac_chenel_e dac_chan)
 {
@@ -311,10 +340,7 @@ void keytone_set_dac_chan(dac_chenel_e dac_chan)
     }
 
     //等待按键音结束后才能切换dac通道
-    while (g_keytone_infor.playing == TRUE)
-    {
-        sys_os_time_dly(1);
-    }
+    keytone_play_deal_wait();
 
     g_keytone_infor.dac_chan = dac_chan;
 }
@@ -334,10 +360,7 @@ void keytone_set_on_off(bool on_off)
     }
 
     //等待按键音结束后才能切换dac通道
-    while (g_keytone_infor.playing == TRUE)
-    {
-        sys_os_time_dly(1);
-    }
+    keytone_play_deal_wait();
 
     g_keytone_infor.enable = on_off;
 }
@@ -351,10 +374,12 @@ void keytone_play_deal(void)
         return;
     }
 
+    keytone_thread_task_stack_free();
+
     kt_id = keytone_fifo_out();
     if (kt_id == 0xff)
     {
-        PRINT_WARNING("kt fifo out err!!");
+        //PRINT_WARNING("kt fifo out err!!");
         return;
     }
 
@@ -364,13 +389,7 @@ void keytone_play_deal(void)
     }
 }
 
-void keytone_play_deal_wait(void)
-{
-    while (g_keytone_infor.playing == TRUE)
-    {
-        sys_os_time_dly(1);
-    }
-}
+
 
 bool keytone_play(uint8 kt_id, uint8 mode)
 {
@@ -392,6 +411,11 @@ bool keytone_play(uint8 kt_id, uint8 mode)
     }
 
     if (g_app_info_state.autotest_mode != 0)
+    {
+        return FALSE;
+    }
+
+    if(g_keytone_infor.kt_mute == 1)
     {
         return FALSE;
     }
@@ -461,15 +485,15 @@ void com_start_key_tone(uint8 mode)
 uint8 keytone_fifo_out(void)
 {
     uint8 kt_id, i;
-
-    if (g_keytone_infor.count == 0)
+    
+    if ((g_keytone_infor.count == 0) || (g_keytone_infor.count > KEYTONE_FIFO_DEPTH))
     {
         return -1;
     }
 
     kt_id = g_keytone_infor.kt_fifo[0];
     g_keytone_infor.count--;
-
+    
     for (i = 0; i < g_keytone_infor.count; i++)
     {
         g_keytone_infor.kt_fifo[i] = g_keytone_infor.kt_fifo[i + 1];
@@ -482,7 +506,7 @@ bool keytone_fifo_in(uint8 kt_id)
 {
     if (g_keytone_infor.count >= KEYTONE_FIFO_DEPTH)
     {
-        PRINT_WARNING("kt fifo in full!");
+        PRINT_WARNING("kt full!");
         return FALSE;
     }
 

@@ -1,16 +1,18 @@
 #ifndef __AP_AUTOTEST_MEM_DEFINE_H
 #define __AP_AUTOTEST_MEM_DEFINE_H
 
-//数据采集buffer
-#define LINEIN_SOUND_DATA_ADDR      (0x9fc22400)
-#define MIC_SOUND_DATA_ADDR         (LINEIN_SOUND_DATA_ADDR)
-#define FM_SOUND_DATA_ADDR          (MIC_SOUND_DATA_ADDR)
-
-//每次采集共1k的数据量
-#define SOUND_DATA_LEN              (0x400)
-
 //DAC数据缓存buffer，共1k的数据量 16*16*2*2
-#define DAC_BUFFER                  (FM_SOUND_DATA_ADDR + SOUND_DATA_LEN)
+#define DAC_BUFFER                  (0x9fc22400)
+
+#define DAC_BUFFER_LEN              (0x400)
+
+//数据采集buffer
+#define SOUND_DATA_ADDR             (DAC_BUFFER + DAC_BUFFER_LEN)
+
+//每次采集共4k的数据量
+#define SOUND_DATA_LEN              (0x1000)
+
+#define SAVE_SOUND_DATA_ADDR        (LINEIN_SOUND_DATA_ADDR + SOUND_DATA_LEN)
 
 //stub发送参数缓冲区，共256字节
 #define STUB_ATT_RW_TEMP_BUFFER     (0x9fc3a000)

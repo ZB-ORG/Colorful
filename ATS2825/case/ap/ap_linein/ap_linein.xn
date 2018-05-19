@@ -85,5 +85,11 @@ SECTIONS
         linein_control.o(.text .rodata)
         linein_rcp_deal.o(.text .xdata)
     }
+	
+	. = ((. + AP_BANK_SPACE) & (~(AP_BANK_SPACE - 1)))  + OFFSET;
+    BANK_CONTROL_1_2 :
+    {
+        linein_control.o(.BANK_CONTROL_1_2)
+    }
 
 }

@@ -365,6 +365,14 @@ static int32 act_test_read_bt_addr_arg(uint16 *line_buffer, uint8 *arg_buffer, u
 
             unicode_to_uint8_bytes(start, end, bt_addr_arg->bt_addr, 2, 3);
         }
+
+        act_test_parse_test_arg(line_buffer, 4, &start, &end);
+
+        bt_addr_arg->bt_addr_add_mode = unicode_to_int(start, end, 16);
+
+        act_test_parse_test_arg(line_buffer, 5, &start, &end);
+
+        bt_addr_arg->bt_burn_mode = unicode_to_int(start, end, 16);        
     }
     else
     {
@@ -373,13 +381,6 @@ static int32 act_test_read_bt_addr_arg(uint16 *line_buffer, uint8 *arg_buffer, u
 
         unicode_to_uint8_bytes(start, end, bt_addr_arg->bt_addr, 2, 3);
     }
-    act_test_parse_test_arg(line_buffer, 3, &start, &end);
-
-    bt_addr_arg->bt_addr_add_mode = unicode_to_int(start, end, 16);
-
-    act_test_parse_test_arg(line_buffer, 4, &start, &end);
-
-    bt_addr_arg->bt_burn_mode = unicode_to_int(start, end, 16);
 
     return TRUE;
 }
@@ -409,12 +410,12 @@ static int32 act_test_read_btplay_arg(uint16 *line_buffer, uint8 *arg_buffer, ui
     {
         arg_num += 5;
 
-        DEBUG_ATT_PRINT("byte0", btplay_arg->bt_transmitter_addr[0], 2);
-        DEBUG_ATT_PRINT("byte1", btplay_arg->bt_transmitter_addr[1], 2);
-        DEBUG_ATT_PRINT("byte2", btplay_arg->bt_transmitter_addr[2], 2);
-        DEBUG_ATT_PRINT("byte3", btplay_arg->bt_transmitter_addr[3], 2);
-        DEBUG_ATT_PRINT("byte4", btplay_arg->bt_transmitter_addr[4], 2);
-        DEBUG_ATT_PRINT("byte5", btplay_arg->bt_transmitter_addr[5], 2);
+        //DEBUG_ATT_PRINT("byte0", btplay_arg->bt_transmitter_addr[0], 2);
+        //DEBUG_ATT_PRINT("byte1", btplay_arg->bt_transmitter_addr[1], 2);
+        //DEBUG_ATT_PRINT("byte2", btplay_arg->bt_transmitter_addr[2], 2);
+        //DEBUG_ATT_PRINT("byte3", btplay_arg->bt_transmitter_addr[3], 2);
+        //DEBUG_ATT_PRINT("byte4", btplay_arg->bt_transmitter_addr[4], 2);
+        //DEBUG_ATT_PRINT("byte5", btplay_arg->bt_transmitter_addr[5], 2);
     }
     else
     {
@@ -427,7 +428,7 @@ static int32 act_test_read_btplay_arg(uint16 *line_buffer, uint8 *arg_buffer, ui
     //¶ÁÈ¡²âÊÔÄ£Ê½
     act_test_parse_test_arg(line_buffer, arg_num++, &start, &end);
 
-    btplay_arg->bt_test_mode = unicode_to_int(start, end, 16);
+    btplay_arg->bt_test_mode = unicode_to_int(start, end, 16);  
 
     if (g_test_mode != TEST_MODE_CARD)
     {
@@ -546,18 +547,6 @@ int32 act_test_read_mptest_arg(uint16 *line_buffer, uint8 *arg_buffer, uint32 ar
 
     mp_arg->pwr_threshold_high = (int8) unicode_to_int(start, end, 10);
 
-    act_test_parse_test_arg(line_buffer, arg_num++, &start, &end);
-
-    mp_arg->ber_test = (uint8) unicode_to_int(start, end, 10);
-
-    act_test_parse_test_arg(line_buffer, arg_num++, &start, &end);
-
-    mp_arg->ber_threshold_low = (int8) unicode_to_int(start, end, 10);
-
-    act_test_parse_test_arg(line_buffer, arg_num++, &start, &end);
-
-    mp_arg->ber_threshold_high = (int8) unicode_to_int(start, end, 10);
-
     return TRUE;
 }
 
@@ -596,6 +585,120 @@ int32 act_test_read_btname_arg(uint16 *line_buffer, uint8 *arg_buffer, uint32 ar
     return TRUE;
 }
 
+int32 act_test_read_ber_test_arg(uint16 *line_buffer, uint8 *arg_buffer, uint32 arg_len)
+{
+    uint16*  start = NULL;
+    uint16*  end   = NULL;
+    uint8 arg_num;
+    ber_test_arg_t *ber_arg = (ber_test_arg_t *)arg_buffer;
+
+    arg_num = 1;
+    act_test_parse_test_arg(line_buffer, arg_num++, &start, &end);
+
+    ber_arg->ber_channel_low = (uint8)unicode_to_int(start, end, 10);
+    //print_log("channel low:%d", ber_arg->ber_channel_low);
+
+    act_test_parse_test_arg(line_buffer, arg_num++, &start, &end);
+
+    ber_arg->ber_channel_mid = (uint8)unicode_to_int(start, end, 10);    
+
+    act_test_parse_test_arg(line_buffer, arg_num++, &start, &end);
+
+    ber_arg->ber_channel_high = (uint8)unicode_to_int(start, end, 10);  
+
+    act_test_parse_test_arg(line_buffer, arg_num++, &start, &end);
+
+    ber_arg->ber_thr_low = (int8)unicode_to_int(start, end, 10);  
+
+    act_test_parse_test_arg(line_buffer, arg_num++, &start, &end);
+
+    ber_arg->ber_thr_high = (int8)unicode_to_int(start, end, 10);    
+    
+    return TRUE;
+}
+
+int32 act_test_read_lradc_test_arg(uint16 *line_buffer, uint8 *arg_buffer, uint32 arg_len)
+{
+    uint16*  start = NULL;
+    uint16*  end   = NULL;
+    uint8 arg_num;
+    lradc_test_arg_t *lradc_arg = (lradc_test_arg_t *)arg_buffer;
+
+    arg_num = 1;
+
+    act_test_parse_test_arg(line_buffer, arg_num++, &start, &end);
+    lradc_arg->lradc1_test = (uint8)unicode_to_int(start, end, 10);
+
+    act_test_parse_test_arg(line_buffer, arg_num++, &start, &end);
+    lradc_arg->lradc1_thr_low = (uint8)unicode_to_int(start, end, 10);
+
+    act_test_parse_test_arg(line_buffer, arg_num++, &start, &end);
+    lradc_arg->lradc1_thr_high = (uint8)unicode_to_int(start, end, 10);
+
+    act_test_parse_test_arg(line_buffer, arg_num++, &start, &end);
+    lradc_arg->lradc2_test = (uint8)unicode_to_int(start, end, 10);
+
+    act_test_parse_test_arg(line_buffer, arg_num++, &start, &end);
+    lradc_arg->lradc2_thr_low = (uint8)unicode_to_int(start, end, 10);
+
+    act_test_parse_test_arg(line_buffer, arg_num++, &start, &end);
+    lradc_arg->lradc2_thr_high = (uint8)unicode_to_int(start, end, 10);
+
+    act_test_parse_test_arg(line_buffer, arg_num++, &start, &end);
+    lradc_arg->lradc4_test = (uint8)unicode_to_int(start, end, 10);
+
+    act_test_parse_test_arg(line_buffer, arg_num++, &start, &end);
+    lradc_arg->lradc4_thr_low = (uint8)unicode_to_int(start, end, 10);
+
+    act_test_parse_test_arg(line_buffer, arg_num++, &start, &end);
+    lradc_arg->lradc4_thr_high = (uint8)unicode_to_int(start, end, 10);    
+    
+    return TRUE;
+}
+
+int32 act_test_read_channel_test_arg(uint16 *line_buffer, uint8 *arg_buffer, uint32 arg_len)
+{
+    uint16*  start = NULL;
+    uint16*  end   = NULL;
+    uint8 arg_num;
+    channel_test_arg_t *channel_test_arg = (channel_test_arg_t *)arg_buffer;
+
+    arg_num = 1;
+
+    act_test_parse_test_arg(line_buffer, arg_num++, &start, &end);
+    channel_test_arg->test_left_ch = (uint8)unicode_to_int(start, end, 10);
+
+    act_test_parse_test_arg(line_buffer, arg_num++, &start, &end);
+    channel_test_arg->left_ch_power_threadshold = (uint32)unicode_to_int(start, end, 10);    
+
+    act_test_parse_test_arg(line_buffer, arg_num++, &start, &end);
+    channel_test_arg->test_left_ch_SNR = (uint8)unicode_to_int(start, end, 10);
+
+    act_test_parse_test_arg(line_buffer, arg_num++, &start, &end);
+    channel_test_arg->left_ch_SNR_threadshold = (uint32)unicode_to_int(start, end, 10);
+
+    act_test_parse_test_arg(line_buffer, arg_num++, &start, &end);
+    channel_test_arg->left_ch_max_sig_point = unicode_to_int(start, end, 10);
+
+    act_test_parse_test_arg(line_buffer, arg_num++, &start, &end);
+    channel_test_arg->test_right_ch = (uint8)unicode_to_int(start, end, 10);
+
+    act_test_parse_test_arg(line_buffer, arg_num++, &start, &end);
+    channel_test_arg->right_ch_power_threadshold = (uint32)unicode_to_int(start, end, 10);    
+
+    act_test_parse_test_arg(line_buffer, arg_num++, &start, &end);
+    channel_test_arg->test_right_ch_SNR = (uint8)unicode_to_int(start, end, 10);
+
+    act_test_parse_test_arg(line_buffer, arg_num++, &start, &end);
+    channel_test_arg->right_ch_SNR_threadshold = (uint32)unicode_to_int(start, end, 10);
+
+    act_test_parse_test_arg(line_buffer, arg_num++, &start, &end);
+    channel_test_arg->right_ch_max_sig_point = (uint8)unicode_to_int(start, end, 10);
+
+    return TRUE;
+}
+
+
 const att_task_read_arg_t autotest_readarg_ops[] =
 {
     { TESTID_MODIFY_BTNAME, act_test_read_bt_name_arg },
@@ -615,6 +718,16 @@ const att_task_read_arg_t autotest_readarg_ops[] =
     { TESTID_MP_READ_TEST, act_test_read_mptest_arg },
 
     { TESTID_READ_BTNAME, act_test_read_btname_arg },
+
+    { TESTID_BER_TEST, act_test_read_ber_test_arg},
+
+    { TESTID_LRADC_TEST, act_test_read_lradc_test_arg},
+
+    { TESTID_LINEIN_CH_TEST_ATS2825, act_test_read_channel_test_arg},
+
+    { TESTID_LINEIN_CH_TEST_ATS2823, act_test_read_channel_test_arg},    
+
+    { TESTID_MIC_CH_TEST, act_test_read_channel_test_arg}
 };
 
 int32 act_test_read_test_arg(uint16 test_id, uint16 *line_buffer, uint8 *arg_buffer, uint32 arg_len)

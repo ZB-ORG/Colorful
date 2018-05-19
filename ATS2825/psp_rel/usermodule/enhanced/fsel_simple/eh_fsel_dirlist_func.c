@@ -104,7 +104,7 @@ uint16 fsel_check_index_num(uint16 cur_num)
         }
         index_ptr++;
     }
-    return i;
+    return cur_num;
 }
 
 //设置文件播放的顺序

@@ -29,6 +29,7 @@ uint8 second_empty_flag2 =0;
 //  uint16 cur_buffer_time=0;
 uint8 tws_or_notws_flag=0;
 int8 clear_filter_timer_id = -1;
+int8 clear_tts_filter_timer_id = -1;
 #endif
 
 /******************************************************************************/
@@ -140,6 +141,22 @@ static void _save_var(void)
 
 }
 
+#ifdef WAVES_ASET_TOOLS
+void waves_init(void)
+{
+    if (STUB_PC_TOOL_WAVES_ASET_MODE == g_app_info_state_all.stub_pc_tools_type)
+    {
+        g_waves.tuning_status = TUNING;
+    }
+    else if (STUB_PC_TOOL_UNKOWN == g_app_info_state_all.stub_pc_tools_type)
+    {
+        g_waves.tuning_status = NO_TUNING;
+    }
+    g_waves.bin_number = g_app_info_state_all.bin_number;
+    g_waves.input_para_enable = (uint8) com_get_config_default(SETTING_APP_SUPPORT_WAVES_INPUT_PARAM); 
+}
+#endif
+
 /******************************************************************************/
 /*!
  * \par  Description:
@@ -170,9 +187,7 @@ static void _app_init(void)
     change_engine_state(ENGINE_STATE_PAUSE);
 
 #ifdef WAVES_ASET_TOOLS
-
-    support_waves_pc_tools_bt =  (uint8) com_get_config_default(SETTING_APP_SUPPORT_WAVES_PC_TOOLS); 
-
+    waves_init();
 #endif
 
 }
@@ -219,7 +234,35 @@ int main(int argc, const char *argv[])
     /*ap初始化*/
     _app_init();
 
+    //解除过滤
+#ifdef ENABLE_TRUE_WIRELESS_STEREO 
+        if((g_p_bt_stack_cur_info->dev_role==TWS_MASTER)&&((g_p_bt_stack_cur_info->tws_master_phonecon==0)
+        ||(g_p_tws_info->sub_quit_bl_flag==1)))
+   {
+        //当切应用回连，保证丢数
+   }
+   else
+#endif
+   {
+        btplay_engine_pipe_control(PIPE_OP_UNFILTER);
+    }    
+
     result = get_message_loop();
+
+#ifdef ENABLE_TRUE_WIRELESS_STEREO
+     g_p_tws_info->pri_pause_flag=0;
+#endif
+
+    //销毁共享查询
+    if (sys_share_query_destroy(APP_ID_BTPLAYEG) == -1)
+    {
+        // PRINT_ERR("btcall share query destroy fail!!");
+        while (1)
+        {
+            ; //nothing for QAC
+        }
+    }
+    
 
     _app_exit();
     return result;

@@ -94,12 +94,20 @@ SECTIONS
         uengine_main.o(.text .rodata) 
     }
     
-    /*bank control 1*/
+    /*bank control 2*/
     . = ((. + AP_BANK_SPACE) & (~(AP_BANK_SPACE - 1))) + OFFSET;
      BANK_CONTROL_1_2   : 
     {
         uengine_message_deal.o(.text .rodata) 
         uengine_event_deal.o(.text .rodata)
+        uengine_control.o(.bank)
+    }
+    
+	/*bank control 3*/
+    . = ((. + AP_BANK_SPACE) & (~(AP_BANK_SPACE - 1))) + OFFSET;
+     BANK_CONTROL_1_3   : 
+    {
+        uengine_control_bank.o(.text .rodata) 
     }
        
                     

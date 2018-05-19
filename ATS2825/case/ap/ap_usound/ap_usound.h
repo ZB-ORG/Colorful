@@ -65,7 +65,9 @@ extern app_result_e _key_next_deal(void) __FAR__;
 
 extern app_result_e _key_play_deal(void) __FAR__;
 
-extern app_result_e _key_vol_deal(void) __FAR__;
+extern app_result_e _key_vol_add_deal(void) __FAR__;
+
+extern app_result_e _key_vol_sub_deal(void) __FAR__;
 
 extern app_result_e ud_unstick_msg_deal(void *ev_param) __FAR__;
 

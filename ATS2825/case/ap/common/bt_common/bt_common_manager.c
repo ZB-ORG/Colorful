@@ -18,7 +18,8 @@ uint8 __section__(".bt_globe_data")check_id1;
 uint8 __section__(".bt_globe_data")check_id2;
 uint8 __section__(".bt_globe_data")once_auto_flag;
 uint8 __section__(".bt_globe_data")send_once_flag;
-
+uint8 __section__(".bt_globe_data")g_tws_m_linein_flag;
+uint8 __section__(".bt_globe_data")g_tws_m_switchap_flag;
 #endif
 
 bt_auto_connect_ctrl_t __section__(".bt_auto_connect") g_bt_auto_connect_ctrl;
@@ -26,6 +27,8 @@ uint8 __section__(".bt_auto_connect") g_bt_auto_connect_addr[BD_ADDR_LEN]; //×Ô¶
 btmanager_global_variable_struct __section__(".bt_globe_data") g_btmanager_gl_var;
 bt_stack_info_t __section__(".bt_globe_data") g_bt_stack_cur_info;
 bt_stack_pipe_t * __section__(".bt_globe_data") g_p_rcp_in_data_ctl;
+uint16 __section__(".bt_globe_data") g_fast_discoverable_cnt;
+int8 __section__(".bt_globe_data") g_fast_discoverable_timer;
 
 static void btmanager_global_var_init(bool standby_exit);
 static void load_bt_stack_config(btstack_config_t *cfg);
@@ -71,7 +74,7 @@ void __section__(".call_auto_conn") send_cmd_to_other(uint8 op)
 #endif
 
 
-void com_btmanager_init(bool standby_exit)
+void __section__(".bank_4")com_btmanager_init(bool standby_exit)
 {
     bool need_patch_download;
     bool need_power_on;
@@ -125,14 +128,15 @@ void com_btmanager_init(bool standby_exit)
     //Æô¶¯À¶ÑÀÐ­ÒéÕ»£¬»á¸üÐÂ g_bt_auto_connect_ctrl.enable_a2dp/enable_avrcp/enable_hfp ±äÁ¿
     if (standby_exit == TRUE)
     {
-        sd_sec_param_t sd_sec_param;
-
+        sys_disable_mem_use(SRAM_S3BT_BUFFER, SRAM_S3BT_BUFFER + SRAM_S3BT_SIZE);
+        
         g_btmanager_gl_var.btstack_standby = FALSE;
 
-        sd_sec_param.file_offset = NOR_S3BT_BT_STACK;
-        sd_sec_param.sram_addr = SRAM_S3BT_BUFFER;
-        sd_sec_param.sec_num = 0x6000/0x200;
-        base_ext_vram_read(&sd_sec_param);
+        sys_vm_read(SRAM_S3BT_BUFFER, VM_S3BT_BT_STACK, VM_S3BT_BT_STACK_LEN);
+
+        base_clear_vram_index(VM_S3BT_BT_STACK); 
+
+        sys_base_set_exit_S3bt_scene();
     }
     install_bt_stack(standby_exit, need_patch_download, need_power_on);
     g_app_info_state.bt_power_on = TRUE;
@@ -142,6 +146,8 @@ void com_btmanager_init(bool standby_exit)
         {
             sys_udelay(1);
         }
+
+        sys_enable_mem_use(SRAM_S3BT_BUFFER, SRAM_S3BT_BUFFER + SRAM_S3BT_SIZE);
     }
 
     //»ñÈ¡Éè±¸Åä¶ÔÁÐ±í£¬ÒÔ¾ö¶¨ÊÇ·ñ»ØÁ¬
@@ -150,7 +156,7 @@ void com_btmanager_init(bool standby_exit)
         auto_connect_sync_rmt_device_list();
 
         //´òÓ¡°æ±¾ºÅ
-        print_btstack_ver();
+        //print_btstack_ver();
     }
 
     //³õÊ¼»¯Íê³ÉÊ±¸üÐÂÒ»´ÎBTSTACK×´Ì¬
@@ -194,8 +200,10 @@ void com_btmanager_init(bool standby_exit)
 	
 }
 
-void com_btmanager_exit(bool standby_enter, bool need_power_off)
+void __section__(".bank_3") com_btmanager_exit(bool standby_enter, bool need_power_off)
 {
+    uint8 *temp_buffer;
+    
     if (g_app_info_vector[APP_TYPE_BTSTACK].used == 0)
     {
         return;
@@ -230,6 +238,14 @@ void com_btmanager_exit(bool standby_enter, bool need_power_off)
         kill_app_timer(g_btmanager_gl_var.bat_rpt_timer_id);
         g_btmanager_gl_var.bat_rpt_timer_id = -1;
     }
+        
+    //for fast discover time kill 
+    if (g_fast_discoverable_timer != -1)
+    {
+    	  libc_print("restart",0,0);
+    	  kill_app_timer(g_fast_discoverable_timer);
+        g_fast_discoverable_timer = -1;
+    }   
 
     sys_shm_destroy(SHARE_MEM_ID_BTSTACK_STATUS);
 
@@ -240,14 +256,18 @@ void com_btmanager_exit(bool standby_enter, bool need_power_off)
     {//±¸·ÝÈ«¾Ö±äÁ¿
         sd_sec_param_t sd_sec_param;
 
-        libc_memset(SRAM_S3BT_BUFFER, 0x0, 0x200);
-        libc_memcpy(SRAM_S3BT_BUFFER, &g_btmanager_gl_var, sizeof(g_btmanager_gl_var));
-        libc_memcpy(SRAM_S3BT_BUFFER + 0x100, &g_bt_auto_connect_ctrl, sizeof(g_bt_auto_connect_ctrl));
+        libc_memset(SRAM_S3BT_BUFFER + 0x6000, 0x0, 0x200);
 
-        sd_sec_param.file_offset = NOR_S3BT_BT_MANAGER;
-        sd_sec_param.sram_addr = SRAM_S3BT_BUFFER;
-        sd_sec_param.sec_num = 1;
-        base_ext_vram_write(&sd_sec_param);
+        temp_buffer = sys_malloc(sizeof(g_btmanager_gl_var) + sizeof(g_bt_auto_connect_ctrl));
+        
+        libc_memcpy(temp_buffer, &g_btmanager_gl_var, sizeof(g_btmanager_gl_var));
+        libc_memcpy(temp_buffer + sizeof(g_btmanager_gl_var), &g_bt_auto_connect_ctrl, sizeof(g_bt_auto_connect_ctrl));
+
+        //sd_sec_param.file_offset = NOR_S3BT_BT_MANAGER;
+        //sd_sec_param.sram_addr = SRAM_S3BT_BUFFER;
+        //sd_sec_param.sec_num = 1;
+        //base_ext_vram_write(&sd_sec_param);
+
     }
 
     //Ð¶ÔØÀ¶ÑÀÐ­ÒéÕ»
@@ -271,10 +291,20 @@ void com_btmanager_exit(bool standby_enter, bool need_power_off)
             sys_udelay(1);
         }
 
-        sd_sec_param.file_offset = NOR_S3BT_BT_STACK;
-        sd_sec_param.sram_addr = SRAM_S3BT_BUFFER;
-        sd_sec_param.sec_num = 0x6000/0x200;
-        base_ext_vram_write(&sd_sec_param);
+        //sd_sec_param.file_offset = NOR_S3BT_BT_STACK;
+        //sd_sec_param.sram_addr = SRAM_S3BT_BUFFER;
+        //sd_sec_param.sec_num = 0x6000/0x200;
+        //base_ext_vram_write(&sd_sec_param);
+
+        //ÕâÀïÐ´Èë±È½Ï¶àµÄVRAMÊý¾Ý£¬ÐèÒªÌØÊâ´¦Àí
+        *(uint16 *)(SRAM_S3BT_BUFFER - 2) = VM_LARGE_DATA_TAG;
+        
+        sys_vm_write((SRAM_S3BT_BUFFER - 2), VM_S3BT_BT_STACK, VM_S3BT_BT_STACK_LEN);  
+
+        //·Åµ½×îºóÃæÔÙÐ´£¬·ÀÖ¹½¨±íÎóÅÐ
+        sys_vm_write(temp_buffer, VM_S3BT_BT_MANAGER, sizeof(g_btmanager_gl_var) + sizeof(g_bt_auto_connect_ctrl));
+
+        sys_free(temp_buffer);
     }
 
     //É¾³ýBT STACKµ÷Æµµã
@@ -283,22 +313,25 @@ void com_btmanager_exit(bool standby_enter, bool need_power_off)
 
 static void btmanager_global_var_init(bool standby_exit)
 {
+    //uint8 temp_data[64];
+    
     if (standby_exit == TRUE)
-    {//»Ö¸´È«¾Ö±äÁ¿
-        sd_sec_param_t sd_sec_param;
+    {
+    	uint8 *temp_data;
 
-        sd_sec_param.file_offset = NOR_S3BT_BT_MANAGER;
-        sd_sec_param.sram_addr = SRAM_S3BT_BUFFER;
-        sd_sec_param.sec_num = 1;
-        base_ext_vram_read(&sd_sec_param);
+        temp_data = sys_malloc(sizeof(g_btmanager_gl_var) + sizeof(g_bt_auto_connect_ctrl));
 
-        libc_memcpy(&g_btmanager_gl_var, SRAM_S3BT_BUFFER, sizeof(g_btmanager_gl_var));
-        libc_memcpy(&g_bt_auto_connect_ctrl, SRAM_S3BT_BUFFER + 0x100, sizeof(g_bt_auto_connect_ctrl));
+        sys_vm_read(temp_data, VM_S3BT_BT_MANAGER, sizeof(g_btmanager_gl_var) + sizeof(g_bt_auto_connect_ctrl));
+
+        libc_memcpy(&g_btmanager_gl_var, temp_data, sizeof(g_btmanager_gl_var));
+        libc_memcpy(&g_bt_auto_connect_ctrl, (temp_data + sizeof(g_btmanager_gl_var)), sizeof(g_bt_auto_connect_ctrl));
+        sys_free(temp_data);
     }
     else
     {//ÖØÐÂ¼ÓÔØ²¢³õÊ¼»¯È«¾Ö±äÁ¿
 #ifdef ENABLE_TRUE_WIRELESS_STEREO
         send_once_flag=0;
+        g_tws_m_linein_flag = 0;
 #endif
 
         //³õÊ¼»¯È«¾Ö±äÁ¿
@@ -310,6 +343,10 @@ static void btmanager_global_var_init(bool standby_exit)
         g_btmanager_gl_var.sniff_timer_id = -1;
         g_btmanager_gl_var.bat_rpt_timer_id = -1;
         g_btmanager_gl_var.discoverable_flag = 0; //BT STACKÄ¬ÈÏ²»¿É¼ûµÄ
+        
+        //for fast disoverable mode 
+        g_fast_discoverable_timer = -1;
+        g_fast_discoverable_cnt = 0;
 
         //Ö§³Ö¶àÉÙ¸öÔ¶³ÌÉè±¸
         g_btmanager_gl_var.support_dev_num = (uint8) com_get_config_default(BTMANAGER_SUPPORT_DEVICE_NUM);
@@ -332,6 +369,13 @@ static void btmanager_global_var_init(bool standby_exit)
 
         //g_bt_auto_connect_ctrl.connect_tick_cnt = 0;
         g_bt_auto_connect_ctrl.connect_tick_cnt = g_bt_auto_connect_ctrl.auto_connect_interval * 2;
+    }
+
+    if(g_btmanager_gl_var.support_dev_num > 1)
+    {
+        //Ö§³ÖµÄÉè±¸¸öÊý´óÓÚ1¸ö£¬ÔòÐèÒªÊ¹ÓÃsend buffer
+        //ÐèÒªÏµÍ³È¥µôÕâ²¿·Ö¿Õ¼äµÄ¹ÜÀí
+        sys_disable_use_send_buffer();
     }
 
     g_btmanager_gl_var.last_call_last_timestamp = sys_get_ab_timer();
@@ -400,14 +444,22 @@ static void install_bt_stack(bool standby_exit, bool need_patch_download, bool n
     bt_stack_arg_t bt_stack_arg;
     uint8 save_bt_data;
 
-    if(g_app_info_state.stub_tools_type != 0)
+    if(g_app_info_state.stub_tools_type == 0)
     {
-        bt_stack_arg.work_mode = WORK_NORNAL | WORK_MEM_SMALL;    
+        bt_stack_arg.work_mode = WORK_NORNAL | WORK_MEM_NORMAL;
     }
     else
     {
-        bt_stack_arg.work_mode = WORK_NORNAL | WORK_MEM_NORMAL;    
+        if (g_app_info_state.stub_tools_type != STUB_PC_TOOL_ATT_MODE)
+        {
+            bt_stack_arg.work_mode = WORK_NORNAL | WORK_MEM_SMALL;
+        }
+        else
+        {
+            bt_stack_arg.work_mode = WORK_AUTOTEST | WORK_MEM_SMALL;        
+        }
     }
+
     
     bt_stack_arg.standby_exit = standby_exit;
     bt_stack_arg.need_patch_download = need_patch_download;
@@ -439,10 +491,18 @@ static void install_bt_stack(bool standby_exit, bool need_patch_download, bool n
         {
             bt_stack_arg.save_addr = 1;
         }
+        else
+        {
+            bt_stack_arg.save_addr = 0;
+        }
 
         if(save_bt_data == SAVE_BT_NAME)
         {
             bt_stack_arg.save_name = 1;
+        }
+        else
+        {
+            bt_stack_arg.save_name = 0;
         }
     }
 
@@ -493,7 +553,7 @@ static void uninstall_bt_stack(bool standby_enter, bool need_power_off)
 //»ñÈ¡Éè±¸Åä¶ÔÁÐ±í£¬ÒÔ¾ö¶¨ÊÇ·ñ»ØÁ¬
 void __section__(".bank_2") auto_connect_sync_rmt_device_list(void)
 {
-    bt_paired_info_t cur_list;
+    bt_paired_info_t *cur_list;
 
     msg_apps_t msg;
     uint8 i, j;
@@ -502,31 +562,39 @@ void __section__(".bank_2") auto_connect_sync_rmt_device_list(void)
     
     support_dev_num_tmp = g_btmanager_gl_var.support_dev_num;
 
+    cur_list = sys_malloc(sizeof(bt_paired_info_t));
+
+    if(NULL == cur_list)
+    {
+        libc_print("malloc pairlist fail", 0, 0);
+        return;
+    }
+
 #ifdef ENABLE_TRUE_WIRELESS_STEREO
-    libc_memset(&cur_list, 0x0, sizeof(bt_paired_info_t));
+    libc_memset(cur_list, 0x0, sizeof(bt_paired_info_t));
     msg.type = MSG_BTSTACK_GET_TWS_PAIRED_LIST_SYNC;
-    msg.content.addr = &cur_list;
+    msg.content.addr = cur_list;
     send_sync_msg_btmanager(NULL, &msg, NULL, 0);
 
-    PRINT_INFO_INT("tws_dev_num:", cur_list.dev_num);
+    PRINT_INFO_INT("tws_dev_num:", cur_list->dev_num);
     
     
-    if ((cur_list.dev_num > 0) && (g_bt_auto_connect_ctrl.enable_auto_connect == 1))
+    if ((cur_list->dev_num > 0) && (g_bt_auto_connect_ctrl.enable_auto_connect == 1))
     {
         if (g_ap_switch_var.forbid_auto_connect == FALSE)
         {
             g_bt_auto_connect_ctrl.need_auto_connect = 0x01;
         }
 
-        PRINT_INFO_INT("tws_mru_num:", cur_list.dev[0].mru_num);
+        PRINT_INFO_INT("tws_mru_num:", cur_list->dev[0].mru_num);
 
         libc_memcpy(g_bt_auto_connect_ctrl.dev_info[0].remote_addr.bytes,
-                cur_list.dev[0].bd_addr.bytes, 6);
-        g_bt_auto_connect_ctrl.dev_info[0].support_profile = cur_list.dev[0].support_profile;
+                cur_list->dev[0].bd_addr.bytes, 6);
+        g_bt_auto_connect_ctrl.dev_info[0].support_profile = cur_list->dev[0].support_profile;
         g_bt_auto_connect_ctrl.dev_info[0].conn_flag = 1;
 
-        g_bt_auto_connect_ctrl.dev_info[0].dev_type = cur_list.dev[0].dev_type;
-        g_bt_auto_connect_ctrl.tws_prior_role = cur_list.dev_role;
+        g_bt_auto_connect_ctrl.dev_info[0].dev_type = cur_list->dev[0].dev_type;
+        g_bt_auto_connect_ctrl.tws_prior_role = cur_list->dev_role;
         
         if (g_bt_auto_connect_ctrl.tws_prior_role == TWS_SLAVE)
         {
@@ -546,35 +614,35 @@ void __section__(".bank_2") auto_connect_sync_rmt_device_list(void)
     
 #endif    
 
-    libc_memset(&cur_list, 0x0, sizeof(bt_paired_info_t));
+    libc_memset(cur_list, 0x0, sizeof(bt_paired_info_t));
     msg.type = MSG_BTSTACK_GET_PAIRED_LIST_SYNC;
-    msg.content.addr = &cur_list;
+    msg.content.addr = cur_list;
     send_sync_msg_btmanager(NULL, &msg, NULL, 0);
     
-    PRINT_INFO_INT("dev_num:", cur_list.dev_num);
+    PRINT_INFO_INT("dev_num:", cur_list->dev_num);
 
-    if ((cur_list.dev_num > 0) && (g_bt_auto_connect_ctrl.enable_auto_connect == 1))
+    if ((cur_list->dev_num > 0) && (g_bt_auto_connect_ctrl.enable_auto_connect == 1))
     {
         if (g_ap_switch_var.forbid_auto_connect == FALSE)
         {
             g_bt_auto_connect_ctrl.need_auto_connect = 0x01;
         }
 
-        for (i = 0; i < cur_list.dev_num; i++)
+        for (i = 0; i < cur_list->dev_num; i++)
         {
-            PRINT_INFO_INT("mru_num:", cur_list.dev[i].mru_num);
+            PRINT_INFO_INT("mru_num:", cur_list->dev[i].mru_num);
 
             for (j = 0; j < support_dev_num_tmp; j++)
             {
-                if (cur_list.dev[i].mru_num == (j + 1))
+                if ((cur_list->dev[i].mru_num == (j + 1))&&((auto_ptr+j)<RMT_DEV_NUM))
                 {
                     libc_memcpy(g_bt_auto_connect_ctrl.dev_info[auto_ptr+j].remote_addr.bytes,
-                            cur_list.dev[i].bd_addr.bytes, 6);
-                    g_bt_auto_connect_ctrl.dev_info[auto_ptr+j].support_profile = cur_list.dev[i].support_profile;
+                            cur_list->dev[i].bd_addr.bytes, 6);
+                    g_bt_auto_connect_ctrl.dev_info[auto_ptr+j].support_profile = cur_list->dev[i].support_profile;
                     g_bt_auto_connect_ctrl.dev_info[auto_ptr+j].conn_flag = 1;
 #ifdef ENABLE_TRUE_WIRELESS_STEREO
-                    g_bt_auto_connect_ctrl.dev_info[auto_ptr+j].dev_type = cur_list.dev[i].dev_type;
-                    g_bt_auto_connect_ctrl.tws_prior_role = cur_list.dev_role;
+                    g_bt_auto_connect_ctrl.dev_info[auto_ptr+j].dev_type = cur_list->dev[i].dev_type;
+                    g_bt_auto_connect_ctrl.tws_prior_role = cur_list->dev_role;
                     if (g_bt_auto_connect_ctrl.tws_prior_role == TWS_SLAVE)
                     {
                     	g_bt_auto_connect_ctrl.connect_tick_cnt = g_bt_auto_connect_ctrl.auto_connect_interval;
@@ -596,6 +664,7 @@ void __section__(".bank_2") auto_connect_sync_rmt_device_list(void)
                 	
     }
 
+    sys_free(cur_list);
     g_ap_switch_var.forbid_auto_connect = FALSE;
 }
 

@@ -93,6 +93,12 @@ struct base_block_device_operations {
 #define     BASE_DSP_START                  (18)
 #define     BASE_OTA_PREPARE                (19)
 #define     BASE_OTA_PART_QUERY             (20)
+#define     BASE_QUERY_FIRST_BOOT           (30)
+#define     BASE_PARAM_MERGE_DEAL           (31)
+#define     BASE_SET_WRITE_ONOFF            (32)
+#define     BASE_MERGE_VRAM                 (33)
+#define     BASE_RW_VRAM_INDEX              (34)
+#define     BASE_SET_S3BT_SCENE             (35)
 
 /*3.对上层提供的总接口函数*/
 extern void * card_op_entry(void *param1, void *param2, void *param3, device_cmd_e cmd)__FAR__;
@@ -124,6 +130,17 @@ extern void * base_op_entry(void *param1, void *param2, void *param3, device_cmd
 #define base_dsp_start(a)   base_op_entry((void*)BASE_DSP_START, (void*)(a), (void*)(0), BASE_GET_INFO) 
 #define base_ota_prepare(a,b) base_op_entry((void*)BASE_OTA_PREPARE, (void*)(a), (void*)(b), BASE_GET_INFO)
 #define base_ota_read_part_info() base_op_entry((void*)BASE_OTA_PART_QUERY, (void*)(0), (void*)(0), BASE_GET_INFO)
+
+#define base_query_first_boot() base_op_entry((void*)BASE_QUERY_FIRST_BOOT, (void*)(0), (void*)(0), BASE_GET_INFO)
+#define base_param_merge_deal() base_op_entry((void*)BASE_PARAM_MERGE_DEAL, (void*)(0), (void*)(0), BASE_GET_INFO)
+#define base_set_enable_write_protect() base_op_entry((void*)BASE_SET_WRITE_ONOFF, (void*)(1), (void*)(0), BASE_GET_INFO)
+#define base_set_disable_write_protect() base_op_entry((void*)BASE_SET_WRITE_ONOFF, (void*)(0), (void*)(0), BASE_GET_INFO)
+#define base_query_support_write_protect(a) base_op_entry((void*)BASE_SET_WRITE_ONOFF, (void*)(2), (void*)(a), BASE_GET_INFO)
+#define base_special_vram_merge(a, b) base_op_entry((void*)BASE_MERGE_VRAM, (void*)(a), (void*)(b), BASE_GET_INFO)
+#define base_clear_vram_index(a) base_op_entry((void*)BASE_RW_VRAM_INDEX, (void*)(a), (void*)(0), BASE_GET_INFO)
+#define base_read_vram_index(a) base_op_entry((void*)BASE_RW_VRAM_INDEX, (void*)(a), (void*)(1), BASE_GET_INFO)
+#define base_enter_s3bt_scene() base_op_entry((void*)BASE_SET_S3BT_SCENE, (void*)(1), (void*)(0), BASE_GET_INFO)
+#define base_exit_s3bt_scene() base_op_entry((void*)BASE_SET_S3BT_SCENE, (void*)(0), (void*)(0), BASE_GET_INFO)
 
 //复用了获取sector大小接口
 #define base_ota_part_write(a) base_op_entry((void*)(a), (void*)(0), (void*)(0), BASE_GET_SEC_SIZE)
