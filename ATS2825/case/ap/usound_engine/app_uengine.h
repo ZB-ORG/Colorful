@@ -17,11 +17,18 @@
 #include "mmm_pp.h"
 #include "usound_common.h"
 
+#ifdef WAVES_ASET_TOOLS
+extern  waves_t g_waves;
+#endif
+
 /*!定义音乐引擎的任务栈和主线程优先级*/
 #define    AP_UENGINE_STK_POS  AP_BACK_LOW_STK_POS
 #define    AP_UENGINE_PRIO     AP_BACK_LOW_PRIO
 
 #define MAX_ENERGY_NUM     0x08
+
+#define MUTE_DELAY          2500
+#define AUTO_PLAY_DELAY     (MUTE_DELAY/10 + 200)
 
 /*!
  * \brief
@@ -110,6 +117,39 @@ extern bool g_uspeaker_24bit;
 
 extern uint8 g_auto_play_flag;
 
+extern uint8 g_switch_song_flag;
+
+extern uint8 g_data_flag;
+
+extern uint8 g_pa_type;
+
+extern uint32 g_current_vol;
+
+extern uint32 g_vol_sync_timer;
+
+extern uint8 g_force_equ;
+
+extern uint8 g_vol_chg_cnt;
+
+extern uint8 g_vol_no_chg;
+
+extern int8 g_pre_dif;
+
+//for esd
+
+extern uint32 g_temp_conut;
+extern uint16 g_energy_mean;
+extern uint16 g_energy_max;
+extern uint8 g_energy_same_count;
+
+extern uint8 g_mute_flag;
+
+extern uint32 mute_cnt;
+
+extern uint8 g_mute_cnt_flag;
+
+extern uint32 g_auto_play_count;
+
 extern app_result_e uengine_control_block(void) __FAR__;
 
 extern int32 uegine_player_open(void) __FAR__;
@@ -126,12 +166,22 @@ extern app_result_e uengine_next_song(void) __FAR__;
 
 extern app_result_e uengine_prev_song(void) __FAR__;
 
+extern app_result_e uengine_vol_add(void) __FAR__;
+
+extern app_result_e uengine_vol_sub(void) __FAR__;
+
 extern app_result_e uengine_tts_start(void) __FAR__;
 
 extern app_result_e uengine_tts_stop(void) __FAR__;
 
 extern void uengine_reply_msg(void* msg_ptr, bool ret_vals) __FAR__;
 
-extern app_result_e uengine_sync_volume(uint32 volume) __FAR__;
+extern app_result_e uengine_sync_volume(uint32 volume, uint8 mode) __FAR__;
 
+extern app_result_e uengine_switch_deal(void) __FAR__;
+
+extern app_result_e uengine_vol_sync(uint8 vol) __FAR__;
+
+extern void auto_play_for_esd(uint8* check_time) __FAR__;
+extern void esd_check_dsp_excption(short *energy_mean,short *energy_max,uint32 prit_count)__FAR__;
 #endif //__APP_UENGINE_H__

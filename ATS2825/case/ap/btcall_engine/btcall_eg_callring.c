@@ -14,6 +14,10 @@
 #define CALLRING_FADE_OUT   2
 #define CALLRING_FADE_OK    3
 
+
+uint8 g_irq_cnt;
+uint8 g_hf_flag;
+uint8 g_ff_flag;
 /******************************************************************************
 * \par  Description:   把sco接收的数据写到缓存空间,单声道音频数据
 *\                            拷贝为双声道音频
@@ -217,7 +221,6 @@ void *callring_thread_handle(void *param)
     uint8 fade_falg = 0;
     g_callring_data.callring_thread_exist = 1;
     btcall_gl_var.need_exit_thread = FALSE;
-    
     while(1)
     {
         if (btcall_gl_var.need_exit_thread == TRUE)
@@ -231,7 +234,7 @@ void *callring_thread_handle(void *param)
                 if (btcall_gl_var.last_dma0_state == DMA_HALF_TRANSED)
                 {
                     libc_memset(g_btcall_callring_dac_buf + CALLRING_DAC_BUFFER_LENGTH/2, 0x00, 256);
-                    while ((act_readl(DMAIP) & 0x00000800) == 0)//half transed，表示淡出帧播放结束
+                    while ((g_hf_flag == 0))//half transed，表示淡出帧播放结束
                     {
                         sys_mdelay(1);
                     }
@@ -239,7 +242,7 @@ void *callring_thread_handle(void *param)
                 else
                 {
                     libc_memset(g_btcall_callring_dac_buf, 0x00, 256);
-                    while ((act_readl(DMAIP) & 0x00000008) == 0)//trans complete，表示淡出帧播放结束
+                    while (g_ff_flag == 0)//trans complete，表示淡出帧播放结束
                     {
                         sys_mdelay(1);
                     }
@@ -254,30 +257,45 @@ void *callring_thread_handle(void *param)
             memcpy_dual_callring(g_btcall_callring_dac_buf, g_btcall_callring_read_buf, \
                     CALLRING_READ_BUFFER_LENGTH, 0);
 
-            set_dac_rate(8,0);
-            enable_dac(DAFIS_DMA, DAF0_EN);
+            if(1 == g_app_info_state_all.fix_sample_rate_flag)
+            {
+                config_asrc(K_OUT0_U0, 3);
+                set_dac_rate(48,0);
+                set_asrc_rate(8,0,1000);
+                //act_writel(act_readl(ASRC_OUT0_CTL) | (0x01),ASRC_OUT0_CTL);
+                enable_dac(DAFIS_ASRC, DAF0_EN);
+            }
+            else
+            {
+                set_dac_rate(8,0);
+                enable_dac(DAFIS_DMA, DAF0_EN);
+            }
 
             callring_dac_dma_config();
             dma_dac_start_transfer();
 
             btcall_gl_var.last_dma0_state = DMA_TRANS_COMPLECT;//表示将更新buffer上半half
         }
+        #if 1
         else if (btcall_gl_var.last_dma0_state == DMA_TRANS_COMPLECT)
         {
-            if ((act_readl(DMAIP) & 0x00000800) != 0)//half transed
+            if (g_hf_flag == 1)//((act_readl(DMAIP) & 0x00000800) != 0)//half transed
             {
+                //clear pending，注意不能使用读-或-写这种方式，避免清掉其他pending位
+                //act_writel(0x00000800, DMAIP);
+                g_hf_flag = 0;
+                
                 callring_frame(g_btcall_callring_read_buf, CALLRING_READ_BUFFER_LENGTH/2);
                 memcpy_dual_callring(g_btcall_callring_dac_buf, g_btcall_callring_read_buf, \
                         CALLRING_READ_BUFFER_LENGTH/2, fade_falg);
-
-                while ((act_readl(DMAIP) & 0x00000800) != 0)
-                {
-                    //clear pending，注意不能使用读-或-写这种方式，避免清掉其他pending位
-                    act_writel(0x00000800, DMAIP);
-                }
-
                 btcall_gl_var.last_dma0_state = DMA_HALF_TRANSED;
-
+                if ((g_irq_cnt == 0) && (1 == g_app_info_state_all.fix_sample_rate_flag))
+                {
+                    act_writel(act_readl(DMA3CTL) | (1 << DMA3CTL_reload), DMA3CTL);
+                    act_writel(act_readl(DMA3CTL) & (~(1 << DMA3CTL_DMA3START)), DMA3CTL);
+                    act_writel(act_readl(DMA3CTL) | (1 << DMA3CTL_DMA3START), DMA3CTL);
+                }
+                
                 if (fade_falg == CALLRING_FADE_OUT)
                 {
                     fade_falg = CALLRING_FADE_OK;
@@ -286,34 +304,40 @@ void *callring_thread_handle(void *param)
         }
         else //btcall_gl_var.last_dma0_state == DMA_HALF_TRANSED
         {
-            if ((act_readl(DMAIP) & 0x00000008) != 0)//trans complete
+            if (g_ff_flag == 1)//((act_readl(DMAIP) & 0x00000008) != 0)//trans complete
             {
+                //clear pending，注意不能使用读-或-写这种方式，避免清掉其他pending位
+                //act_writel(0x00000008, DMAIP);
+                g_ff_flag = 0;
+                
                 callring_frame(g_btcall_callring_read_buf, CALLRING_READ_BUFFER_LENGTH/2);
                 memcpy_dual_callring(g_btcall_callring_dac_buf + CALLRING_DAC_BUFFER_LENGTH/2, \
                         g_btcall_callring_read_buf, CALLRING_READ_BUFFER_LENGTH/2, fade_falg);
-
-                while ((act_readl(DMAIP) & 0x00000808) != 0)
-                {
-                    //clear pending，注意不能使用读-或-写这种方式，避免清掉其他pending位
-                    act_writel(0x00000808, DMAIP);
-                }
-
                 btcall_gl_var.last_dma0_state = DMA_TRANS_COMPLECT;
-
+                
                 if (fade_falg == CALLRING_FADE_OUT)
                 {
                     fade_falg = CALLRING_FADE_OK;
                 }
+                g_irq_cnt ++;
             }
         }
-
-        sys_os_time_dly(2);
+        #endif
+        sys_os_time_dly(1);
     }
+    g_irq_cnt = 0;
 
     act_writel(act_readl(DMA3CTL) & (~(1 << DMA3CTL_DMA3START)), DMA3CTL);
-
+    
+    sys_free_irq(IRQ_DMA3);
+    
     disable_dac(DAF0_EN);
-
+    
+    if(1 == g_app_info_state_all.fix_sample_rate_flag)
+    {
+        close_asrc(K_OUT0_U0);
+    }
+    
     sys_sd_fclose(g_callring_data.callring_handle);
     btcall_gl_var.last_dma0_state = DMA_NOT_TRANS;
     g_callring_data.callring_thread_exist = 0;
@@ -321,4 +345,28 @@ void *callring_thread_handle(void *param)
     libc_pthread_exit();
 
     return (void *) NULL;
+}
+
+__section__ (".text.irq")int ring_dma_isr(void)
+{
+    uint8 tempdata = 0;
+    if ((act_readl(DMAIP) & 0x00000008) != 0)//trans complete
+    {
+        //clear pending，注意不能使用读-或-写这种方式，避免清掉其他pending位
+        act_writel(0x00000008, DMAIP);
+        
+        g_ff_flag = 1;
+    }
+    else if ((act_readl(DMAIP) & 0x00000800) != 0)//half transed
+    {
+        //clear pending，注意不能使用读-或-写这种方式，避免清掉其他pending位
+        act_writel(0x00000800, DMAIP);
+
+        g_hf_flag = 1;
+    }
+    else
+    {
+        ;//nothing
+    }
+    return tempdata;
 }

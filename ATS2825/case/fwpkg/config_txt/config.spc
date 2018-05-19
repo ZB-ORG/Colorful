@@ -33,7 +33,7 @@ tab_layer1=dae_config;
 tabname =setting;
 DISP_EN=digital audio effect configuration;
 DISP_CH=数字音效配置;
-DISPLAY=0;
+DISPLAY=1;
 
 tab_layer2=tts_option; 
 tab_layer1_name=common_parameters; 
@@ -89,56 +89,56 @@ tab_layer1_name=dae_config;
 tabname =setting;
 DISP_EN=bass enhancement configuration;
 DISP_CH=低音增强配置;
-DISPLAY=1;
+DISPLAY=0;
 
 tab_layer2=treble_enhancement; 
 tab_layer1_name=dae_config; 
 tabname =setting;
 DISP_EN=treble enhancement configuration;
 DISP_CH=高音增强配置;
-DISPLAY=1;
+DISPLAY=0;
 
 tab_layer2=parameter_eq; 
 tab_layer1_name=dae_config; 
 tabname =setting;
 DISP_EN=parameter eq configuration;
 DISP_CH=均衡器配置;
-DISPLAY=1;
+DISPLAY=0;
 
 tab_layer2=limiter_config; 
 tab_layer1_name=dae_config; 
 tabname =setting;
 DISP_EN=limiter configuration;
 DISP_CH=限幅器配置;
-DISPLAY=1;
+DISPLAY=0;
 
 tab_layer2=mdrc_config; 
 tab_layer1_name=dae_config; 
 tabname =setting;
 DISP_EN=mdrc configuration;
 DISP_CH=动态范围控制配置;
-DISPLAY=1;
+DISPLAY=0;
 
 tab_layer2=dae_enhancement; 
 tab_layer1_name=dae_config; 
 tabname =setting;
 DISP_EN=dae enhancement configuration;
 DISP_CH=小音量增强配置;
-DISPLAY=1;
+DISPLAY=0;
 
 tab_layer2= dae_weaken; 
 tab_layer1_name=dae_config; 
 tabname =setting;
 DISP_EN=dae weaken configuration;
 DISP_CH=大音量减弱配置;
-DISPLAY=1;
+DISPLAY=0;
 
 tab_layer2=signal_detect_config; 
 tab_layer1_name=dae_config; 
 tabname =setting;
 DISP_EN=signal detect configuration;
 DISP_CH=信号检测配置;
-DISPLAY=1;
+DISPLAY=0;
 
 tab=usb;
 DISP_EN=usb property;
@@ -511,14 +511,14 @@ key=SETTING_AUDIO_OUTPUT_CHANNAL;
 type=DATA;
 operate=SINGLE;
 len=;
-RANGE=0-4;
+RANGE=0-1;
 tab_layer1_name=hardware_config; 
 tabname =setting;
 RANGE_DISP_EN=0:DAC,1:I2S,2:SPDIF,3:DAC+I2S,4:DAC+SPDIF;  
 RANGE_DISP_CH=0:DAC,1:I2S,2:SPDIF,3:DAC+I2S,4:DAC+SPDIF; 
 DISP_EN=audio out channl:0 DAC ，1 I2S，2 SPDIF，3 DAC+I2S，4 DAC+SPDIF;
 DISP_CH=音频输出通道:0 DAC ，1 I2S，2 SPDIF，3 DAC+I2S，4 DAC+SPDIF;
-DISPLAY=0;
+DISPLAY=1;
 
 key=SETTING_AUDIO_INNER_PA_SET_MODE;
 type=DATA;
@@ -544,6 +544,32 @@ RANGE_DISP_EN=2:difference mic,3: single end mic, 4: digital mic;
 RANGE_DISP_CH=2:单端mic,3:差分mic,4:数字mic;
 DISP_EN=audio in channl;
 DISP_CH=音频输入通道:2=单端mic，3=差分mic，4=数字mic;
+DISPLAY=0;
+
+key=SETTING_AUDIO_SAMPLE_RATE_FIXED;
+type=DATA;
+operate=SINGLE;
+len=;
+RANGE=0-1;
+tab_layer1_name=hardware_config; 
+tabname =setting;
+RANGE_DISP_EN=0:not fixed,1:fixed in 48K;  
+RANGE_DISP_CH=0:不固定,1:固定为48K; 
+DISP_EN=sample rate fixed:0 not fixed ，1 fixed in 48K;
+DISP_CH=固定采样率输出:0 不固定 ，1 固定为48K;
+DISPLAY=1;
+
+key=SETTING_AUDIO_POW_SAVING_MODE;
+type=DATA;
+operate=SINGLE;
+len=;
+RANGE=0-1;
+tab_layer1_name=hardware_config; 
+tabname =setting;
+RANGE_DISP_EN=0:sound quality priority,1:power saving priority;  
+RANGE_DISP_CH=0:音质优先,1:功耗优先; 
+DISP_EN=power saving configuration:0 sound quality priority ，1 power saving priority;
+DISP_CH=audio功耗配置:0 音质优先 ，1 功耗优先;
 DISPLAY=0;
 
 key=SETTING_SOUND_ENABLE_KEYTONE;
@@ -938,7 +964,7 @@ RANGE_DISP_EN=0:use inner capacitor,1:use extern capacitor;
 RANGE_DISP_CH=0:使用内部电容,1:使用外部电容;
 DISP_EN=26MHz crystal oscillator capacitor:0-use inner capacitor, 1-use extern capacitor;
 DISP_CH=26MHz晶振匹配电容:0表示使用内部电容，1表示使用外部电容
-DISPLAY=1;
+DISPLAY=0;
 
 key=SETTING_HARDWARE_SUPPORT_CARD;
 type=DATA;
@@ -1244,6 +1270,74 @@ DISP_EN=show udisk label:support English name only,max to 11 bytes;
 DISP_CH=磁盘卷标名:只支持英文名称,最大11字节;
 DISPLAY=1;
 
+key=USB_CARDREADER_BCD_DEVICE;
+type=STR;
+operate=EDIT;
+len=6;
+RANGE=;
+tab_layer1_name=usb_card_reader; 
+tabname =usb;
+DISP_EN=Cardreader BcdDevice Field;
+DISP_CH=Cardreader BcdDevice Field:用于区分不同版本的固件;
+DISPLAY=1;
+
+key=USB_SOUND_BCD_DEVICE;
+type=STR;
+operate=EDIT;
+len=6;
+RANGE=;
+tab_layer1_name=usb_sound; 
+tabname =usb;
+DISP_EN=USB Audio BcdDevice Field;
+DISP_CH=USB Audio BcdDevice Field:用于区分不同版本的固件;
+DISPLAY=1;
+
+key=USB_SN_TYPE;
+type=DATA;
+operate=SINGLE;
+len=;
+RANGE=0-1;
+tabname=usb;
+RANGE_DISP_EN=0:random SerialNumber,1:SerialNumber determined by user;
+RANGE_DISP_CH=0:随机生成SerialNumber,1:用户自定SerialNumber;
+DISP_EN=select SerialNumber type 0--random SerialNumber;1--SerialNumber determined by user;
+DISP_CH=SerialNumber类型选择:0-随机生成SerialNumber;1-用户自定SerialNumber;
+DISPLAY=1;
+
+key=USB_CARDREADER_SN;
+type=STR;
+operate=EDIT;
+len=16;
+RANGE=;
+tab_layer1_name=usb_card_reader; 
+tabname =usb;
+DISP_EN=USB Cardreader SerialNumber Field;
+DISP_CH=USB Cardreader SerialNumber Field:最大16字节;
+DISPLAY=1;
+
+key=USB_SOUND_SN;
+type=STR;
+operate=EDIT;
+len=16;
+RANGE=;
+tab_layer1_name=usb_sound; 
+tabname =usb;
+DISP_EN=USB Audio SerialNumber Field;
+DISP_CH=USB Audio SerialNumber Field:最大16字节;
+DISPLAY=1;
+
+key=USOUND_SAMPLE_TYPE;
+type=DATA;
+operate=SINGLE;
+len=;
+RANGE=0-2;
+tabname=usb;
+RANGE_DISP_EN=0:usound sample 48K&44.1k,1:only 48k.2,only 44.1k.;
+RANGE_DISP_CH=0:usound 采样率支持48k和44.1k,1:仅支持48k,2:仅支持44.1k;
+DISP_EN=select usound sample type 0--48k&44.1k;1--48k;2--44.1k;
+DISP_CH=usb采样率选择:0-48k和44.1k;1-仅支持48k;2-仅支持44.1k;
+DISPLAY=1;
+
 key=BTSTACK_DEVICE_NAME;
 type=STR;
 operate=EDIT;
@@ -1257,11 +1351,11 @@ DISPLAY=1;
 key=BTSTACK_BLE_DEVICE_NAME;
 type=STR;
 operate=EDIT;
-len=21;
+len=29;
 RANGE=;
 tabname=btstack;
-DISP_EN=bluetooth ble_device name:max to 21 bytes
-DISP_CH=BLE蓝牙设备名称:最大21字符
+DISP_EN=bluetooth ble_device name:max to 29 bytes
+DISP_CH=BLE蓝牙设备名称:最大29字符
 DISPLAY=1;
 
 key=BTSTACK_BLE_ADV_MANUFACTUREER_ID;
@@ -1553,10 +1647,10 @@ operate=SINGLE;
 len=;
 RANGE=0,1;
 tabname=btmanager;
-RANGE_DISP_EN=1:verification apk,2:don't verification apk;
-RANGE_DISP_CH=1:验证APK,2:不验证APK;
-DISP_EN=verification apk:1-verification apk,2-don't verification apk;
-DISP_CH=验证:1-验证APK，2-不验证APK，以向后兼容旧版本APK;
+RANGE_DISP_EN=1:verification apk,0:don't verification apk;
+RANGE_DISP_CH=1:验证APK,0:不验证APK;
+DISP_EN=verification apk:1-verification apk,0-don't verification apk;
+DISP_CH=验证:1-验证APK，0-不验证APK，以向后兼容旧版本APK;
 DISPLAY=0;
 
 key=BTMANAGER_ENABLE_THREEWAY_CALL;
@@ -2221,6 +2315,19 @@ DISP_EN=linein input adc gain:0-15, for 0-45db, step 3db
 DISP_CH=line-in ADC 增益:0-15 对应 0-45db, 每级递增3db
 DISPLAY=1;
 
+key=DAE_PRINT_ENABLE;
+type=DATA;
+operate=SINGLE;
+len=;
+RANGE=0,1;
+tab_layer1_name=dae_config;    
+tabname=setting;
+RANGE_DISP_EN=0:no print dae,1:print dae;
+RANGE_DISP_CH=0:关闭DAE参数打印,1:打开DAE参数打印;
+DISP_EN=dae param print enable:0-off,1-on;
+DISP_CH=是否打开DAE参数打印:0表示不打印，1表示打印;
+DISPLAY=1;
+
 key=DAE_BYPASS_ENABLE;
 type=DATA;
 operate=SINGLE;
@@ -2243,7 +2350,7 @@ tab_layer1_name=dae_config;
 tabname=setting;
 DISP_EN=precut:unit is 0.1db
 DISP_CH=预衰减:单位0.1db
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_EQUIVALENT_GAIN;
 type=DATA;
@@ -2254,7 +2361,7 @@ tab_layer1_name=dae_config;
 tabname=setting;
 DISP_EN=equivalent precut:unit is 0.1db
 DISP_CH=等效预衰减:单位0.1db，该值是对DAE音效模块对信号提升的一个评估值；该参数只有打开MDRC时才起作用
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_VIRTUAL_BASS_ENABLE;
 type=DATA;
@@ -2268,7 +2375,7 @@ RANGE_DISP_EN=0:disable,1:enable;
 RANGE_DISP_CH=0:关闭,1:开启;
 DISP_EN=bass enhancement option:0-disable,1-enable;
 DISP_CH=低音增强开关:0-关闭,1-开启;
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_VIRTUAL_BASS_CUTOFF_FREQ;
 type=DATA;
@@ -2280,7 +2387,7 @@ tab_layer1_name=dae_config;
 tabname =setting;
 DISP_EN=bass enhancement cutoff frequency:unit is 1Hz
 DISP_CH=低音增强截止频率:单位为1Hz
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_VIRTUAL_BASS_RATIO;
 type=DATA;
@@ -2292,7 +2399,7 @@ tab_layer1_name=dae_config;
 tabname =setting;
 DISP_EN=bass enhancement gain:unit is 1DB
 DISP_CH=低音增强增益:单位为1DB
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_ORIGINAL_BASS_RATIO;
 type=DATA;
@@ -2318,7 +2425,7 @@ RANGE_DISP_EN=0:disable,1:enable;
 RANGE_DISP_CH=0:关闭,1:开启;
 DISP_EN=treble enhancement option:0-disable,1-enable;
 DISP_CH=高音增强开关:0-关闭,1-开启;
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_TREBLE_ENHANCE_CUTOFF_FREQ;
 type=DATA;
@@ -2331,7 +2438,7 @@ tab_layer1_name=dae_config;
 tabname =setting;
 DISP_EN=treble enhancement cutoff frequency:unit is 1Hz
 DISP_CH=高音增强截止频率:单位为1Hz
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_TREBLE_ENHANCE_RATIO;
 type=DATA;
@@ -2344,7 +2451,7 @@ tab_layer1_name=dae_config;
 tabname =setting;
 DISP_EN=treble enhancement gain:unit is 1DB
 DISP_CH=高音增强增益:单位为1DB
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_PEQ_ENABLE;
 type=DATA;
@@ -2358,7 +2465,7 @@ RANGE_DISP_EN=0:disable,1:enable;
 RANGE_DISP_CH=0:关闭,1:开启;
 DISP_EN=parameter eq option:0-disable,1-enable;
 DISP_CH=PEQ开关:0-关闭,1-开启;
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_PEQ_BANK0_SETTING;
 type=ARRAY;
@@ -2370,7 +2477,7 @@ tab_layer1_name=dae_config;
 tabname =setting;
 DISP_EN=peq band1 setting:[cutoff, Q value, gain, type]
 DISP_CH=PEQ BAND1 配置:[中心频率或截止频率；Q值，单位为0.1；增益，单位为0.1DB，范围-120 ~ 120；类型 1表示peaking，2表示high pass，等]
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_PEQ_BANK1_SETTING;
 type=ARRAY;
@@ -2382,7 +2489,7 @@ tab_layer1_name=dae_config;
 tabname =setting;
 DISP_EN=peq band2 setting:[cutoff, Q value, gain, type]
 DISP_CH=PEQ BAND2 配置:[中心频率或截止频率；Q值，单位为0.1；增益，单位为0.1DB，范围-120 ~ 120；类型 1表示peaking，2表示high pass，等]
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_PEQ_BANK2_SETTING;
 type=ARRAY;
@@ -2394,7 +2501,7 @@ tab_layer1_name=dae_config;
 tabname =setting;
 DISP_EN=peq band3 setting:[cutoff, Q value, gain, type]
 DISP_CH=PEQ BAND3 配置:[中心频率或截止频率；Q值，单位为0.1；增益，单位为0.1DB，范围-120 ~ 120；类型 1表示peaking，2表示high pass，等]
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_PEQ_BANK3_SETTING;
 type=ARRAY;
@@ -2406,7 +2513,7 @@ tab_layer1_name=dae_config;
 tabname =setting;
 DISP_EN=peq band4 setting:[cutoff, Q value, gain, type]
 DISP_CH=PEQ BAND4 配置:[中心频率或截止频率；Q值，单位为0.1；增益，单位为0.1DB，范围-120 ~ 120；类型 1表示peaking，2表示high pass，等]
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_PEQ_BANK4_SETTING;
 type=ARRAY;
@@ -2418,7 +2525,7 @@ tab_layer1_name=dae_config;
 tabname =setting;
 DISP_EN=peq band5 setting:[cutoff, Q value, gain, type]
 DISP_CH=PEQ band5 配置:[中心频率或截止频率；Q值，单位为0.1；增益，单位为0.1DB，范围-120 ~ 120；类型 1表示peaking，2表示high pass，等]
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_PEQ_BANK5_SETTING;
 type=ARRAY;
@@ -2430,7 +2537,7 @@ tab_layer1_name=dae_config;
 tabname =setting;
 DISP_EN=peq band6 setting:[cutoff, Q value, gain, type]
 DISP_CH=PEQ band6 配置:[中心频率或截止频率；Q值，单位为0.1；增益，单位为0.1DB，范围-120 ~ 120；类型 1表示peaking，2表示high pass，等]
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_PEQ_BANK6_SETTING;
 type=ARRAY;
@@ -2442,7 +2549,7 @@ tab_layer1_name=dae_config;
 tabname =setting;
 DISP_EN=peq band7 setting:[cutoff, Q value, gain, type]
 DISP_CH=PEQ BAND7 配置:[中心频率或截止频率；Q值，单位为0.1；增益，单位为0.1DB，范围-120 ~ 120；类型 1表示peaking，2表示high pass，等]
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_PEQ_BANK7_SETTING;
 type=ARRAY;
@@ -2454,7 +2561,7 @@ tab_layer1_name=dae_config;
 tabname =setting;
 DISP_EN=peq band8 setting:[cutoff, Q value, gain, type]
 DISP_CH=PEQ band8 配置:[中心频率或截止频率；Q值，单位为0.1；增益，单位为0.1DB，范围-120 ~ 120；类型 1表示peaking，2表示high pass，等]
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_PEQ_BANK8_SETTING;
 type=ARRAY;
@@ -2466,7 +2573,7 @@ tab_layer1_name=dae_config;
 tabname =setting;
 DISP_EN=peq band9 setting:[cutoff, Q value, gain, type]
 DISP_CH=PEQ BAND9 配置:[中心频率或截止频率；Q值，单位为0.1；增益，单位为0.1DB，范围-120 ~ 120；类型 1表示peaking，2表示high pass，等]
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_PEQ_BANK9_SETTING;
 type=ARRAY;
@@ -2478,7 +2585,7 @@ tab_layer1_name=dae_config;
 tabname =setting;
 DISP_EN=peq band10 setting:[cutoff, Q value, gain, type]
 DISP_CH=PEQ BAND10 配置:[中心频率或截止频率；Q值，单位为0.1；增益，单位为0.1DB，范围-120 ~ 120；类型 1表示peaking，2表示high pass，等]
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_PEQ_BANK10_SETTING;
 type=ARRAY;
@@ -2490,7 +2597,7 @@ tab_layer1_name=dae_config;
 tabname =setting;
 DISP_EN=peq band11 setting:[cutoff, Q value, gain, type]
 DISP_CH=PEQ BAND11 配置:[中心频率或截止频率；Q值，单位为0.1；增益，单位为0.1DB，范围-120 ~ 120；类型 1表示peaking，2表示high pass，等]
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_PEQ_BANK11_SETTING;
 type=ARRAY;
@@ -2502,7 +2609,7 @@ tab_layer1_name=dae_config;
 tabname =setting;
 DISP_EN=peq band12 setting:[cutoff, Q value, gain, type]
 DISP_CH=PEQ band12 配置:[中心频率或截止频率；Q值，单位为0.1；增益，单位为0.1DB，范围-120 ~ 120；类型 1表示peaking，2表示high pass，等]
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_PEQ_BANK12_SETTING;
 type=ARRAY;
@@ -2514,7 +2621,7 @@ tab_layer1_name=dae_config;
 tabname =setting;
 DISP_EN=peq band13 setting:[cutoff, Q value, gain, type]
 DISP_CH=PEQ BAND13 配置:[中心频率或截止频率；Q值，单位为0.1；增益，单位为0.1DB，范围-120 ~ 120；类型 1表示peaking，2表示high pass，等]
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_PEQ_BANK13_SETTING;
 type=ARRAY;
@@ -2526,7 +2633,7 @@ tab_layer1_name=dae_config;
 tabname =setting;
 DISP_EN=peq band14 setting:[cutoff, Q value, gain, type]
 DISP_CH=PEQ BAND14 配置:[中心频率或截止频率；Q值，单位为0.1；增益，单位为0.1DB，范围-120 ~ 120；类型 1表示peaking，2表示high pass，等]
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_LIMITER_ENABLE;
 type=DATA;
@@ -2540,7 +2647,7 @@ RANGE_DISP_EN=0:disable,1:enable;
 RANGE_DISP_CH=0:关闭,1:开启;
 DISP_EN=limiter option:0-disable,1-enable;
 DISP_CH=限幅器开关:0-关闭,1-开启;
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_LIMITER_SETTING;
 type=ARRAY;
@@ -2552,7 +2659,7 @@ tab_layer1_name=dae_config;
 tabname =setting;
 DISP_EN=limiter setting:[threshold, attack_time, release_time, reserve]
 DISP_CH=限幅器配置:[限幅器阈值，单位为0.1DB，范围 -60DB ~ 0DB; 限幅器启动时间，单位为0.01ms，取值范围为 0.02 ~ 10 ms; 限幅器释放时间，单位为1ms，取值范围为 1 ~ 1000 ms]
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_MDRC_ENABLE;
 type=DATA;
@@ -2566,7 +2673,7 @@ RANGE_DISP_EN=0:disable,1:enable;
 RANGE_DISP_CH=0:关闭,1:开启;
 DISP_EN=mdrc option:0-disable,1-enable;
 DISP_CH=动态范围控制开关:0-关闭,1-开启;
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_MDRC_BANK0_SETTING;
 type=ARRAY;
@@ -2578,7 +2685,7 @@ tab_layer1_name=dae_config;
 tabname =setting;
 DISP_EN=normal mdrc band1 setting:[threshold, attack_time, release_time, crossover_freq]
 DISP_CH=普通模式动态范围控制 BAND1 配置:[动态范围控制阈值，单位为0.1DB，范围 -60DB ~ 0DB; 限幅器启动时间，单位为0.01ms，取值范围为 0.02 ~ 10 ms; 限幅器释放时间，单位为1ms，取值范围为 1 ~ 1000 ms; 分频点]
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_MDRC_BANK1_SETTING;
 type=ARRAY;
@@ -2590,7 +2697,7 @@ tab_layer1_name=dae_config;
 tabname =setting;
 DISP_EN=normal mdrc band2 setting:[threshold, attack_time, release_time, crossover_freq]
 DISP_CH=普通模式动态范围控制 BAND2 配置:[动态范围控制阈值，单位为0.1DB，范围 -60DB ~ 0DB; 限幅器启动时间，单位为0.01ms，取值范围为 0.02 ~ 10 ms; 限幅器释放时间，单位为1ms，取值范围为 1 ~ 1000 ms; 分频点]
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_MDRC_BANK2_SETTING;
 type=ARRAY;
@@ -2602,7 +2709,7 @@ tab_layer1_name=dae_config;
 tabname =setting;
 DISP_EN=normal mdrc band3 setting:[threshold, attack_time, release_time, crossover_freq]
 DISP_CH=普通模式动态范围控制 BAND3 配置:[动态范围控制阈值，单位为0.1DB，范围 -60DB ~ 0DB; 限幅器启动时间，单位为0.01ms，取值范围为 0.02 ~ 10 ms; 限幅器释放时间，单位为1ms，取值范围为 1 ~ 1000 ms; 分频点]
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_MDRC_LIMITER_TH_DIFF;
 type=DATA;
@@ -2614,7 +2721,7 @@ tab_layer1_name=dae_config;
 tabname =setting;
 DISP_EN=normal threshold difference by limiter:unit is 0.1DB
 DISP_CH=普通模式与限幅器阈值差值:单位为0.1DB
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_MDRC_VOLUME_ADJUST;
 type=DATA;
@@ -2626,7 +2733,7 @@ tab_layer1_name=dae_config;
 tabname =setting;
 DISP_EN=normal volume adjust:unit is 0.1DB
 DISP_CH=普通模式音量微调:单位为0.1DB
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_MDRC_SIGNAL_ADJUST;
 type=DATA;
@@ -2638,7 +2745,7 @@ tab_layer1_name=dae_config;
 tabname =setting;
 DISP_EN=normal signal adjust:unit is 0.1DB
 DISP_CH=普通模式信号微调:单位为0.1DB
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_MDRC_AUX_BANK0_SETTING;
 type=ARRAY;
@@ -2650,7 +2757,7 @@ tab_layer1_name=dae_config;
 tabname =setting;
 DISP_EN=aux mdrc band1 setting:[threshold, attack_time, release_time, crossover_freq]
 DISP_CH=AUX模式动态范围控制 BAND1 配置:[动态范围控制阈值，单位为0.1DB，范围 -60DB ~ 0DB; 限幅器启动时间，单位为0.01ms，取值范围为 0.02 ~ 10 ms; 限幅器释放时间，单位为1ms，取值范围为 1 ~ 1000 ms; 分频点]
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_MDRC_AUX_BANK1_SETTING;
 type=ARRAY;
@@ -2662,7 +2769,7 @@ tab_layer1_name=dae_config;
 tabname =setting;
 DISP_EN=aux mdrc band2 setting:[threshold, attack_time, release_time, crossover_freq]
 DISP_CH=AUX模式动态范围控制 BAND2 配置:[动态范围控制阈值，单位为0.1DB，范围 -60DB ~ 0DB; 限幅器启动时间，单位为0.01ms，取值范围为 0.02 ~ 10 ms; 限幅器释放时间，单位为1ms，取值范围为 1 ~ 1000 ms; 分频点]
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_MDRC_AUX_BANK2_SETTING;
 type=ARRAY;
@@ -2674,7 +2781,7 @@ tab_layer1_name=dae_config;
 tabname =setting;
 DISP_EN=aux mdrc band3 setting:[threshold, attack_time, release_time, crossover_freq]
 DISP_CH=AUX模式动态范围控制 BAND3 配置:[动态范围控制阈值，单位为0.1DB，范围 -60DB ~ 0DB; 限幅器启动时间，单位为0.01ms，取值范围为 0.02 ~ 10 ms; 限幅器释放时间，单位为1ms，取值范围为 1 ~ 1000 ms; 分频点]
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_MDRC_AUX_LIMITER_TH_DIFF;
 type=DATA;
@@ -2686,7 +2793,7 @@ tab_layer1_name=dae_config;
 tabname =setting;
 DISP_EN=aux threshold difference by limiter:unit is 0.1DB
 DISP_CH=AUX模式与限幅器阈值差值:单位为0.1DB
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_MDRC_AUX_VOLUME_ADJUST;
 type=DATA;
@@ -2698,7 +2805,7 @@ tab_layer1_name=dae_config;
 tabname =setting;
 DISP_EN=aux volume adjust:unit is 0.1DB
 DISP_CH=AUX模式音量微调:单位为0.1DB
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_MDRC_AUX_SIGNAL_ADJUST;
 type=DATA;
@@ -2710,7 +2817,7 @@ tab_layer1_name=dae_config;
 tabname =setting;
 DISP_EN=aux signal adjust:unit is 0.1DB
 DISP_CH=AUX模式信号微调:单位为0.1DB
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_ENHANCED_ENABLE;
 type=DATA;
@@ -2724,7 +2831,7 @@ RANGE_DISP_EN=0:disable,1:enable;
 RANGE_DISP_CH=0:关闭,1:开启;
 DISP_EN=dae enhancement option:0-disable,1-enable;
 DISP_CH=小音量增强开关:0-关闭,1-开启;
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_ENHANCED_BAND0_SETTING;
 type=ARRAY;
@@ -2736,7 +2843,7 @@ tab_layer1_name=dae_config;
 tabname =setting;
 DISP_EN=highpass weaken setting:[cutoff frequency, reserve, start volume, keep volume, gain]
 DISP_CH=高通减弱配置:[截至频率, reserve, 小音量开始音量 -600 ~ -10, 小音量保持音量 -590 ~ 0, 增益 -120 ~ 0] 单位均为 0.1db
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_ENHANCED_BAND1_SETTING;
 type=ARRAY;
@@ -2748,7 +2855,7 @@ tab_layer1_name=dae_config;
 tabname =setting;
 DISP_EN=bass enhancement setting:[cutoff frequency, bass enhancement option, start volume, keep volume, gain]
 DISP_CH=低频增强配置:[低频频率, 低音增强选项, 小音量开始音量 -590 ~ 0, 小音量保持音量 -600 ~ -10, 增益 -120 ~ 0] 单位均为 0.1db
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_ENHANCED_BAND2_SETTING;
 type=ARRAY;
@@ -2760,7 +2867,7 @@ tab_layer1_name=dae_config;
 tabname =setting;
 DISP_EN=treble enhancement setting:[cutoff frequency, treble enhancement option, start volume, keep volume, gain]
 DISP_CH=高频增强配置:[高频频率, 高音增强选项, 小音量开始音量 -590 ~ 0, 小音量保持音量 -600 ~ -10, 增益 -120 ~ 0] 单位均为 0.1db
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_ENHANCED_BAND3_SETTING;
 type=ARRAY;
@@ -2772,7 +2879,7 @@ tab_layer1_name=dae_config;
 tabname =setting;
 DISP_EN=peq point 1 enhancement setting:[cutoff frequency, reserve, start volume, keep volume, gain]
 DISP_CH=PEQ1增强配置:[PEQ频点, 保留, 小音量开始音量 -590 ~ 0, 小音量保持音量 -600 ~ -10, 增益 -120 ~ 0] 单位均为 0.1db
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_ENHANCED_BAND4_SETTING;
 type=ARRAY;
@@ -2784,7 +2891,7 @@ tab_layer1_name=dae_config;
 tabname =setting;
 DISP_EN=peq point 2 enhancement setting:[cutoff frequency, reserve, start volume, keep volume, gain]
 DISP_CH=PEQ2增强配置:[PEQ频点, 保留, 小音量开始音量 -590 ~ 0, 小音量保持音量 -600 ~ -10, 增益 -120 ~ 0] 单位均为 0.1db
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_ENHANCED_BAND5_SETTING;
 type=ARRAY;
@@ -2796,7 +2903,7 @@ tab_layer1_name=dae_config;
 tabname =setting;
 DISP_EN=peq point 3 enhancement setting:[cutoff frequency, reserve, start volume, keep volume, gain]
 DISP_CH=PEQ3增强配置:[PEQ频点, 保留, 小音量开始音量 -590 ~ 0, 小音量保持音量 -600 ~ -10, 增益 -120 ~ 0] 单位均为 0.1db
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_ENHANCED_PEAK_RATIO;
 type=DATA;
@@ -2808,7 +2915,7 @@ tab_layer1_name=dae_config;
 tabname =setting;
 DISP_EN=dae enhancement peak ratio:unit is 0.1
 DISP_CH=音效增强尖峰比率:需要综合考虑增强PEQ点相互影响程度，以及低音增强和高音增强，单位为0.1
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_WEAKEN_ENABLE;
 type=DATA;
@@ -2822,7 +2929,7 @@ RANGE_DISP_EN=0:disable,1:enable;
 RANGE_DISP_CH=0:关闭,1:开启;
 DISP_EN=dae weaken option:0-disable,1-enable;
 DISP_CH=大音量减弱开关:0-关闭,1-开启;
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_WEAKEN_BAND0_SETTING;
 type=ARRAY;
@@ -2834,7 +2941,7 @@ tab_layer1_name=dae_config;
 tabname =setting;
 DISP_EN=highpass enhancement setting:[cutoff frequency, reserve, start volume, keep volume, gain]
 DISP_CH=高通增强配置:[截至频率, reserve, 大音量开始音量 -600 ~ -10, 大音量保持音量 -590 ~ 0, 增益 -120 ~ 0] 单位均为 0.1db
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_WEAKEN_BAND1_SETTING;
 type=ARRAY;
@@ -2846,7 +2953,7 @@ tab_layer1_name=dae_config;
 tabname =setting;
 DISP_EN=bass weaken setting:[cutoff frequency, bass enhancement option, start volume, keep volume, gain]
 DISP_CH=低频减弱配置:[低频频率, 低音增强选项, 大音量开始音量 -600 ~ -10, 大音量保持音量 -590 ~ 0, 增益 -120 ~ 0] 单位均为 0.1db
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_WEAKEN_BAND2_SETTING;
 type=ARRAY;
@@ -2858,7 +2965,7 @@ tab_layer1_name=dae_config;
 tabname =setting;
 DISP_EN=treble weaken setting:[cutoff frequency, treble enhancement option, start volume, keep volume, gain]
 DISP_CH=高频减弱配置:[高频频率, 高音增强选项, 大音量开始音量 -600 ~ -10, 大音量保持音量 -590 ~ 0, 增益 -120 ~ 0] 单位均为 0.1db
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_WEAKEN_BAND3_SETTING;
 type=ARRAY;
@@ -2870,7 +2977,7 @@ tab_layer1_name=dae_config;
 tabname =setting;
 DISP_EN=peq point 1 weaken setting:[cutoff frequency, reserve, start volume, keep volume, gain]
 DISP_CH=PEQ1减弱配置:[PEQ频点, 保留, 大音量开始音量 -600 ~ -10, 大音量保持音量 -590 ~ 0, 增益 -120 ~ 0] 单位均为 0.1db
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_WEAKEN_BAND4_SETTING;
 type=ARRAY;
@@ -2882,7 +2989,7 @@ tab_layer1_name=dae_config;
 tabname =setting;
 DISP_EN=peq point 2 weaken setting:[cutoff frequency, reserve, start volume, keep volume, gain]
 DISP_CH=PEQ2减弱配置:[PEQ频点, 保留, 大音量开始音量 -600 ~ -10, 大音量保持音量 -590 ~ 0, 增益 -120 ~ 0] 单位均为 0.1db
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_WEAKEN_BAND5_SETTING;
 type=ARRAY;
@@ -2894,7 +3001,7 @@ tab_layer1_name=dae_config;
 tabname =setting;
 DISP_EN=peq point 3 weaken setting:[cutoff frequency, reserve, start volume, keep volume, gain]
 DISP_CH=PEQ3减弱配置:[PEQ频点, 保留, 大音量开始音量 -600 ~ -10, 大音量保持音量 -590 ~ 0, 增益 -120 ~ 0] 单位均为 0.1db
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_SIGNAL_ENERGY_ENABLE;
 type=DATA;
@@ -2908,7 +3015,7 @@ RANGE_DISP_EN=0:disable,1:enable;
 RANGE_DISP_CH=0:关闭,1:开启;
 DISP_EN=signal detect option:0-disable,1-enable;
 DISP_CH=信号检测开关:0-关闭,1-开启;
-DISPLAY=1;
+DISPLAY=0;
 
 key=DAE_SIGNAL_ENERGY_SETTING;
 type=ARRAY;
@@ -2920,5 +3027,5 @@ tab_layer1_name=dae_config;
 tabname =setting;
 DISP_EN=signal detect setting:[Detect Period, Detect Period Count, Reduce threshold, Reduce Period Count, min signal energy]
 DISP_CH=信号检测开关:[信号检测参数：检测周期ms 范围 1000 ~ 2000，有效周期数max=30，预降0.1DB条件 范围-60 ~ -10，预降周期数条件<=max，信号大小有效最小值0.1db 音量范围 -600 ~ 0]
-DISPLAY=1;
+DISPLAY=0;
 

@@ -156,15 +156,31 @@ typedef struct
     uint32 file_type_bit;       //文件后缀名bitmap
 } fsel_param_t;
 
+typedef struct
+{
+    uint8  file_ext[4];         //文件的后缀名，全填0代表文件信息为空
+    uint32 cluster_no;          //文件的目录项所在的簇号
+    uint32 dir_entry;           //文件的目录项在所在簇号内的偏移
+} file_extend_info_t;
+
+typedef struct
+{
+    uint8  file_name[12];       //文件名
+} file_name_info_t;
+
+typedef union
+{
+  file_extend_info_t  file_extend_info;  
+  file_name_info_t    file_name_info; 
+} file_info_u;
+
 //目录下的文件信息
 typedef struct
 {
     uint8 disk;                 //DISK_C;DISK_H;DISK_U
     uint8 dir_layer;            //当前目录层次，从0开始，0表示根目录
     uint16 resever;             //保留对齐
-    uint8 filename[4];          //文件的后缀名，全填0代表文件信息为空
-    uint32 cluster_no;          //文件的目录项所在的簇号
-    uint32 dir_entry;           //文件的目录项在所在簇号内的偏移
+    file_info_u file_info;      //文件信息
     pdir_layer_t dir_layer_info;//目录层次信息
     uint8 res_3byte[3];         //保留对齐
     uint16 file_total;          //当前目录文件总数
@@ -177,9 +193,7 @@ typedef struct
     uint8 disk;                 //DISK_C;DISK_H;DISK_U
     uint8 list_layer;           //列表层数
     uint16 list_type;           //子表类型 plist_type_e
-    uint8 filename[4];          //文件的后缀名，全填0代表文件信息为空
-    uint32 cluster_no;          //文件的目录项所在的簇号
-    uint32 dir_entry;           //文件的目录项在所在簇号内的偏移
+    file_info_u file_info;      //文件信息
     pdir_layer_t dir_layer_info;//目录层次信息
     uint8 res_3byte[3];         //保留对齐
     uint16 file_total;          //当前文件总数 (在当前列表下文件层的总数)
@@ -195,17 +209,15 @@ typedef struct
 //收藏夹下的文件信息
 typedef struct
 {
-    uint8 disk;         //'DISK_C;DISK_H;DISK_U
-    uint8 reserved;     //保留对齐
-    uint16 file_index;  //no used
-    uint8 filename[4];  //文件的后缀名，全填0代表文件信息为空
-    uint32 cluster_no;  //文件的目录项所在的簇号
-    uint32 dir_entry;   //文件的目录项在所在簇号内的偏移
-    pdir_layer_t dir_layer_info;//目录层次信息
-    uint8 res_3byte[3]; //保留对齐
-    uint16 file_total;  //当前收藏夹文件总数
-    uint16 file_num;    //当前文件在收藏夹中的序号
-    uint8 title[USERPL_TITLE_MAX]; // 收藏夹显示的文件标题
+    uint8 disk;                     //'DISK_C;DISK_H;DISK_U
+    uint8 reserved;                 //保留对齐
+    uint16 file_index;              //no used
+    file_info_u file_info;          //文件信息
+    pdir_layer_t dir_layer_info;    //目录层次信息
+    uint8 res_3byte[3];             //保留对齐
+    uint16 file_total;              //当前收藏夹文件总数
+    uint16 file_num;                //当前文件在收藏夹中的序号
+    uint8 title[USERPL_TITLE_MAX];  // 收藏夹显示的文件标题
 } flist_location_t;
 
 //文件信息联合体

@@ -35,10 +35,10 @@ uint8 pc_connect_probe(void)
 
         if (ret == 0)
         {
-    		if(pc_type != 0)
-    		{
-        	    break;
-    		}
+            if(pc_type != 0)
+            {
+                break;
+            }
         }
 
         sys_os_time_dly(5);
@@ -83,7 +83,7 @@ uint8 manager_open_stub(uint8 need_uninstall_led)
     
     //测试开始之前关看门狗，防止测试重启
     DISABLE_WATCH_DOG;  
-
+#if 0
     //进入调试模式不开启ESD功能，清除之前记忆的AP类型
     act_writel(act_readl(RTC_BAK0) & (~(0xff << MY_RTC_FUNC_INDEX)), RTC_BAK0);
 
@@ -104,7 +104,7 @@ uint8 manager_open_stub(uint8 need_uninstall_led)
     }     
 
     clear_esd_flag();
-
+#endif
     stub_open(need_uninstall_led);
 
     PRINT_INFO("stub init");
@@ -115,6 +115,8 @@ uint8 manager_open_stub(uint8 need_uninstall_led)
     stub_type = pc_connect_probe();
 
     g_app_info_state.stub_tools_type = stub_type;
+    g_app_info_state_all.stub_pc_tools_type = stub_type;
+    g_app_info_state_all.stub_phy_type = g_app_info_state.stub_phy_type;
 
     return stub_type;
 }

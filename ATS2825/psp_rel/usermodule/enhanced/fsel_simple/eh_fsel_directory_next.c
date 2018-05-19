@@ -353,7 +353,7 @@ bool fsel_dir_next_dir(uint8 *strdir)
 //location: µ±Ç°Â·¾¶
 bool fsel_get_dir_name(uint8 *strdir, uint8 name_len, file_location_t *location)
 {
-    bool ret_len;
+    bool ret_len = 0;
 
     if (strdir == NULL)
     {

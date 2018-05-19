@@ -7,7 +7,7 @@
  ********************************************************************************/
 
 #include "common_func.h"
-
+#include "common_waves_dae.h"
 /*! \cond COMMON_API */
 
 app_result_e com_key_deal_switch_app(void);
@@ -33,7 +33,11 @@ app_result_e com_key_deal_siri(void);
 app_result_e com_hid_send_key(void);
 app_result_e com_hid_disconnect(void);
 app_result_e com_key_deal_enter_ota(void);
-
+app_result_e com_key_deal_force_ble_unlink(void);
+app_result_e com_key_deal_force_unlink_10s(void);
+#ifdef WAVES_DYNAMIC_SWITCH_DAE_DEMO
+app_result_e waves_dynamic_switch_dae_demo(void);
+#endif
 const key_event_map_t __section__(".rodata.ke_maplist") com_ke_maplist[] =
 {
     /*! 切换应用模式 */
@@ -46,9 +50,9 @@ const key_event_map_t __section__(".rodata.ke_maplist") com_ke_maplist[] =
     { { KEY_VADD, 0, KEY_TYPE_DOWN | KEY_TYPE_LONG | KEY_TYPE_HOLD, KEY_DEAL_FILTER_UP }, com_key_deal_volume_add },
     { { KEY_NEXT_VOLADD, 0, KEY_TYPE_LONG | KEY_TYPE_HOLD, KEY_DEAL_FILTER_UP }, com_key_deal_volume_add },
 //#ifdef OTA_VERSION
-#if 0
-      { { KEY_VADD, 0, KEY_TYPE_DBL_CLICK, 0 }, com_key_deal_enter_ota },
-#endif //shade ota ap hot key deal
+//#if 0
+      //{ { KEY_VADD, 0, KEY_TYPE_DBL_CLICK, 0 }, com_key_deal_force_ble_unlink },
+//#endif //shade ota ap hot key deal
 //#endif //OTA_VERSION
     /*! 音量减 */
     { { KEY_VSUB, 0, KEY_TYPE_DOWN | KEY_TYPE_LONG | KEY_TYPE_HOLD, KEY_DEAL_FILTER_UP }, com_key_deal_volume_sub },
@@ -67,11 +71,12 @@ const key_event_map_t __section__(".rodata.ke_maplist") com_ke_maplist[] =
 #if (__SUPPORT_SIRI_ == 1)
        // SIRI
     { { KEY_EQ, 0, KEY_TYPE_LONG, KEY_DEAL_FILTER }, com_key_deal_siri },
-#else  //test mode按键与SIRI按键复用，需要做互斥处理
+#endif
     /*! 进入test mode */
-    { { KEY_EQ, 0, KEY_TYPE_LONG, KEY_DEAL_FILTER }, com_key_deal_FT_test },
-    { { KEY_EQ, 0, KEY_TYPE_DBL_CLICK, KEY_DEAL_FILTER }, com_key_deal_BQB_test },
-#endif //__SUPPORT_SIRI_ 
+    //{ { KEY_EQ, 0, KEY_TYPE_LONG_10S, KEY_DEAL_FILTER }, com_key_deal_FT_test },
+    { { KEY_EQ, 0, KEY_TYPE_LONG_10S, KEY_DEAL_FILTER }, com_key_deal_force_unlink_10s },
+    //{ { KEY_EQ, 0, KEY_TYPE_DBL_CLICK, KEY_DEAL_FILTER }, com_key_deal_BQB_test },
+    { { KEY_EQ, 0, KEY_TYPE_DBL_CLICK, KEY_DEAL_FILTER }, com_key_deal_force_ble_unlink },
 
     /*! 进入录音 */
 #if (SUPPORT_RECORD == 1)
@@ -91,8 +96,13 @@ const key_event_map_t __section__(".rodata.ke_maplist") com_ke_maplist[] =
 #if (CASE_BOARD_TYPE != CASE_BOARD_DEMO)
     { { KEY_PLAY, 0, KEY_TYPE_LONG, KEY_DEAL_FILTER }, com_key_deal_shutoff },
 #endif
+#ifndef WAVES_DYNAMIC_SWITCH_DAE_DEMO
     /*! 断开蓝牙 */
     { { KEY_MODE, 0, KEY_TYPE_LONG, KEY_DEAL_FILTER }, com_key_deal_force_unlink },
+#else
+    { { KEY_MODE, 0, KEY_TYPE_LONG, KEY_DEAL_FILTER }, waves_dynamic_switch_dae_demo},
+#endif
+// { { KEY_MODE, 0, KEY_TYPE_LONG_10S, KEY_DEAL_ITSELF }, com_key_deal_force_unlink_10s },
 
     /*! 回拨最后一个电话（只拨打出？） */
 #if (SUPPORT_PHONE_KEY == 1)
@@ -121,7 +131,7 @@ void __section__(".text.BANK_UI") com_app_deal_play_prev_next(void)
     g_prev_next_ch_start = 0;
     if(prev_next_ch_timer_id != -1)
     {
-         kill_app_timer(prev_next_ch_timer_id);
+        kill_app_timer(prev_next_ch_timer_id);
         prev_next_ch_timer_id = -1;
     }
     // libc_print("start 0",0,0);
@@ -158,7 +168,11 @@ app_result_e com_key_deal_switch_mute(void)
 {
     if (g_ignore_switch_mute == FALSE)
     {
-        com_switch_mute();
+#ifdef ENABLE_TRUE_WIRELESS_STEREO
+        com_switch_mute(1,0,NULL);
+#else
+         com_switch_mute();
+#endif
     }
 
     return RESULT_NULL;
@@ -232,20 +246,20 @@ app_result_e com_key_deal_shutoff(void)
     app_result_e result = RESULT_NULL;
 
 #ifdef ENABLE_TRUE_WIRELESS_STEREO
-   if (g_bt_stack_cur_info.sim_a_en == 1)
-   {
-        libc_print("sim_a_en",0,0);
-   }
-   else
+    if (g_bt_stack_cur_info.sim_a_en == 1)
+    {
+        libc_print("sim",0,0);
+    }
+    else
 #endif           
     {    
         com_filter_key_hold();
 #ifdef ENABLE_TRUE_WIRELESS_STEREO
-       //if (g_app_info_vector[APP_TYPE_BTSTACK].used != 0)
-       if((g_bt_stack_cur_info.dev_role!=NORMAL_DEV)&&(g_app_info_vector[APP_TYPE_BTSTACK].used != 0))
+        //if (g_app_info_vector[APP_TYPE_BTSTACK].used != 0)
+        if((g_bt_stack_cur_info.dev_role!=NORMAL_DEV)&&(g_app_info_vector[APP_TYPE_BTSTACK].used != 0))
         {   
-             //libc_print("_POWER_",0,0);
-             com_btmanager_power_off();        
+            //libc_print("_POWER_",0,0);
+            com_btmanager_power_off();        
         }  
 #endif
     
@@ -330,14 +344,14 @@ app_result_e com_key_deal_enter_record_uplay(void)
 
 app_result_e com_key_deal_force_unlink(void)
 {
-
     if (g_app_info_vector[APP_TYPE_BTSTACK].used != 0)
     {
         com_btmanager_force_unlink();
         
 #ifdef ENABLE_TRUE_WIRELESS_STEREO
         //当用mode键同时做组对和解组对按键时候的播报处理
-        if((g_bt_stack_cur_info.dev_role==0)&&(g_bt_stack_cur_info.conn_status==CONN_STATUS_WAIT_PAIR))
+        if((g_bt_stack_cur_info.dev_role==0)&&(g_bt_stack_cur_info.conn_status==CONN_STATUS_WAIT_PAIR)
+             &&(g_btmanager_gl_var.support_dev_num>1))
         {
             com_tts_state_play(TTS_MODE_ONLYONE,(void *) TTS_WAIT_BT_PAIR);
         }
@@ -348,6 +362,35 @@ app_result_e com_key_deal_force_unlink(void)
         //com_tts_state_play(TTS_MODE_ONLYONE,(void *) TTS_WAIT_BT_PAIR);
 #endif
     }
+    return RESULT_NULL;
+}
+
+#ifdef WAVES_DYNAMIC_SWITCH_DAE_DEMO
+app_result_e waves_dynamic_switch_dae_demo(void)
+{
+    static uint8 waves_bin_number = 0;
+    waves_bin_number++;
+    if (waves_bin_number >= WAVES_DAE_PARA_BIN_MAX_NUM)
+    {
+        waves_bin_number = 0;
+    }
+    dynamic_switch_waves_bin_para(waves_bin_number);
+    
+    return RESULT_NULL;
+}
+#endif
+
+
+app_result_e com_key_deal_force_unlink_10s(void)
+{
+
+    //libc_print("ll m up",0,0);
+#ifdef ENABLE_TRUE_WIRELESS_STEREO    
+    if (g_app_info_vector[APP_TYPE_BTSTACK].used != 0)
+    {
+        com_btmanager_clearpairlist();
+    }    
+#endif        
     return RESULT_NULL;
 }
 
@@ -363,11 +406,16 @@ app_result_e com_key_deal_call_last(void)
 
 app_result_e com_key_deal_BQB_test(void)
 {
+    uint32 temp_flag;
+    temp_flag = sys_local_irq_save();	
     if (g_app_info_vector[APP_TYPE_BTSTACK].used != 0)
     {
+        led_display(NUMBER1, NUM_B, 1);
+        led_display(NUMBER2, NUM_Q, 1);
+        led_display(NUMBER3, NUM_B, 1);    	
         com_btmanager_BQB_test();
     }
-
+    sys_local_irq_restore(temp_flag);
     return RESULT_NULL;
 }
 
@@ -388,9 +436,9 @@ app_result_e com_key_deal_FT_test(void)
 app_result_e com_key_deal_siri(void)
 {
 #if (__SUPPORT_SIRI_ == 1)    
-    if (g_btmanager_gl_var.enable_siri)
+    if (g_btmanager_gl_var.enable_siri != 0)
     {
-        PRINT_INFO("com_key_deal_siri ");
+        //PRINT_INFO("com_key_deal_siri ");
         if (g_app_info_vector[APP_TYPE_BTSTACK].used != 0)
         {
             com_btmanager_hfp_siri_handle();
@@ -449,7 +497,7 @@ app_result_e com_hid_disconnect(void)
     return RESULT_NULL;
 }
 
-app_result_e com_key_deal_enter_ota(void)
+/*app_result_e com_key_deal_enter_ota(void)
 {
     otaval_t g_otaval;
     uint8 ota_mode;
@@ -472,6 +520,17 @@ app_result_e com_key_deal_enter_ota(void)
         }
     }
     return RESULT_NULL;
+}*/
+
+app_result_e com_key_deal_force_ble_unlink(void)
+{
+      
+    if(g_bt_stack_cur_info.ble_con_flag !=0)
+    {
+        com_btmanager_unlink_spp_ble_profile(1);
+    }      
+    return RESULT_NULL;
 }
+
 
 /*! \endcond */

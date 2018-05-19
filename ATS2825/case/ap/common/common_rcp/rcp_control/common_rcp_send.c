@@ -77,7 +77,7 @@ void com_rcp_send_cmd_pkg(uint8 cmd_id, uint8 cmd_type,uint8 dev_id)
     //发送给哪个设备
     g_rcp_remote_number = dev_id;
     //当前是client
-    g_rcp_remote_number |= RCP_ROLE_CLIENT;
+    g_rcp_remote_number |= (uint8)RCP_ROLE_CLIENT;
 
     //发送同步消息给蓝牙后台
     tmp_cmd_pkg.magic[0] = RCP_MAGIC_SOH;

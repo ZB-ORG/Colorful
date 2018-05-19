@@ -99,17 +99,24 @@ typedef struct
     uint8 enable_ble : 1; //是否支持BLE数据链路
     uint8 enable_avrcp_volume_sync : 1; //是否支持AVRCP音量同步
 	uint8 enable_siri : 1;		// 是否支持SIRI
+#ifdef ENABLE_TRUE_WIRELESS_STEREO		
+		uint8 last_role;//for tws use 
+#endif //#ifdef ENABLE_TRUE_WIRELESS_STEREO		
     uint32 last_call_last_timestamp; //最近一次回拨时间，用于避免频繁发送回拨命令，导致响应不及时而堆积在BT STACK
 } btmanager_global_variable_struct;
 
 extern uint8 g_bt_auto_connect_addr[BD_ADDR_LEN];
 extern bt_auto_connect_ctrl_t g_bt_auto_connect_ctrl;
 extern btmanager_global_variable_struct g_btmanager_gl_var;
+extern int8 g_fast_discoverable_timer;
+extern uint16 g_fast_discoverable_cnt;
 
 extern uint32 com_btmanager_gen_random_lap(void) __FAR__;
-extern void com_btmanager_init(bool standby_exit) __FAR__;
+extern void __section__(".bank_4")com_btmanager_init(bool standby_exit) __FAR__;
 
 #ifdef ENABLE_TRUE_WIRELESS_STEREO
+extern uint8 g_tws_m_linein_flag;
+extern uint8 g_tws_m_switchap_flag;
 extern uint8 send_once_flag;
 extern void com_btmanager_call_back_auto_connect(void)__FAR__;
 extern void send_cmd_to_other(uint8 op)__FAR__;
@@ -152,6 +159,11 @@ extern app_result_e com_btmanager_avrcp_set_volume_to_soundbox(uint8 vol, bool t
 extern uint8 com_btmanager_avrcp_volume2avrcp_volume(uint8 vol) __FAR__;
 extern int   com_btmanager_avrcp_update_volume_to_phone(uint8 vol) __FAR__;
 
+extern int com_btmanager_tws_send(uint8 data,uint8 data1, uint8 data2,uint8 data3,uint32 type)__FAR__;
+#ifdef __BQB_TEST_PROFILE_
+extern void  com_btmanager_delay_report(void) __FAR__;
+#endif
+
 typedef enum
 {
     BTCALL_HFP_ANSWER_CALL,   /* 0 */
@@ -168,7 +180,7 @@ extern void com_btmanager_hfp_battery_report_update_handle(void) __FAR__;
 extern int com_btmanager_hfp_battery_report_update(uint8 bat_value) __FAR__;
 
 extern int com_btmanager_force_unlink(void) __FAR__;
-
+extern int com_btmanager_clearpairlist(void) __FAR__;
 
 extern void com_btmanager_power_off(void)__FAR__;
 extern app_result_e com_key_deal_shutoff(void)__FAR__;

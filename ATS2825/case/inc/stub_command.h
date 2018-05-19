@@ -41,6 +41,9 @@
 
 #define STUB_CMD_ASET_WRITE_STATUS      (0x0380)
 
+#define STUB_CMD_ASET_WRITE_APPLICATION_PROPERTIES   (0x0390)//向工具端写应用的属性
+
+
 //Read Volume
 #define STUB_CMD_ASET_READ_VOLUME       (0x0301)
 
@@ -207,11 +210,11 @@
 #define STUB_CMD_ATT_RETRUN_CFO_VAL     0x0456
 
 //waves工具命令字
-
+//小机成功接收Maxx Audio Tuning工具发来的数据后，回复给PC的命令字
 #define STUB_CMD_WAVES_ASET_ACK                         (0x07fe)
 
 #define STUB_CMD_WAVES_ASET_READ_COEFF_PROPERTY         (0x0740)
 
-#define STUB_CMD_WAVES_ASET_WRITE_COEFF_CONTENT         (0x0741)
+#define STUB_CMD_WAVES_ASET_READ_COEFF_CONTENT         (0x0741)
 
 #endif

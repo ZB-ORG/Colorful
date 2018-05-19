@@ -244,6 +244,11 @@ typedef struct
 #define QUERY_ID_MUSIC_PLIST      0x12  //获取指定序号本地音乐的播放列表信息
 /* 命令参数为：file seq, file count, NULL */
 /* 应答参数为：file count, 0, music_rcp_plist_info_t */
+#define QUERY_ID_MUSIC_STATUS    0x13   //获取本地音乐当前目录的状态信息
+/* 应答参数为：dir_status, 0, random */
+#define QUERY_ID_MUSIC_DLIST       0x14  //获取指定序号本地目录的列表信息
+/* 命令参数为：dir seq, dir count, NULL */
+/* 应答参数为：dir seq, dir count, music_rcp_dlist_info_t */
 
 #define QUERY_ID_STATION_LIST     0x20  //获取收音机电台列表
 /* 应答参数为：freq count, 0, 频点uint32 * freq count*/
@@ -533,6 +538,6 @@ extern uint16 g_rcp_pkg_max_len; //RCP最大长度，受限于缓冲区大小
 
 #define RCP_PKG_MAX_PAYLOAD          (520) //RCP最大负载为520字节，允许在data区中存放512数据及8个字节的描述
 #define RCP_LONG_COMMAND_BUFFER_LEN  (RCP_PKG_MAX_PAYLOAD + RCP_COMMAND_HEAD_SIZE) //最多为 0x220 字节
-extern uint8 g_rcp_default_long_buffer[RCP_LONG_COMMAND_BUFFER_LEN];
+extern uint8 *g_rcp_default_long_buffer;
 
 #endif

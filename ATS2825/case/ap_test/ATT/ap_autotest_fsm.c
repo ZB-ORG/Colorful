@@ -29,8 +29,8 @@ test_result_e act_test_fmplay_test(void *arg_buffer)
 #endif
 
 
-void sys_reboot(void)
-{
+static void sys_reboot(void)
+{       
     DEBUG_ATT_PRINT("reboot...", 0, 0);
     
     sys_local_irq_save();
@@ -40,27 +40,7 @@ void sys_reboot(void)
     while(1);
 }
     
-int32 att_fw_swtch_deal(void)
-{
-    int32 ret_val;
-    att_swtich_fw_arg_t *att_switch_fw_arg;
 
-    libc_memset((uint8 *)STUB_ATT_RW_TEMP_BUFFER, 0, 40);
-
-    att_switch_fw_arg = (att_swtich_fw_arg_t *)STUB_ATT_RW_TEMP_BUFFER;
-    
-	//小机重启到ATT工具枚举的超时时间
-    att_switch_fw_arg->reboot_timeout = 30;
-
-    ret_val = att_write_data(STUB_CMD_ATT_REBOOT_TIMEOUT, 32, STUB_ATT_RW_TEMP_BUFFER);
-
-    if(ret_val == 0)
-    {
-        ret_val = att_read_data(STUB_CMD_ATT_ACK, 0, STUB_ATT_RW_TEMP_BUFFER);
-
-        return TRUE;
-    }    
-}
 
 void act_test_change_test_timeout(uint16 timeout)
 {
@@ -130,10 +110,17 @@ int32 act_test_read_testid(uint8 *arg_buffer, uint32 arg_len)
                     ret_val = att_write_data(STUB_CMD_ATT_ACK, 0, STUB_ATT_RW_TEMP_BUFFER);  
                 }
                 
-                if(g_test_info.test_id == TESTID_PRODUCT_TEST)
+                if((g_test_info.test_id == TESTID_PRODUCT_TEST)
+                    || (g_test_info.test_id == TESTID_FLASHTEST))
                 {
                     act_test_change_test_timeout(60);                    
                 }
+
+                if(g_test_info.test_id == TESTID_BER_TEST)
+                {
+                    act_test_change_test_timeout(600);                    
+                }                
+                
             }
         }
 
@@ -173,45 +160,53 @@ int32 act_test_read_testid(uint8 *arg_buffer, uint32 arg_len)
 
 const att_task_stru_t autotest_ops[] =
 {
-    {TESTID_MODIFY_BTNAME,              act_test_modify_bt_name},
+    {TESTID_MODIFY_BTNAME,              1, 1, 0, 0, act_test_modify_bt_name},
 
-    {TESTID_MODIFY_BLENAME,             act_test_modify_bt_ble_name},
+    {TESTID_MODIFY_BLENAME,             1, 1, 0, 0, act_test_modify_bt_ble_name},
 
-    {TESTID_MODIFY_BTADDR,              act_test_modify_bt_addr},
+    {TESTID_MODIFY_BTADDR,              1, 1, 0, 0, act_test_modify_bt_addr},
 
-    {TESTID_BT_TEST,                    act_test_bt_test},
+    {TESTID_BT_TEST,                    1, 1, 0, 0, act_test_bt_test},
 
-    {TESTID_GPIO_TEST,                  act_test_gpio_test},
+    {TESTID_GPIO_TEST,                  1, 1, 0, 0, act_test_gpio_test},
 
-    {TESTID_GPIO_TEST_ATS2823,          act_test_gpio_test},
+    {TESTID_GPIO_TEST_ATS2823,          1, 1, 0, 0, act_test_gpio_test_ATS2823},
 
-    {TESTID_LINEIN_CH_TEST,             act_test_linein_channel_test},
+    {TESTID_LINEIN_CH_TEST_ATS2825,     1, 1, 0, 0, act_test_linein_channel_test_ATS2825},
 
-    {TESTID_MIC_CH_TEST,                act_test_mic_channel_test}, 
+    {TESTID_LINEIN_CH_TEST_ATS2823,     1, 1, 0, 0, act_test_linein_channel_test_ATS2823},
 
-    {TESTID_FM_CH_TEST,                 act_test_fm_channel_test},
+    {TESTID_MIC_CH_TEST,                1, 1, 0, 0, act_test_mic_channel_test}, 
 
-    {TESTID_SDCARD_TEST,                act_test_sdcard_play_test},
+//    {TESTID_FM_CH_TEST,               1, 1, 0, 0, act_test_fm_channel_test},
 
-    {TESTID_PRODUCT_TEST,               act_test_product_test},
+    {TESTID_SDCARD_TEST,                1, 1, 0, 0, act_test_sdcard_play_test},
 
-    {TESTID_PREPARE_PRODUCT_TEST,       act_test_prepare_product},
+    {TESTID_PRODUCT_TEST,               0, 1, 1, 0, act_test_product_test},
+
+    {TESTID_PREPARE_PRODUCT_TEST,       0, 1, 1, 0, act_test_prepare_product},
 	
-    {TESTID_UHOST_TEST,                 act_test_uhost_play_test},
+    {TESTID_UHOST_TEST,                 1, 1, 0, 0, act_test_uhost_play_test},
 
-    {TESTID_LINEIN_TEST,                act_test_linein_play_test},
+//    {TESTID_LINEIN_TEST,                1, 1, 0, 0, act_test_linein_play_test},
 
-    {TESTID_MP_TEST,                    att_mp_test},
+    {TESTID_MP_TEST,                    0, 1, 0, 0, att_mp_test},
 
-    {TESTID_MP_READ_TEST,               att_mp_read_test},
+    {TESTID_MP_READ_TEST,               0, 1, 0, 0, att_mp_read_test},
 
-    {TESTID_READ_BTADDR,                act_test_read_bt_addr},
+    {TESTID_READ_BTADDR,                1, 1, 0, 0, act_test_read_bt_addr},
 
-    {TESTID_READ_BTNAME,                act_test_read_bt_name},
+    {TESTID_READ_BTNAME,                1, 1, 0, 0, act_test_read_bt_name},
 
-    {TESTID_FTMODE,                     act_test_enter_ft_mode},
+    {TESTID_FTMODE,                     1, 1, 0, 0, act_test_enter_ft_mode},
 
-    {TESTID_BQBMODE,                    act_test_enter_BQB_mode}
+    {TESTID_BQBMODE,                    1, 1, 0, 0, act_test_enter_BQB_mode},
+
+    {TESTID_FLASHTEST,                  1, 1, 1, 0, act_test_flashtest},
+
+    {TESTID_BER_TEST,                   0, 1, 0, 0, act_test_ber_test},
+    
+    {TESTID_LRADC_TEST,                 1, 1, 0, 0, act_test_lradc_test},
 
 //    {TESTID_MONITOR,                    act_test_monitor}
 };
@@ -311,6 +306,7 @@ void test_dispatch(void)
 {
     int ret_val;
     int i;
+    uint8 att_cmd_temp_buffer[80];
 
     act_test_start_deal();
     
@@ -340,6 +336,15 @@ void test_dispatch(void)
         {
             if(autotest_ops[i].test_id == g_test_info.test_id)    
             {
+                if(g_test_mode == TEST_MODE_CARD)
+                {
+                    if(autotest_ops[i].support_card_test == 0)
+                    {
+                        att_write_test_info("Unsupport card test: ", g_test_info.test_id, 1);
+                        act_test_report_test_log(FALSE, g_test_info.test_id);
+                        break;
+                    }
+                }
                 autotest_ops[i].test_func(att_cmd_temp_buffer); 
                 break;                  
             }
@@ -347,7 +352,7 @@ void test_dispatch(void)
 
         if(i == sizeof(autotest_ops)/sizeof(att_task_stru_t))
         {
-            DEBUG_ATT_PRINT("unknown id", 0, 0);
+            //DEBUG_ATT_PRINT("unknown id", 0, 0);
 
             break;
         }
@@ -355,8 +360,18 @@ void test_dispatch(void)
 
     if(g_test_mode != TEST_MODE_USB)
     {
-        write_log_file();
+        write_log_file(TRUE);
+        //sys_mdelay(5000);
+        //sys_reboot();         
+        led_flash_ok();         
     } 
+    else
+    {          
+        att_write_test_info("Test time: ", sys_get_ab_timer() - g_test_base_time, 1);
+        stub_close();
+        //sys_mdelay(5000);
+        //sys_reboot();
+    }
 }
 
 

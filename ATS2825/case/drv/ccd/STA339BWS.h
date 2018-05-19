@@ -1,5 +1,5 @@
 #ifndef	__PACFG339_H__
-//#define	__PACFG339_H__
+#define	__PACFG339_H__
 
 #define  DEVICE_ADDR1	 0x38
 #define  DEVICE_ADDR2	 0x3a

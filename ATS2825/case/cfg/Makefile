@@ -1,5 +1,22 @@
 #定义伪目标
- 
+.PHONY: test	    
+
+#判断是否支持linein TWS
+#grep -q "\/\/\#define __SUPPORT_LINEIN_TWS" ../inc/case_independent.h 搜索是否打开TWS的配置宏
+
+#注意c语言中的#字符在makefile中有特殊含义，需要加转义字符
+#设置linein ap及linein引擎的编译目录
+AP_LINEIN_DIR := $(shell grep -q "\/\/\#define __SUPPORT_LINEIN_TWS" ../inc/case_independent.h; \
+            if [ $$? == 0 ]; \
+            then echo "./../ap/ap_linein"; \
+            else echo "./../ap/ap_linein_tws"; \
+            fi)
+
+AP_LINEINEG_DIR := $(shell grep -q "\/\/\#define __SUPPORT_LINEIN_TWS" ../inc/case_independent.h; \
+            if [ $$? == 0 ]; \
+            then echo "./../ap/linein_engine"; \
+            else echo "./../ap/linein_tws_engine"; \
+            fi)
 all:
 
 	make -C ./../../psp_rel/usermodule/enhanced/make_build
@@ -13,11 +30,12 @@ all:
 	make -C ./../ap/ap_manager
 	make -C ./../ap/ap_music
 	make -C ./../ap/ap_alarm
+	make -C ./../ap/ap_OTA_test
 	make -C ./../ap/ap_config
 	make -C ./../ap/music_engine
 	make -C ./../ap/music_scan	
-	make -C ./../ap/ap_linein
-	make -C ./../ap/linein_engine
+	make -C ./../ap/$(AP_LINEIN_DIR)
+	make -C ./../ap/$(AP_LINEINEG_DIR)
 	make -C ./../ap/ap_usound	
 	make -C ./../ap/ap_cardreader	
 	make -C ./../ap/fm_engine
@@ -39,11 +57,12 @@ clean:
 	make -C ./../ap/ap_manager clean
 	make -C ./../ap/ap_music clean
 	make -C ./../ap/ap_alarm clean
-	make -C ./../ap/music_scan clean	
+	make -C ./../ap/ap_OTA_test clean
+	make -C ./../ap/music_scan clean
 	make -C ./../ap/ap_config clean
 	make -C ./../ap/music_engine clean
-	make -C ./../ap/ap_linein clean
-	make -C ./../ap/linein_engine clean
+	make -C ./../ap/$(AP_LINEIN_DIR) clean
+	make -C ./../ap/$(AP_LINEINEG_DIR) clean
 	make -C ./../ap/ap_usound clean
 	make -C ./../ap/ap_cardreader clean		
 	make -C ./../ap/fm_engine clean
@@ -59,6 +78,7 @@ clean_target:
 	make -C ./../ap/ap_manager clean_target
 	make -C ./../ap/ap_music clean_target
 	make -C ./../ap/ap_alarm clean_target
+	make -C ./../ap/ap_OTA_test clean_target
 	make -C ./../ap/ap_config clean_target
 	make -C ./../ap/btplay_engine clean_target
 	make -C ./../ap/btcall_engine clean_target
@@ -66,8 +86,8 @@ clean_target:
 	make -C ./../ap/ap_btcall clean_target
 	make -C ./../ap/music_engine clean_target
 	make -C ./../ap/music_scan clean_target	
-	make -C ./../ap/ap_linein clean_target
-	make -C ./../ap/linein_engine clean_target
+	make -C ./../ap/$(AP_LINEIN_DIR) clean_target
+	make -C ./../ap/$(AP_LINEINEG_DIR) clean_target
 	make -C ./../ap/ap_cardreader clean_target		
 	make -C ./../ap/fm_engine clean_target
 	make -C ./../ap/ap_radio clean_target

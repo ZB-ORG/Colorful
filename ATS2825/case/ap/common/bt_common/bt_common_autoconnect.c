@@ -18,13 +18,17 @@
 //启动连接调频后，30秒钟后就会将频率强制调到WORKING
 #define LINKING_TO_WORKING_TIMER      (60)
 
+
+void check_auto_con_flag()__FAR__;
 //交替回连代码
 #ifdef ENABLE_TRUE_WIRELESS_STEREO
+void com_exchange_vale(auto_conn_dev_info_t *p_dev_info,uint8 i,uint8 j)__FAR__;
+
 extern uint8 check_id1;
 extern uint8 check_id2;
 extern uint8 once_auto_flag;
 
-uint8 com_get_dev_conn_init(void)
+uint8 __section__(".text.auto_connect_bank") com_get_dev_conn_init(void)
 {
     msg_apps_t msg;
     msg_reply_t temp_reply;
@@ -156,7 +160,7 @@ uint8 __section__(".text.auto_connect_bank") auto_connect_deal(void)
     for (i = 0; i < g_btmanager_gl_var.support_dev_num; i++)
     {
 
-        if(check_id1 >= RMT_DEV_NUM)
+        if(check_id1 >= g_btmanager_gl_var.support_dev_num)
         {
             check_id1 = 0;
         }
@@ -334,15 +338,101 @@ uint8 __section__(".text.auto_connect_bank") connect_remain_profile_bank(auto_co
     return 0;
 }
 
+
+
+void __section__(".auto_connect_bank1") check_auto_con_flag()
+{
+    uint8 i,j=0;
+    for (i = 0; i < g_btmanager_gl_var.support_dev_num; i++)
+    {
+        if (libc_memcmp(g_bt_auto_connect_ctrl.dev_info[i].remote_addr.bytes,
+                g_bt_stack_cur_info.rmt_dev[i].addr.bytes, 6) == 0)
+        {
+            if (((g_bt_stack_cur_info.rmt_dev[i].serv_conn & HFP_CONNECTED) != 0)
+                    || ((g_bt_stack_cur_info.rmt_dev[i].serv_conn & A2DP_CONNECTED) != 0))
+            {
+                //如果已经连上，标记一下，这样就不需要再回连了
+                g_bt_auto_connect_ctrl.dev_info[i].connect_cnt = 0;
+                g_bt_auto_connect_ctrl.dev_info[i].conn_flag = 0;
 #ifdef ENABLE_TRUE_WIRELESS_STEREO
+                if ((g_bt_auto_connect_ctrl.dev_info[1-i].conn_flag == 1)
+                      && (g_bt_auto_connect_ctrl.need_auto_connect == 1)
+                      && (once_auto_flag == 0))
+                {
+                    g_bt_auto_connect_ctrl.connect_tick_cnt = g_bt_auto_connect_ctrl.auto_connect_interval * 2;
+                    once_auto_flag = 1;
+                   // PRINT_INFO("hgg");
+                }    
+#endif    
+            }
+        }
+    }  
+}
+
+
+bool __section__(".text.auto_connect_profile_bank") stop_auto_con(uint8 i)
+{
+    uint8 h;
+    bool ret=TRUE;
+    if(g_btmanager_gl_var.support_dev_num==1)
+    {
+         //找到和和远端设备相同地址的回连设备id
+        for(h=0;h<2;h++)
+        {
+            g_bt_auto_connect_ctrl.dev_info[h].connect_cnt = 0;
+            g_bt_auto_connect_ctrl.dev_info[h].conn_flag = 0;
+        }  
+    }
+    else
+    {
+        //找到和和远端设备相同地址的回连设备id
+        for(h=0;h<2;h++)
+        {
+              if (libc_memcmp(g_bt_auto_connect_ctrl.dev_info[h].remote_addr.bytes,
+                g_bt_stack_cur_info.rmt_dev[i].addr.bytes, 6) == 0)
+              {
+                 break;
+              } 
+        }
+        if(h>=2)
+        {
+            ret=FALSE;
+            return ret;
+        }
+        g_bt_auto_connect_ctrl.dev_info[h].connect_cnt = 0;
+        g_bt_auto_connect_ctrl.dev_info[h].conn_flag = 0;
+    }
+    return ret;
+}
+
+
+#ifdef ENABLE_TRUE_WIRELESS_STEREO
+
+//检测是否还有服务没有连上
+void __section__(".auto_connect_bank1") com_exchange_vale(auto_conn_dev_info_t *p_dev_info,uint8 i,uint8 j)
+{
+    #if 1
+     libc_print("\nexchange i=:",i,2);
+    libc_memcpy(p_dev_info, &g_bt_auto_connect_ctrl.dev_info[i], sizeof(auto_conn_dev_info_t));
+    libc_memcpy(p_dev_info->remote_addr.bytes,g_bt_auto_connect_ctrl.dev_info[i].remote_addr.bytes, 6);
+
+    libc_memcpy(&g_bt_auto_connect_ctrl.dev_info[i], &g_bt_auto_connect_ctrl.dev_info[j], sizeof(auto_conn_dev_info_t));
+    libc_memcpy(g_bt_auto_connect_ctrl.dev_info[i].remote_addr.bytes, g_bt_auto_connect_ctrl.dev_info[j].remote_addr.bytes, 6);
+
+    libc_memcpy(&g_bt_auto_connect_ctrl.dev_info[j], p_dev_info, sizeof(auto_conn_dev_info_t));
+    libc_memcpy(g_bt_auto_connect_ctrl.dev_info[j].remote_addr.bytes,  p_dev_info->remote_addr.bytes, 6);
+    #endif
+}
+
 //检测是否还有服务没有连上
 uint8 connect_remain_profile(void)
 {
+    
     uint8 i;
     uint8 need_connect = 0;
     uint8 tmp_already_conn_init = 0;
 
-    if(check_id2 >= RMT_DEV_NUM)
+    if(check_id2 >= g_btmanager_gl_var.support_dev_num)
     {
         check_id2 = 0;
     }
@@ -442,14 +532,14 @@ uint8 connect_remain_profile(void)
         {
              g_bt_auto_connect_ctrl.dev_info[check_id2].avrcp_disconnect_cnt = 0;
         }    
-    if(++check_id2 >= g_btmanager_gl_var.support_dev_num)
-    {
-        check_id2 = 0;
-    }
+        if(++check_id2 >= g_btmanager_gl_var.support_dev_num)
+        {
+            check_id2 = 0;
+        }
 
     }
-
     return need_connect;
+    
 }
 #else
 //检测是否还有服务没有连上
@@ -547,7 +637,9 @@ uint8 connect_remain_profile(void)
 void check_connect_status(void)
 {
     uint8 i, j = 0;
-
+    auto_conn_dev_info_t tmp_dev;
+    //PRINT_DATA(g_bt_auto_connect_ctrl.dev_info[0].remote_addr.bytes,6);
+    //PRINT_DATA(g_bt_auto_connect_ctrl.dev_info[1].remote_addr.bytes,6);
     if (g_bt_stack_cur_info.num_connected == g_btmanager_gl_var.support_dev_num)
     {
         for (i = 0; i < g_btmanager_gl_var.support_dev_num; i++)
@@ -555,9 +647,17 @@ void check_connect_status(void)
             if (((g_bt_stack_cur_info.rmt_dev[i].serv_conn & HFP_CONNECTED) != 0)
                     || ((g_bt_stack_cur_info.rmt_dev[i].serv_conn & A2DP_CONNECTED) != 0))
             {
-                g_bt_auto_connect_ctrl.dev_info[i].connect_cnt = 0;
-                g_bt_auto_connect_ctrl.dev_info[i].conn_flag = 0;
+
+                //切bank
+                if(FALSE==stop_auto_con(i))
+                {
+                    return ;
+                }
                 j++;
+                //PRINT_INFO("clear flag");            
+                //g_bt_auto_connect_ctrl.dev_info[i].connect_cnt = 0;
+                //g_bt_auto_connect_ctrl.dev_info[i].conn_flag = 0;
+
             }
         }
 
@@ -565,7 +665,7 @@ void check_connect_status(void)
                 && (g_bt_auto_connect_ctrl.need_auto_connect == 1))
         {
 #ifdef ENABLE_TRUE_WIRELESS_STEREO
-       once_auto_flag = 0;
+           once_auto_flag = 0;
 #endif
             g_bt_auto_connect_ctrl.need_auto_connect = 0x0;
             PRINT_INFO("stop auto-conn1");
@@ -575,40 +675,36 @@ void check_connect_status(void)
 
     if (g_bt_stack_cur_info.num_connected != 0)
     {
-
 #ifdef ENABLE_TRUE_WIRELESS_STEREO
-    //添加条件 当副箱连接上了主箱的时候，那么就不再去回连手机
-    if((g_bt_stack_cur_info.dev_role == TWS_SLAVE)&&( g_bt_auto_connect_ctrl.need_auto_connect!=0))
-    {
-         g_bt_auto_connect_ctrl.need_auto_connect = 0x0;
-         PRINT_INFO("stop auto-conn2");
-    }
-#endif
-
-        for (i = 0; i < g_btmanager_gl_var.support_dev_num; i++)
+        //添加条件 当副箱连接上了主箱的时候，那么就不再去回连手机
+        if((g_bt_stack_cur_info.dev_role == TWS_SLAVE)&&( g_bt_auto_connect_ctrl.need_auto_connect!=0))
         {
-            if (libc_memcmp(g_bt_auto_connect_ctrl.dev_info[i].remote_addr.bytes,
-                    g_bt_stack_cur_info.rmt_dev[i].addr.bytes, 6) == 0)
-            {
-                if (((g_bt_stack_cur_info.rmt_dev[i].serv_conn & HFP_CONNECTED) != 0)
-                        || ((g_bt_stack_cur_info.rmt_dev[i].serv_conn & A2DP_CONNECTED) != 0))
-                {
-                    //如果已经连上，标记一下，这样就不需要再回连了
-                    g_bt_auto_connect_ctrl.dev_info[i].connect_cnt = 0;
-                    g_bt_auto_connect_ctrl.dev_info[i].conn_flag = 0;
-#ifdef ENABLE_TRUE_WIRELESS_STEREO
-            if ((g_bt_auto_connect_ctrl.dev_info[1-i].conn_flag == 1)
-                  && (g_bt_auto_connect_ctrl.need_auto_connect == 1)
-                  && (once_auto_flag == 0))
-            {
-                g_bt_auto_connect_ctrl.connect_tick_cnt = g_bt_auto_connect_ctrl.auto_connect_interval * 2;
-                once_auto_flag = 1;
-                PRINT_INFO("hgg");
-            }    
-#endif                    
-                }
-            }
+             g_bt_auto_connect_ctrl.need_auto_connect = 0x0;
+             PRINT_INFO("stop auto-conn2");
         }
+        //调整设备回连顺序
+        if(g_bt_stack_cur_info.dev_role==TWS_MASTER)
+        {
+            for (i = 0; i < g_bt_stack_cur_info.num_connected ; i++)
+            {
+                for(j = 0;j < g_btmanager_gl_var.support_dev_num;j++)
+                {
+                    //调整回连设备顺序
+                    if ((libc_memcmp(g_bt_auto_connect_ctrl.dev_info[j].remote_addr.bytes,
+                         g_bt_stack_cur_info.rmt_dev[i].addr.bytes, 6) == 0) && (i != j))
+                    {
+                        com_exchange_vale(&tmp_dev,i,j);
+                        break;                        
+                    }    
+                }
+             }
+        }
+#endif
+        if(g_bt_auto_connect_ctrl.need_auto_connect!=0)
+        {
+            //切bank,该bank空间紧张 
+            check_auto_con_flag(); 
+        }      
     }
 
     //如果每个设备都不需要回连，则停止回连
@@ -626,6 +722,9 @@ void check_connect_status(void)
        once_auto_flag = 0;
 #endif
         g_bt_auto_connect_ctrl.need_auto_connect = 0x0;
+#ifdef __ESD_MODE_
+        g_end_autoconnt = 1;
+#endif
         PRINT_INFO("stop auto-conn");
     }
 }

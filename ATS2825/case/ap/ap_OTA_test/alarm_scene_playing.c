@@ -293,30 +293,19 @@ void alarm_playing_main_view(view_update_e mode)
     switch (mode)
     {
         case VIEW_UPDATE_CREATE:
-//        {
-//            //读取日期和时间
-//            sys_get_date(&(g_p_alarm_ring->alarm_date));
-//            if (g_p_alarm_ring->alarm_date.year > 2099)
-//            {
-//                g_p_alarm_ring->alarm_date.year = 2000;
-//                sys_set_date(&(g_p_alarm_ring->alarm_date));
-//            }
-//            sys_get_time(&(g_p_alarm_ring->alarm_time));
-//
+        {
             g_p_alarm_ring->twinkling_flag = TRUE;
             g_p_alarm_ring->twinkling_timer_id = set_app_timer(APP_TIMER_ATTRB_UI, 500, alarm_ring_handle);
-//
             g_p_alarm_ring->overtime_flag = FALSE;
-//
 #if (SUPPORT_LED_DRIVER == 1)
             if (g_comval.support_led_display == 1)
             {
                 __alarm_ring_view_redraw();
             }
 #endif
-//        }
+        }
         break;
-
+        
         case VIEW_UPDATE_DESTROY:
         {
             if (g_p_alarm_ring->twinkling_timer_id != -1)

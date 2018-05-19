@@ -244,4 +244,25 @@ SECTIONS
     {
         music_play.o(.text.BANK20)
     }
+
+    . = ((. + AP_BANK_SPACE) & (~(AP_BANK_SPACE - 1)))  + OFFSET;
+    BANK_CONTROL_1_21 :
+    {
+        music_rcp_dir_get.o(.xdata)
+        . = MUSIC_RCP_DEAL_GET_XDATA_LEN;
+    }
+    
+    . = ((. + AP_BANK_SPACE) & (~(AP_BANK_SPACE - 1)))  + OFFSET + MUSIC_RCP_DEAL_GET_XDATA_LEN;
+    BANK_CONTROL_1_22 :
+    {
+        music_rcp_dir_get.o(.text .rodata)
+        . = BANK_CONTROL_SIZE - MUSIC_RCP_DEAL_GET_XDATA_LEN;
+    }
+    
+    . = ((. + AP_BANK_SPACE) & (~(AP_BANK_SPACE - 1)))  + OFFSET + MUSIC_RCP_DEAL_GET_XDATA_LEN;
+    BANK_CONTROL_1_23 :
+    {
+        music_rcp_dir_get.o(.text.bank2)
+        . = BANK_CONTROL_SIZE - MUSIC_RCP_DEAL_GET_XDATA_LEN;
+    }
 }

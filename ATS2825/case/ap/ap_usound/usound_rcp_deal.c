@@ -83,7 +83,7 @@ app_result_e usound_apk_key_play(uint32 data1, uint32 data2)
         g_play_key_flag = g_play_status.play_status;
     }
 
-    g_last_time_count = g_play_key_timer;
+    g_last_time_count = (uint32)g_play_key_timer;
 
     usound_play_pause();
 

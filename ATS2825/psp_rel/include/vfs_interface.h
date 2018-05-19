@@ -117,6 +117,7 @@
 
 #define  LONG_NAME_TAG		0xfeff
 
+#define  UDISK_VRAM_MAGIC    (0x5aa5)
 
 typedef struct {
 	uint16 year;
@@ -139,6 +140,11 @@ typedef struct {
 	uint8 buffer[8];
 } pfile_offset_t;
 
+typedef struct
+{   
+    uint16 magic;
+    uint16 write_flag;
+} udisk_vram_info_t;
 
 //定义文件系统错误类型
 #define  ERR_PHY_R          		0x02   //磁盘读错误   

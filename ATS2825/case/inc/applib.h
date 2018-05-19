@@ -288,12 +288,15 @@ typedef struct
     /*-- 以上4个成员BT STACK的APPLIB库需要访问，不允许修改 --*/
 
     /*!播tts不发送卸载命令*/
-    uint8 g_no_send_exit_mmm_cmd;
+    uint8 g_no_support_tts_flag;
     uint8 g_send_exit_mmm_tts;
-    uint8 power_on_flag;
+    uint8 power_on_flag:4;
+    uint8 stub_mode_flag:4;
 
     /*! 音频输出状态，见 soundout_state_e */
     uint8 sound_state;
+    
+    uint8 fix_sample_rate_flag;
     
     /*! 蓝牙电量同步全局变量 */
     uint8 battery_report_enable;
@@ -306,6 +309,14 @@ typedef struct
     short *p_energy_value_bands;
     short *p_energy_value_freqs;
 #endif
+    //该变量用途:使用WAVES音效时，为了让中间件知道当前是调试模式还是normal模式而加的
+    uint8 stub_pc_tools_type;
+    uint8 stub_phy_type;  //0:USB 1:UART
+
+    uint8 bin_number:3;   //WAVES音效normal模式，使用第几套音效参数  
+    uint8 waves_dae_para_update_flag:1;///WAVES音效normal模式下，更新音效参数组标志
+    uint8 reserve:4; 
+    
 } app_info_state_all_t;
 
 /*!

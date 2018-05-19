@@ -19,7 +19,6 @@
 
 static const uint8 card_drv_name[] = "card.drv";
 static const uint8 uhost_drv_name[] = "uhost.drv";
-static const uint8 nor_drv_name[] = "nor_ud.drv";
 const uint8 fw_file_name[] =
 {
     0xff,0xfe,
@@ -168,11 +167,6 @@ bool upgrade_fw_check(void)
     //装载物理介质,卡优先
     if ((!is_fw_exist(DRV_GROUP_STG_CARD, card_drv_name, DISK_H)) && (!is_fw_exist(DRV_GROUP_STG_UHOST, uhost_drv_name,
             DISK_U)))
-    {
-        return FALSE;
-    }
-
-    if (sys_drv_install(DRV_GROUP_STG_BASE, 0, nor_drv_name) != 0)
     {
         return FALSE;
     }

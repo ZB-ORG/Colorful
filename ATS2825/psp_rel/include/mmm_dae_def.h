@@ -50,7 +50,7 @@ extern "C"
 
 #if (SUPPORT_MULTI_FREQ_MULTI_BAND_SETTING == 1)
 #define MFBE_BANDS     10
-#define MAX_FREQ_POINT 12
+#define MAX_FREQ_POINT 10
 #endif
 
 typedef struct
@@ -88,8 +88,7 @@ typedef struct
     uint8 num_band;                         //频段数,算法内部最多支持10段
     uint8 num_freq_point;                   //频点数,算法内部最多支持12点
     short duration_ms;                      //统计时长，单位ms
-    short f_low[MFBE_BANDS];                //带通下限，若为0且对应的f_high不为0则为低频段
-    short f_high[MFBE_BANDS];               //带通上限
+    short f_c[MFBE_BANDS];					//带通中心频率
     short freq_point[MAX_FREQ_POINT];       //各频点数组 
 } dae_attributes_t;
 #endif
@@ -206,6 +205,10 @@ typedef struct
     bool mdrc_enable; //MDRC算法
     bool limiter_enable; //限幅算法
     bool energy_detect_enable; //信号能量检测
+    bool noise_reduction_enable;
+    bool enable_2823T;
+    bool dae_print_enable;
+    
     uint8 run_freq; //运行频率
 
     peq_band_t peq_bands[MAX_PEQ_SEG]; //PEQ 滤波器参数
@@ -220,10 +223,9 @@ typedef struct
     uint8 spk_comp_filter_QvalRight; //右声道滤波器Q值
 
     uint16 vbass_cut_freq; //低频截止频率
-    int16 vbass_ratio; //虚拟低音的增益 单位为0.1dB
+    int16 vbass_ratio; //虚拟低音的增益 单位为0.1dB 0.0dB -24dB 方案端要减去12.0dB再传递给DSP
     int8 original_bass_ratio; //原始低音的增益
-    int8 vbass_type;          //虚拟低音的类型  
-
+    
     uint8 vsurround_angle; //环绕角度
     int8 vsurround_ratio; //增益
 
@@ -257,7 +259,6 @@ typedef struct
     bool compressor_enable_standard_mode;        //压缩器算法
     bool mdrc_enable_standard_mode;              //mdrc算法
     bool audiopp_type_update_flag;               //音效模型更新标志 
-    bool max_vol_flag;                           //标准模式下，音量最大标志
     uint8 audiopp_type;                          //audiopp_type_e
     int8  precut_standard_mode;                  //标准模式下precut值
     int8  dynamic_precut_standard_mode;          //小音量下动态precut衰减   
@@ -269,16 +270,16 @@ typedef struct
     mdrc_peak_detect_standard_mode_t        mdrc_peak_standard_mode;
     dae_mdrc_band_standard_mode_t*   p_mdrc_band_standard_mode;
    /**************************************************/
-
+    uint8 volume_current;
 } dae_config_t;
 
 typedef struct
 {
-    int *p_fade_in_time_ms;
-    int *p_fade_out_time_ms;
-    int *p_fade_in_flag;
-    int *p_fade_out_flag;
-    int *p_DAE_change_flag;
+    short *p_fade_in_time_ms;
+    short *p_fade_out_time_ms;
+    short *p_fade_in_flag;
+    short *p_fade_out_flag;
+    short *p_DAE_change_flag;
 } dae_fade_param_addr_t;
 
 typedef enum
@@ -303,6 +304,8 @@ typedef enum
     SET_FADE_OUT,
     /*!设置淡入*/
     SET_FADE_IN,
+    /*!设置噪音消除算法参数*/   
+    SET_NOISE_REDUCTION_PARA,
     /*!max*/
     MAX_SET_TYPE
 } set_effect_type_e;
@@ -324,6 +327,16 @@ typedef struct
     /*!输出通道处理 1:左右声道交换 2: 单端耳机应用(L=R=原始的(L/2 + R/2)), 0 or 其它值, 跟原始的左右声道一致*/
     int16 output_channel;
 } init_play_param_t;
+
+typedef struct
+{
+    short enable;				            //default: 200ms,step 0.01ms, set 200*100 = 20000    
+    short DownExp_attack_time;				//default: 200ms,step 0.01ms, set 200*100 = 20000
+	short DownExp_release_time;				//default: 10ms,step 1ms, set 10
+	short DownExp_set0_threshold;		    //default: 1ms, step 0.01ms, set 100;
+	short DownExp_threshold;			    //default: -80dB(min), step 0.1dB, set -800
+	short DownExp_ratio;				    //default: 3(greater than 1)  
+}init_noise_reduction_t;
 
 /*! \endcond */
 #ifdef __cplusplus

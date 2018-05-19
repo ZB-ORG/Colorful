@@ -22,28 +22,27 @@ uint8 com_ancs_GetNotificationAttributes(uint8 * ntf_uuid)
     {
         g_ancs_data_buf[i + 1] = ntf_uuid[i];
     }
-    g_ancs_data_buf[5] = 0; // attribute id
+    g_ancs_data_buf[5] = 1; // attribute id
 
-    g_ancs_data_buf[6] = 64; // len
-    g_ancs_data_buf[7] = 0;
+    g_ancs_data_buf[6] = 2; // len
+    g_ancs_data_buf[7] = 3;
 
-    g_ancs_data_buf[8] = 1; // attribute id
+    g_ancs_data_buf[8] = 4; // attribute id
 
-    g_ancs_data_buf[9] = 48; // len
-    g_ancs_data_buf[10] = 0;
+    g_ancs_data_buf[9] = 5; // len
+    g_ancs_data_buf[10] = 6;
 
     com_rcp_ble_serv_send(g_ancs_data_buf, 11, RCP_ANCS_CTRL_POINT_FLAG);
 
-    return 1;
+    return TRUE;
 }
 
 app_result_e ancs_notification_cb(void *data, uint16 data_len, uint8 serv_flag)
 {
-    uint8 i = 0, *cmd_buf;
-    uint32 ntf_uuid;
+    uint8 i = 0, *cmd_buf = NULL;
+    uint32 ntf_uuid = 0;
 
-    //PRINT_INFO("==com_ancs_callback==   Notification ");
-    libc_print("==com_ancs_cb==  Notify", 0, 0);
+    //PRINT_INFO("==com_ancs_callback==   Notification ");    
     if (data != NULL)
     {
         cmd_buf = (uint8 *) data;
@@ -53,9 +52,12 @@ app_result_e ancs_notification_cb(void *data, uint16 data_len, uint8 serv_flag)
         //PRINT_INFO_INT("Category ID   :", cmd_buf[2]);
         //PRINT_INFO_INT("Category Count:", cmd_buf[3]);
         //PRINT_INFO_INT("Notification UUID:", ntf_uuid);
+        //com_start_key_tone(KEYTONE_NOBLOCK);
 
         com_ancs_GetNotificationAttributes(&cmd_buf[4]);
     }
+    libc_print("==com_ancs_cb==  Notify",ntf_uuid, 2);
+    PRINT_DATA(cmd_buf, data_len);
     return RESULT_NULL;
 }
 
@@ -70,6 +72,7 @@ app_result_e ancs_data_cb(void *data, uint16 data_len, uint8 serv_flag)
         cmd_buf = (uint8 *) data;
         //PRINT_DATA(data, data_len);
     }
+    
     return RESULT_NULL;
 }
 

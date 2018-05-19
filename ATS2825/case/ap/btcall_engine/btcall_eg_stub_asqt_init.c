@@ -170,12 +170,15 @@ void copy_dsp_aec_parm(sv_prms_t *dsp_parm, sv_configs_t *in_parm)
     dsp_parm->aec_prms.tail_length = (dsp_parm->aec_prms.tail_length + 8) & (~0x0F);//必须是16倍
     if(dsp_parm->aec_prms.tail_length == 0)
     {
-        #if CASE_TYPE_2825 
+        if(g_app_info_state_all.stub_phy_type == STUB_PHY_USB)
+        {
             dsp_parm->aec_prms.tail_length = 128;
-        #else//耳机方案
+        }
+        else
+        {
+            //耳机方案
             dsp_parm->aec_prms.tail_length = 64;
-        #endif
-        
+        }
     }
     if(in_parm->analysis_mode == 0)
     {
@@ -410,6 +413,7 @@ void btcall_eg_asqt_deal(uint8 stub_tool_type)
     libc_memset((uint8*)&g_asqt_parm, 0x00, sizeof(g_asqt_parm));
     libc_memset((uint8*)g_p_share_mem, 0x00, sizeof(dsp_m4k_share_t));
     init_m4k_dsp_ctl(0);
+
     if(stub_tool_type == STUB_PC_TOOL_ASQT_MODE)
     {
         btcall_gl_var.stub_asqt_en = 1;

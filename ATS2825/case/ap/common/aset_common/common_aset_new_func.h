@@ -93,7 +93,7 @@ typedef struct
 typedef struct
 {
     int16 cutoff_freq; //起：，步长：，终：  default:90
-    int16 vbass_gain; //-12~12   defualt:3
+    int16 vbass_gain;  //PC传递过来的虚拟低音增益的范围是0.0dB ~ 24.0dB  精度为0.1dB 方案端要减去12.0dB再传递给DSP
     int8 vbass_enable; //VBass模块使能
     int8 reserved[3]; //保留
 } aset_vbass_data_t;
@@ -160,17 +160,17 @@ typedef struct{
 typedef struct
 {
     aset_FIR_info_t stFirInfo;
-    int8 next_stFirInfo_index;//下一包的计数，为0时表示没有下一包
+    int8 next_stFirInfo_index;      //下一包的计数，为0时表示没有下一包
     int8 szRev[5];
-    uint8 index; //0 ~ 15 包序号，每个包128字节
+    uint8 index;                    //0 ~ 15 包序号，每个包128字节
     bool bEnFRCurve;
 }aset_FRCurve_data_t;
 
 
 typedef struct
 {
-    short signalPrecut;         //信号后级衰减微调，范围-3db ~ 0db，单位0.1db，默认值为0db
-    short fMVolume;             //音量微调参数，范围-3db  ～ 3db，step 为.1db，默认为db
+    short signalPrecut;             //信号后级衰减微调，范围-3db ~ 0db，单位0.1db，默认值为0db
+    short fMVolume;                 //音量微调参数，范围-3db  ～ 3db，step 为.1db，默认为db
     short   nMaxMid;                //中频高频分频点：Hz ～20KHz，默认值为KHz
     short   nMidMin;                //低频中频分频点：Hz ～20KHz，默认值为Hz
     short   limiterThresholdDiff;   //MDRC与Limiter阈值的差值
@@ -246,8 +246,8 @@ typedef struct
 
 typedef struct
 {
-    short fSignalDetePer;            //信号检测周期（s ～2s，step 为ms，默认值为.5s）
-    short nSignalDetePerNum;          //信号检测周期数（～20，step为，默认为）
+    short fSignalDetePer;           //信号检测周期（s ～2s，step 为ms，默认值为.5s）
+    short nSignalDetePerNum;        //信号检测周期数（～20，step为，默认为）
     short fSignalDesTVal;           //小信号预降阈值（-1db ～-6db，step为0.1db，默认为-20）
     short nSignalDesPerNum;         //小信号预降周期数（～20，step 为，默认值为）
     short nSignalMinVal;            //信号大小有效最小值( -60   ～ 0，step 为0.1db，默认值为-21db)
@@ -278,8 +278,9 @@ typedef struct
 
     int8 bEQ_v_1_2;
     int8 bMDRC_v_1_1;
-    int8 bComPressor_v_1_0;
-    int8 szRev[127];
+    int8 bComPressor_v_1_0;   
+    int8 szRev[119];
+    int8 szVerInfo[8];//方案上传的方案名和版本号，统一大写   
 }aset_interface_config_t;
 
 
@@ -295,63 +296,83 @@ typedef struct
 //兼容标准音效模型增加的结构体
 typedef struct
 {
-    short nThreshold_01;            //阈值，-60::0dB，初始化-15dB
-    short   nCpRatio_01;               //压缩比，1~1000  初始化值为
-    short nThreshold_02;            //阈值，-60::0dB，初始化-15dB
-    short   nCpRatio_02;            //压缩比，1~1000  初始化值为
-    short nRmsAvgTime;              //RMS检测平均时间(ms):   0.02~100.00   初始化值为.00
-    short fAttack_time;          //启动时间，.02~100ms，传值扩大倍，初始化为.00
-    short nRelease_time;         //释放时间，~5000ms，初始化为
+    short nThreshold_01;           //阈值，-60::0dB，初始化-15dB
+    short   nCpRatio_01;           //压缩比，1~1000  初始化值为
+    short nThreshold_02;           //阈值，-60::0dB，初始化-15dB
+    short   nCpRatio_02;           //压缩比，1~1000  初始化值为
+    short nRmsAvgTime;             //RMS检测平均时间(ms):   0.02~100.00   初始化值为.00
+    short fAttack_time;            //启动时间，.02~100ms，传值扩大倍，初始化为.00
+    short nRelease_time;           //释放时间，~5000ms，初始化为
 
-    bool  bLmEnable;          //模块使能
-    char  szRev[17];                 //保留
+    bool  bLmEnable;               //模块使能
+    char  nIndex;                  //标志，为aux，为非aux
+    char  szRev[16];               //保留
 }Compressor_TP_Info_M;
 
 typedef struct
 {
-    short nThreshold_01;            //阈值，-60::0dB，初始化-15dB
-    short   nCpRatio_01;               //压缩比，1~1000  初始化值为
-    short nThreshold_02;            //阈值，-60::0dB，初始化-15dB
-    short   nCpRatio_02;            //压缩比，1~1000  初始化值为
-    short nRmsAvgTime;              //RMS检测平均时间(ms):   0.02~100.00   初始化值为.00
-    short fAttack_time;          //启动时间，.02~100ms，传值扩大倍，初始化为.00
-    short nRelease_time;         //释放时间，~5000ms，初始化为
+    short nThreshold_01;           //阈值，-60::0dB，初始化-15dB
+    short   nCpRatio_01;           //压缩比，1~1000  初始化值为
+    short nThreshold_02;           //阈值，-60::0dB，初始化-15dB
+    short   nCpRatio_02;           //压缩比，1~1000  初始化值为
+    short nRmsAvgTime;             //RMS检测平均时间(ms):   0.02~100.00   初始化值为.00
+    short fAttack_time;            //启动时间，.02~100ms，传值扩大倍，初始化为.00
+    short nRelease_time;           //释放时间，~5000ms，初始化为
 }DRC_CpVal_Info_M;
 
 typedef struct
 {
     DRC_CpVal_Info_M stDrcVal_M[3];//三段drc
-    bool  bDrcEnable;        //DRC模块是否使能
-    char cDataFlag;             //添加DRC模块命令二标志，x5A代表还有一组数据需要发送给小机，其他则没有
-    short sIndex;            //添加模组序号，第一组为，以此类推
-    char  szRev[14];            //保留 
+    bool  bDrcEnable;              //DRC模块是否使能
+    char cDataFlag;                //添加DRC模块命令二标志，x5A代表还有一组数据需要发送给小机，其他则没有
+    short sIndex;                  //添加模组序号，第一组为，以此类推
+    char  szRev[14];               //保留 
 } DRC_CP_Info_M;
 
 //添加drc命令三结构体
 typedef struct
 {
-    short fSignalPrecut;        //信号后级衰减微调，范围-3db ~ 0db，单位.1db，默认值为db
-    short fMVolume;             //音量微调参数，范围-3db  ～ 3db，step 为.1db，默认为db
-    short   nMaxMid;            //中频高频分频点：Hz ～20KHz，默认值为KHz
-    short   nMidMin;            //低频中频分频点：Hz ～20KHz，默认值为Hz
-    short  nLimiterThresholdDiff;      //MDRC与Limiter阈值的差值
+    short fSignalPrecut;            //信号后级衰减微调，范围-3db ~ 0db，单位.1db，默认值为db
+    short fMVolume;                 //音量微调参数，范围-3db  ～ 3db，step 为.1db，默认为db
+    short   nMaxMid;                //中频高频分频点：Hz ～20KHz，默认值为KHz
+    short   nMidMin;                //低频中频分频点：Hz ～20KHz，默认值为Hz
+    short  nLimiterThresholdDiff;   //MDRC与Limiter阈值的差值
 
-    short fTsVal;            //补偿滤波器阈值：-60  ～0.0，默认值为
-    short fQVal;             //补偿滤波器Q值：.1  ～0.9，默认值为.1
-    short fStTime;              //补偿滤波器启动时间：.02  ～100ms，默认值为.5
-    short nReleaseTime;         //补偿滤波器释放时间：ms   ～5000ms，默认值为
-    short fGainCom;             //增益补偿：        0.0   ～20.0db，默认值为db
-    char    szRev[12];          //保留
+    short fTsVal;                   //补偿滤波器阈值：-60  ～0.0，默认值为
+    short fQVal;                    //补偿滤波器Q值：.1  ～0.9，默认值为.1
+    short fStTime;                  //补偿滤波器启动时间：.02  ～100ms，默认值为.5
+    short nReleaseTime;             //补偿滤波器释放时间：ms   ～5000ms，默认值为
+    short fGainCom;                 //增益补偿：        0.0   ～20.0db，默认值为db
+    char    szRev[12];              //保留
 }DRC_TP_Info_M3;
+
+typedef enum
+{
+   UNAUX_MODE = 0,
+   AUX_MODE   = 1,
+}aux_mode_e;
+
+typedef struct
+{
+   uint8 aux_mode;      //aux_mode_e
+   uint8 reserved[7];
+}application_properties_t;
 
 extern int32 aset_read_data(uint16 cmd, void *data_buffer, uint32 data_len) __FAR__;
 extern int32 aset_cmd_deal(aset_status_t *aset_status) __FAR__;
 extern int32 aset_write_case_info(void) __FAR__;
 extern int32 aset_upload_sound_param(void) __FAR__;
 extern void  aset_set_dae_init(void) __FAR__;
+extern int32  __section__(".bank_2")aset_update_audiopp(void);
+
+
+extern uint8 *g_aset_rw_buffer;
+
 
 #ifdef SUPPORT_ASET_TEST
 extern void  aset_reconnect_deal(void) __FAR__;
+extern uint8 get_audiopp_type(void)__FAR__;
+
 #endif
 
 #endif

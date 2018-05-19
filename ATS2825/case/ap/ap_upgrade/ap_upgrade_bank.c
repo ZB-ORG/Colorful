@@ -21,7 +21,7 @@ static const uint8 lfi_name[] = { "FWIMAGE FW " };
 static const uint8 nor_id_name[] = { "NOR_ID  BIN" };
 static const uint8 brec_name[] = { "NORBREC BIN" };
 static const uint8 mbrec_name[] = {"NORMBRECBIN"};
-
+static const uint8 nor_drv_name[] = "nor_upg.drv";
 /*!
  * \brief
  *      mbrec head info, 16bytes
@@ -86,7 +86,7 @@ void parse_firmware(void)
     {
         _para.fw_mode = 0;
 
-        _para.lfi_start_addr = ((_para.brec_length + 511) / 512) + 2 + 2;
+        _para.lfi_start_addr = ((_para.brec_length + 511) / 512) + 2;
     }
 
     return;
@@ -183,6 +183,16 @@ int search_content(void)
 
     //²Á³ýVRAM
     base_clear_vram(); 
+
+    //½â³ýÐ´±£»¤
+    base_set_disable_write_protect();
+
+    sys_drv_uninstall(DRV_GROUP_STG_BASE);
+    
+    if (sys_drv_install(DRV_GROUP_STG_BASE, 0, nor_drv_name) != 0)
+    {
+        return -1;
+    }     
 
     return 0;
 }

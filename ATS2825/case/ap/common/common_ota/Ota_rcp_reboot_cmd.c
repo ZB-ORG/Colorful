@@ -39,7 +39,7 @@ app_result_e ota_restart_to_clean_data(uint32 data1, uint32 data2, void *data, u
     libc_print("receive restat clean_data CMD!",0,0);    
     sys_vm_read(&g_ota_restore_data,VM_OTA,sizeof(restore_breakpoint_t));
     g_ota_restore_data.updata_statue = OTA_UPDATE_STATE_NULL;
-    g_ota_restore_data.dowmload_statue = OTA_DOWNLOAD_STATE_NULL;
+    g_ota_restore_data.dowmload_statue = OTA_DOWNLOAD_STATE_CLEAR;
     g_ota_restore_data.ud_att = 0;
     ret = base_ota_clear_part_table();  
     if(ret == 0)

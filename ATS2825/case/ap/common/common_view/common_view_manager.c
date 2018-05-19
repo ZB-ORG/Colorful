@@ -106,6 +106,11 @@ int com_view_add(uint8 view_id, create_view_param_t *p_create_view_param)
     com_view_remove_type_view(p_create_view_param->type);
 
     g_view_manager_infor.top++;
+    
+    if(g_view_manager_infor.top >= MVC_VIEW_DEEPTH)
+    {
+        return -1;
+    }
 
     p_tmp_view_infor = &g_view_infor[g_view_manager_infor.top];
     p_tmp_view_infor->id = view_id;
@@ -170,6 +175,12 @@ int com_view_remove(uint8 view_id, bool redraw)
     uninstall_count = g_view_manager_infor.top - tmp_top + 1;
     for (i = 0; i < uninstall_count; i++)
     {
+        if (g_view_manager_infor.top >= MVC_VIEW_DEEPTH)
+        {
+            g_view_manager_infor.top = 0;
+            PRINT_INFO("MVC VIEW DEEPTH ERROR");
+            return -1;
+        }
         p_tmp_view_infor = &g_view_infor[g_view_manager_infor.top];
 
         (p_tmp_view_infor->view_cb)(VIEW_UPDATE_DESTROY);

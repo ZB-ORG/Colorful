@@ -71,6 +71,10 @@ int com_load_share_data(int data_id, uint8 *data_buf, int data_len, int param)
         break;
 
         case COM_SHARE_DATA_RING_FOLDER_SUB:
+        if ((param & 0xff) >= RCP_RING_FOLDER_MAX)
+        {
+            break;
+        }
         if ((param & 0xff00) == 0)
         {
             libc_memcpy(data_buf, g_ring_folder_short[param & 0xff], data_len);
@@ -82,6 +86,11 @@ int com_load_share_data(int data_id, uint8 *data_buf, int data_len, int param)
         break;
 
         case COM_SHARE_DATA_RING_BUILDIN:
+        if(param >= BUILDIN_RING_MAX)
+        {
+            ret = -1;
+            break;
+        }
         libc_memcpy(data_buf, g_sd_ring_file[param], data_len);
         break;
 

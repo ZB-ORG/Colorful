@@ -39,6 +39,17 @@
 /*! 信号能量大小默认值，单位为0.1db */
 #define SIGNAL_ENERGY_DEFAULT       (-60)
 
+//ESD参数在vram结构
+typedef struct
+{
+    uint16 magic; //VM 变量魔数
+    bool esd_flag;
+    uint8 ap_id; //关机的应用
+    uint8 engine_state;
+    uint8 reserve[1];
+} g_config_var_t;
+
+
 typedef struct
 {
     uint8 vol_pa;
@@ -103,13 +114,14 @@ typedef struct
 
 
     /*!S3BT NOR备份区是否已擦写*/
-    bool s3bt_nor_erase_flag;
+    //bool s3bt_nor_erase_flag;
 } ap_switch_var_t;
 
 //common key处理接口声明
 extern bool com_gui_msg_hook(input_gui_msg_t *input_msg) __FAR__;
 extern void com_filter_key_hold(void) __FAR__;
 extern void com_filter_key_up(void) __FAR__;
+extern void com_filter_key_itself(void) __FAR__;
 
 //声音输出管理接口声明
 extern bool com_set_sound_out(soundout_state_e state) __FAR__;
@@ -123,7 +135,11 @@ extern bool com_reset_sound_volume(uint8 set_mode) __FAR__;
 extern void com_set_phy_volume(uint8 set_vol) __FAR__;
 extern void com_update_volume_limit(int8 vol_limit) __FAR__;
 extern bool com_set_mute(bool mute) __FAR__;
+#ifdef ENABLE_TRUE_WIRELESS_STEREO
+extern bool com_switch_mute(uint8 op1,uint8 op2,bool op3)__FAR__;
+#else
 extern bool com_switch_mute(void) __FAR__;
+#endif
 
 typedef enum
 {
@@ -176,12 +192,14 @@ extern bool com_set_dae_chan(bool aux_flag, bool variable_mode) __FAR__;
 extern bool com_load_mdrc_config(dae_config_t *p_dae_cfg, bool load_bin, bool update_signal_detect) __FAR__;
 extern void com_update_dae_config(dae_config_t *p_dae_cfg) __FAR__;
 extern void com_detect_energy_realtime(void) __FAR__;
+void __section__(".text.bank") update_peq_para(comval_t *setting_comval,uint16 enable_id,uint16 para_id)__FAR__;
 
 extern void com_volume_add(bool tts_flag) __FAR__;
 extern void com_volume_sub(bool tts_flag) __FAR__;
 #define SET_VOLUME_VIEW  (1<<0) //显示VOL值
 #define SET_VOLUME_TTS   (1<<1) //最大声音和最小声音 TTS 提示
 extern void com_volume_set(uint8 set_vol, uint8 set_mode) __FAR__;
+extern void dynamic_switch_waves_bin_para(uint8 bin_number)__FAR__;
 
 /*!
  *  \brief
@@ -288,10 +306,16 @@ extern bool g_need_reset_controller_timeout;
 extern bool g_neednot_tts_play_timeout;
 extern bool g_neednot_tts_play_reset;
 
+extern bool g_neednot_tts_play_timeout1;
 extern uint8 g_prev_next_ch_start;
-extern uint8 prev_next_ch_timer_id;
+extern int8 prev_next_ch_timer_id;
 
 
+extern g_config_var_t g_config_var;
+extern bool g_esd_cardreader_flag;
+#ifdef __ESD_MODE_
+extern uint8 g_end_autoconnt ;
+#endif
 extern int com_math_exp_fixed(int db) __FAR__;
 
 #endif

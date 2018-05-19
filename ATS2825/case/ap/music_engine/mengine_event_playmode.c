@@ -91,7 +91,7 @@ void mengine_getid3_done(musfile_location_u* path_info)
 {
     id3_type_e music_type;
     //bool have_no_id3 = FALSE;
-    uint8* nameptr = path_info->dirlocation.filename;
+    uint8* nameptr = path_info->dirlocation.file_info.file_extend_info.file_ext;
 
     //初始化变量
     mengine_init_id3buf();

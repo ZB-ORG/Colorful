@@ -100,7 +100,7 @@ static int8 mp3_check_tag(uint8 *check_str, uint8 *tab_str, uint8 size_str, uint
 bool mp3_v2_2_parse(uint32 id3_size_param)
 {
     uint8 num;
-    uint8 str_len,check_long_name_flag=0;
+    uint8 str_len;  
     int8 result;
     uint32 frame_len;
     id3_2_2_header* frame_h;
@@ -162,11 +162,13 @@ bool mp3_v2_2_parse(uint32 id3_size_param)
                 str_len = id3_save_p->savelen - 1;
             }
             read_buf_data(id3_save_p->saveaddr, str_len);
-            if(check_long_name_flag==1)
-            {
-                check_long_name_flag=0;
-                check_odd_char_in_str(id3_save_p->saveaddr, str_len);
-            }
+            
+//            if(check_long_name_flag==1) //qac发现没用故屏蔽
+//            {
+//                check_long_name_flag=0;
+//                check_odd_char_in_str(id3_save_p->saveaddr, str_len);
+//            }
+
             *(uint8*) (id3_save_p->saveaddr + str_len) = 0x00;
 //            if(((id3_save_p->savelen & 1) == 0)
 //                && (id3_save_p->saveaddr[str_len - 1] & 0x80) != 0)
@@ -320,7 +322,7 @@ bool mp3_v2_x_parse(uint32 id3_size_param, uint8 version)
         }
         else
         {
-        frame_len--; //减去编码类型1个字节长度
+            frame_len--; //减去编码类型1个字节长度
         }
 
         if ((frame_h->frame_id[0] == 'A') && (id3_info_p->apic_flag))

@@ -140,7 +140,11 @@ app_result_e __section__(".text.bank4")app_message_deal(private_msg_t *pri_msg)
                     {
                         if((g_p_bt_stack_cur_info->dev_role==1)&&(g_p_bt_stack_cur_info->tws_master_phonecon==1))
                         {
-                            set_single_shot_app_timer(APP_TIMER_ATTRB_CONTROL,
+                            if(clear_tts_filter_timer_id!=-1)
+                            {
+                                kill_app_timer(clear_tts_filter_timer_id);
+                            }
+                            clear_tts_filter_timer_id=set_single_shot_app_timer(APP_TIMER_ATTRB_CONTROL,
                                 500, Tws_clear_filter);
                         }
                         else

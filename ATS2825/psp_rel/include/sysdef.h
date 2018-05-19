@@ -86,6 +86,7 @@
 #define BACKDOOR_PRINT_DSP_BANKSWITCH            (1 << 18)
 
 #define BACKDOOR_ANTIPOP_START					(1 << 28)
+#define BACKDOOR_AUDIO_POW_SAVING               (1 << 29)
 
 #define GLOBAL_KERNEL_BACKDOOR_FLAG     (*(uint32 *)(RDATA_ADDR_BASE + 0x1aa5c))//backdoor_flag
 /***************/
@@ -138,6 +139,15 @@ typedef enum
     TRIM_CAP_WRITE_ERR_HW,
     TRIM_CAP_WRITE_ERR_NO_RESOURSE
 } trim_cap_write_result_e;
+
+typedef struct
+{
+    uint32 fw_cap_size;                 //方案设置的固件区总大小
+    uint32 spi_cap_size;                //flash总大小
+    uint32 need_write_protect_size;     //需要设置的写保护区域大小
+    uint32 set_write_protect_size;      //设置的写保护区域大小
+}wp_zone_info_t;
+
 
 typedef enum
 {

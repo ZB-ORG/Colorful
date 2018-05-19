@@ -43,6 +43,8 @@ app_result_e com_sys_deal_enter_usound(void *ev_param);
 app_result_e com_sys_install_stub(void *ev_param);
 app_result_e com_sys_deal_btstack_hd_err(void *ev_param);
 app_result_e com_att_switch_app(void *ev_param);
+app_result_e com_tws_switch_app(void *ev_param);
+app_result_e com_mpu_error_deal(void *ev_param);
 
 const sys_event_map_t __section__(".rodata.se_maplist") com_se_maplist[] =
 {
@@ -79,6 +81,8 @@ const sys_event_map_t __section__(".rodata.se_maplist") com_se_maplist[] =
     { { MSG_AUTOTEST_BTT_TEST_SYNC, SYSMSG_STOP_TTS_YES},  com_sys_install_stub},
     { { MSG_BTSTACK_ERR_HARDWARE, SYSMSG_STOP_TTS_YES}, com_sys_deal_btstack_hd_err},
     { { MSG_AUTOTEST_SWITCH_APP, SYSMSG_STOP_TTS_YES}, com_att_switch_app},
+    { { MSG_BTSTACK_TWS_APSWITCH_SYNC, SYSMSG_STOP_TTS_YES}, com_tws_switch_app},
+    { { MSG_MPU_ERROR, SYSMSG_STOP_TTS_YES}, com_mpu_error_deal},
     /*! 结束标志 */
     { { MSG_NULL, 0 }, NULL },
 };
@@ -115,11 +119,22 @@ app_result_e com_sys_deal_sdcard_in(void *ev_param)
 #if (SUPPORT_RING_FOLDER == 1)
         if ((int8) sys_detect_disk(DRV_GROUP_STG_CARD) != -1)
         {
+#ifdef __ESD_MODE_
+            //g_ap_switch_var.result_alarm_ring_scan_backup = RESULT_MUSIC_CPLAY;
+            //result = RESULT_ALARM_RING_FOLDER_SCAN;
+#else
             g_ap_switch_var.result_alarm_ring_scan_backup = RESULT_MUSIC_CPLAY;
             result = RESULT_ALARM_RING_FOLDER_SCAN;
+#endif
         }
 #else
+
+#ifdef __ESD_MODE_
+        //result = RESULT_MUSIC_CPLAY;
+#else
         result = RESULT_MUSIC_CPLAY;
+#endif
+
 #endif
     }
 
@@ -141,8 +156,14 @@ app_result_e com_sys_deal_linein_in(void *ev_param)
 
     if (sys_comval->support_linein == 1)
     {
-        //进入MUSIC应用
-        result = RESULT_ENTER_LINEIN;
+#ifdef ENABLE_TRUE_WIRELESS_STEREO
+        if((g_bt_stack_cur_info.dev_role != 2)&&(get_cur_func_id() != APP_FUNC_PLAYLINEIN))
+#endif
+        {
+            //进入MUSIC应用
+            result = RESULT_ENTER_LINEIN;
+        }    
+       
     }
 
     return result;
@@ -198,7 +219,11 @@ app_result_e com_sys_deal_usb_in(void *ev_param)
     }
     else
     {
+#ifdef __ESD_MODE_
+        result = RESULT_NULL;
+#else
         result = RESULT_USB_SOUND;
+#endif
     }
 
     return result;
@@ -212,13 +237,13 @@ app_result_e com_sys_deal_lowpower(void *ev_param)
     {
         //电量低，请充电
 #ifdef ENABLE_TRUE_WIRELESS_STEREO
-    if(g_bt_stack_cur_info.dev_role!=0)
-    {
-        g_app_info_state_all.g_send_exit_mmm_tts=1;
-    }
+        if(g_bt_stack_cur_info.dev_role!=0)
+        {
+            g_app_info_state_all.g_send_exit_mmm_tts=1;
+        }
 #endif
         com_tts_state_play(TTS_MODE_ONLYONE | TTS_MODE_USEFIFO, (void *) TTS_BAT_LOW_CHARGE);
-	
+    
     }
     else
     {
@@ -301,6 +326,10 @@ app_result_e com_sys_deal_system_enter_s2(void *ev_param)
 
 app_result_e com_sys_deal_system_enter_s3(void *ev_param)
 {
+    sys_disable_use_temp_pool();
+   
+    sys_base_set_enter_s3bt_scene();
+    
     return RESULT_SYSTEM_ENTER_S3;
 }
 
@@ -551,4 +580,34 @@ app_result_e com_att_switch_app(void *ev_param)
 
     return ret_val;
 }
+
+app_result_e com_tws_switch_app(void *ev_param)
+{
+    uint8 next_func_id;
+
+    next_func_id = com_ap_switch_ask_next_func(RESULT_NEXT_FUNCTION);
+    if (next_func_id == get_cur_func_id())
+    {
+        PRINT_WARNING("NO next APP to switch!!");
+        return RESULT_NULL;
+    }
+    else
+    {
+        //过滤来不及响应的短按按键
+        com_filter_keymsg_in_queue(g_p_view_ke->val, KEY_TYPE_SHORT_UP);
+        return RESULT_NEXT_FUNCTION;
+    }    
+}
+
+app_result_e com_mpu_error_deal(void *ev_param)
+{
+    //出现mpu error,表明临时缓冲区有错误，需要先清除临时缓冲区
+    sys_clear_temp_pool();
+
+    //出现mpu error后系统会禁止使用临时缓冲区，这里重新使能这部分空间的使用
+    sys_enable_use_temp_pool();
+
+    return RESULT_NULL;
+}
+
 

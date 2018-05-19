@@ -21,10 +21,10 @@
 
 #pragma __PRQA_IGNORE_START__
 
-const uint8 bt_drv_name[] = "bt_ctrl.drv";
-const uint8 bt_mpdat_name[] = "mpdata.bin";
+static const uint8 bt_drv_name[] = "bt_ctrl.drv";
+static const uint8 bt_mpdat_name[] = "mpdata.bin";
 
-const uint8 hci_tx_channel_cmd[] = { 0x4a, 0xfd, 0x04, 0x3f, 0x00, 0x00, 0x00 };
+static const uint8 hci_tx_channel_cmd[] = { 0x4a, 0xfd, 0x04, 0x3f, 0x00, 0x00, 0x00 };
 
 void act_test_report_mptest_result(int32 ret_val, mp_test_arg_t *mp_arg, cfo_return_arg_t *cfo_return_arg,
         uint32 test_mode)
@@ -146,18 +146,6 @@ void act_test_report_mptest_result(int32 ret_val, mp_test_arg_t *mp_arg, cfo_ret
     return_data->return_arg[trans_bytes++] = 0x002c;
 
     int32_to_unicode(mp_arg->pwr_threshold_high, &(return_data->return_arg[trans_bytes]), &trans_bytes, 10);
-
-    return_data->return_arg[trans_bytes++] = 0x002c;
-
-    int32_to_unicode(mp_arg->ber_test, &(return_data->return_arg[trans_bytes]), &trans_bytes, 10);
-
-    return_data->return_arg[trans_bytes++] = 0x002c;
-
-    int32_to_unicode(mp_arg->ber_threshold_low, &(return_data->return_arg[trans_bytes]), &trans_bytes, 10);
-
-    return_data->return_arg[trans_bytes++] = 0x002c;
-
-    int32_to_unicode(mp_arg->ber_threshold_high, &(return_data->return_arg[trans_bytes]), &trans_bytes, 10);
 
     //如果参数未四字节对齐，要四字节对齐处理
     if ((trans_bytes % 2) != 0)
@@ -282,12 +270,68 @@ void ringbuf_init(void)
     g_ringbuf_rw.read_buffer = (uint8 *) ATT_RINGBUFFER_ADDR;
 }
 
-extern uint8 g_bt_drv_patch_download;
+
+uint32 att_cfo_test_init(mp_test_arg_t *mp_arg)
+{
+    uint32 ret_val;
+
+    cfo_param_t cfo_param;
+
+    libc_memset(&cfo_param, 0, sizeof(cfo_param));
+
+    cfo_param.ic_type = MP_ICTYPE;
+    cfo_param.channel = mp_arg->cfo_channel_low;
+    cfo_param.tx_gain_idx = MP_TX_GAIN_IDX;
+    cfo_param.tx_gain_val = MP_TX_GAIN_VAL;
+    cfo_param.payload = PAYLOADTYPE_SET;
+    cfo_param.pkt_type = PKTTYPE_SET;
+    cfo_param.tx_dac = MP_TX_DAC;
+    cfo_param.whitening_cv = WHITENCOEFF_SET;
+    cfo_param.pkt_header = PKTHEADER_SET;
+    cfo_param.hit_target_l = HIT_ADDRESS_SET_L;
+    cfo_param.hit_target_h = HIT_ADDRESS_SET_H;
+    cfo_param.sut_state = g_SUT_state;
+    cfo_param.report_interval = MP_REPORT_RX_INTERVAL;
+    cfo_param.skip_report_count = MP_SKIP_PKT_NUM;
+    cfo_param.once_report_pkts = MP_ONCE_REPORT_MIN_PKT_NUM;
+    cfo_param.report_timeout = MP_REPORT_TIMEOUT;
+
+    cfo_param.recv_cfo_count = MP_RETURN_RESULT_NUM;
+    //cfo_param.sut_download_patch = mp_arg->cfo_force_sut_init;
+
+    libc_memcpy((uint8 *) (STUB_ATT_RW_TEMP_BUFFER + sizeof(stub_ext_cmd_t)), &cfo_param, sizeof(cfo_param));
+
+    ret_val = att_write_data(STUB_CMD_ATT_CFO_TX_BEGIN, sizeof(cfo_param_t), STUB_ATT_RW_TEMP_BUFFER);
+
+    if (ret_val == 0)
+    {
+        att_read_data(STUB_CMD_ATT_ACK, 0, STUB_ATT_RW_TEMP_BUFFER);
+    }
+
+    if (g_SUT_state == 0)
+    {
+        g_SUT_state = 1;
+    }
+
+    //libc_print("--BTTxbegin", 0, 0);
+
+    return TRUE;
+}
+
+
 uint32 att_mptest_init(mp_test_arg_t *mp_arg)
 {
     bt_drv_param_t tmp_bt_drv_param;
 
-    ringbuf_init();
+    btt_priv_data_t btt_priv_data;
+      
+    g_SUT_state = 0;
+
+    ringbuf_init();    
+
+    //这个函数不能切bank，因发完这个命令PC工具就进行SUT的初始化，这个时候
+    //不会响应工具的任何命令请求，因此重新实现一样的函数，避免bank切换
+    att_cfo_test_init(mp_arg);
 
     if (sys_get_drv_install_info(DRV_GROUP_BT) > 0)
     {
@@ -310,9 +354,12 @@ uint32 att_mptest_init(mp_test_arg_t *mp_arg)
     tmp_bt_drv_param.p_hci_buffer_read_data_cb = &(g_hci_deal.read_data);
     sys_drv_install(DRV_GROUP_BT, &tmp_bt_drv_param, bt_drv_name);
 
-    att_read_mpdata(mp_arg);
+    btt_priv_data.download_patch = FALSE;
+    btt_priv_data.reset_controller = TRUE;
 
-    g_bt_drv_patch_download = FALSE;
+    bt_drv_down_patchcode(TRUE, BT_BTT_MODE, &btt_priv_data);   
+
+    att_read_mpdata(mp_arg);
 
     //#if 1
     //    *((REG32)(DEBUGSEL)) = 0x13; /*debug module select cmu*/
@@ -452,6 +499,7 @@ uint32 att_write_trim_cap(uint32 index, uint32 mode)
 
     return TRUE;
 }
+
 
 test_result_e att_mp_test(void *arg_buffer)
 {

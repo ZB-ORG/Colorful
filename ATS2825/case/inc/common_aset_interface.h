@@ -12,10 +12,10 @@ typedef enum
 {
     /*ASET工具与PC无连接*/
     ASET_TOOLS_DISCONNECT = 0,
+	/*ASET工具未工作，但PC与小机已正常连接*/
+    ASET_TOOLS_NOT_WORK, 
     /*ASET工具正常工作模式*/
-    ASET_TOOLS_WORK,
-    /*ASET工具未工作，但PC与小机已正常连接*/
-    ASET_TOOLS_NOT_WORK    
+    ASET_TOOLS_WORK   
 } aset_tools_run_state_e;
 
 //记录ASET工具的运行状态
@@ -25,6 +25,7 @@ typedef struct
     uint8 run_state:2;    
 } aset_tools_run_state_t;
 
+extern void aset_global_para_init(void) __FAR__;
 extern bool aset_test_init(void) __FAR__;
 
 extern void aset_test_loop_deal(void) __FAR__;

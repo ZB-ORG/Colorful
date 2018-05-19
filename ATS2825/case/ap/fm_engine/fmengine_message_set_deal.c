@@ -29,7 +29,7 @@ app_result_e fm_module_open(private_msg_t* cur_msg)
 
     uint8 band_info, level;
     int result = RESULT_NULL;
-    app_result_e ret;
+    app_result_e ret = RESULT_NULL;
 
     band_info = *(uint8*) data_ptr->msg.content.addr;
 

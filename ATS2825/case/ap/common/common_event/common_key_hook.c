@@ -29,6 +29,38 @@ bool com_gui_msg_hook(input_gui_msg_t *input_msg)
     key_value_e key_val = input_msg->data.kmsg.val;
     key_type_e key_type = input_msg->data.kmsg.type;
 
+    //1.超长按按键后过滤掉后续超长按键（检测到按键抬起，或者其他按键按下，或该按键的新周期，就算过滤完成）
+    if (key_val == g_key_infor.filter_key_itself)
+    {
+        if ((key_type == KEY_TYPE_DOWN) //收到该按键的新周期，过滤完成
+            || (key_type == KEY_TYPE_DBL_CLICK))//双击该按键也算新周期，过滤完成 //第二次超长按也算过滤完成
+        {
+            g_key_infor.filter_key_itself = KEY_NULL;
+        }
+        else
+        {
+           //过滤LONG和HOLD按键
+            if (key_type == KEY_TYPE_LONG_10S)
+            {
+                return FALSE;
+            }
+            if ((key_type != KEY_TYPE_SHORT_UP) && (key_type != KEY_TYPE_LONG_UP))                    
+            {
+                return FALSE;
+            }
+            else //过滤完成，但还是不响应SHORT_UP按键
+            {
+                this_filter_key_value = KEY_NULL;
+                g_key_infor.filter_key_itself = KEY_NULL;
+                return FALSE;
+            }
+        }
+    }
+    else //收到新按键，过滤完成
+    {
+        g_key_infor.filter_key_itself = KEY_NULL;
+    }
+
     //1.长按按键后过滤掉后续按键（检测到按键抬起，或者其他按键按下，或该按键的新周期，就算过滤完成）
     if (key_val == g_key_infor.filter_key)
     {
@@ -41,6 +73,12 @@ bool com_gui_msg_hook(input_gui_msg_t *input_msg)
         }
         else
         {
+            if(key_type == KEY_TYPE_LONG_10S)
+            {
+                g_key_infor.filter_key = KEY_NULL;
+                this_filter_key_value = KEY_NULL;
+                goto LONG10S_DEAL;
+            }
             //过滤LONG和HOLD按键
             if ((key_type != KEY_TYPE_SHORT_UP)
                     && (key_type != KEY_TYPE_LONG_UP))
@@ -87,6 +125,8 @@ bool com_gui_msg_hook(input_gui_msg_t *input_msg)
         g_key_infor.filter_key_up = KEY_NULL;
     }
 
+    LONG10S_DEAL:
+
     //更新当前按键值
     if ((key_type == KEY_TYPE_SHORT_UP) //如果按键已经抬起，那么设置过滤按键无效
     || (key_type == KEY_TYPE_LONG_UP))
@@ -102,9 +142,14 @@ bool com_gui_msg_hook(input_gui_msg_t *input_msg)
     g_ignore_switch_mute = FALSE;
     if (get_mute_enable() == TRUE)
     {
+#ifdef ENABLE_TRUE_WIRELESS_STEREO
+        com_switch_mute(1,0,NULL);
+#else
         change_mute_enable(FALSE);
-        com_reset_sound_volume(0);
         g_ignore_switch_mute = TRUE;
+#endif
+        com_reset_sound_volume(0);
+        
     }
 
     //4.按键音处理，仅在按键按下时发出按键音
@@ -158,6 +203,12 @@ void com_filter_key_hold(void)
 void com_filter_key_up(void)
 {
     g_key_infor.filter_key_up = this_filter_key_value;
+}
+
+void com_filter_key_itself(void)
+{
+    //libc_print("this_filter_key_value",this_filter_key_value,2);
+    g_key_infor.filter_key_itself = this_filter_key_value;
 }
 
 /*! \endcond */

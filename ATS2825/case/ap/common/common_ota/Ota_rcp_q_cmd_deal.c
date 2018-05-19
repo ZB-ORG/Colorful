@@ -70,6 +70,7 @@ app_result_e ota_enquiry_message(uint32 data1, uint32 data2)
     }
     else
     {  
+        //sys_os_time_dly(20);
         com_rcp_send_pkg(0, 0, tmp_com_rcp_info, sizeof(enquiry_message_t), sizeof(enquiry_message_t));
     }
     return RESULT_NULL;
@@ -88,7 +89,14 @@ uint32 message_copy(void *data,uint8 message_type)
     }
     else
     {
-        libc_memcpy(data, &g_OTA_var->g_cur_rec_state, 12);
+#ifdef        ENABLE_TRUE_WIRELESS_STEREO
+        g_OTA_var->g_cur_rec_state.tws_connect_sta = g_bt_stack_cur_info.dev_role ;
+        //libc_print("dev_role",g_OTA_var->g_cur_rec_state.tws_connect_sta,2);
+#else
+        g_OTA_var->g_cur_rec_state.tws_connect_sta = 0;
+        //libc_print("dev_role",0,2);
+#endif
+        libc_memcpy(data, &g_OTA_var->g_cur_rec_state, 14);
     }
 }
 uint32 get_ver_message(Fw_Ver_Module_t *ver_buf)

@@ -120,6 +120,10 @@ static app_result_e _power_on_sys_option(void)
         {
             //开机检测到uhost插入
             key_peripheral_detect_handle(PER_DETECT_UHOST_FORCE);
+            if(g_uhost_delay != 0)
+            {
+                sys_os_time_dly(2);     //等待U盘电平稳定
+            }
             check_uhost_flag = TRUE;
             goto check_msg_again;
         }
@@ -153,14 +157,14 @@ static app_result_e _power_on_key_option(void)
 
 app_result_e check_ota_upgrade(void)
 {
-	otaval_t g_otaval;
+    otaval_t g_otaval;
     sys_vm_read(&g_otaval, VM_OTA_UPGRADE, sizeof(otaval_t));
-	if ( (g_otaval.magic == VRAM_MAGIC(VM_OTA_UPGRADE))
-		&& (g_otaval.ota_upgrade_flag == OTA_UPGRADE_ENABLE) )
-	{
-		return RESULT_ENTER_OTA_UPGRADE;
-	}
-	return RESULT_NULL;
+    if ( (g_otaval.magic == VRAM_MAGIC(VM_OTA_UPGRADE))
+        && (g_otaval.ota_upgrade_flag == OTA_UPGRADE_ENABLE) )
+    {
+        return RESULT_ENTER_OTA_UPGRADE;
+    }
+    return RESULT_NULL;
 }
 
 /******************************************************************************/
@@ -177,9 +181,9 @@ app_result_e config_poweron_option(void)
 {
     app_result_e result = RESULT_NULL;
 
-	// 检查是否进入OTA升级
-	result = check_ota_upgrade();
-	if (result != RESULT_NULL)
+    // 检查是否进入OTA升级
+    result = check_ota_upgrade();
+    if (result != RESULT_NULL)
     {
         goto power_on_option_ok;
     }
@@ -316,6 +320,11 @@ app_result_e config_poweron_option(void)
             result = open_stub();
         }
     }    
+    
+    if(g_app_info_state.stub_tools_type != 0)
+    {
+        g_config_esd_restart = FALSE;        
+    }
 
     return result;
 }

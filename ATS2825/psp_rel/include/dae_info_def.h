@@ -16,7 +16,7 @@
 #include <attr.h>
 
 //支持多频点多频段开关
-#define SUPPORT_MULTI_FREQ_MULTI_BAND_SETTING   0
+#define SUPPORT_MULTI_FREQ_MULTI_BAND_SETTING   1
 #define EQ_NUM_BANDS 20   //NOTE!! 请同步到 mmm_dae_def.h 宏定义 MAX_PEQ_SEG
 
 struct eq_band_setting    //NOTE!! 请同步到 mmm_dae_def.h 结构体定义 peq_band_t
@@ -37,30 +37,39 @@ struct mdrc_band_setting  //NOTE!! 请同步到 mmm_dae_def.h 结构体定义 mdrc_band_t
     short reserve;//确保4字节对齐
 };
 
+typedef struct
+{
+    short enable;				            //default: 200ms,step 0.01ms, set 200*100 = 20000    
+    short DownExp_attack_time;				//default: 200ms,step 0.01ms, set 200*100 = 20000
+	short DownExp_release_time;				//default: 10ms,step 1ms, set 10
+	short DownExp_set0_threshold;		    //default: 1ms, step 0.01ms, set 100;
+	short DownExp_threshold;			    //default: -80dB(min), step 0.1dB, set -800
+	short DownExp_ratio;				    //default: 3(greater than 1)  
+}dae_noise_reduction_t;
+
 #if (SUPPORT_MULTI_FREQ_MULTI_BAND_SETTING == 1)
 #define MFBE_BANDS     10
-#define MAX_FREQ_POINT 12
+#define MAX_FREQ_POINT 10
 #endif
 
 typedef struct
 {
     int sample_rate;            //采样率，支持44100,48000Hz两种
-    int channels;               //目前都是按双通道处理
-    int block_size;             //帧长，目前为128点长度
+    short channels;               //目前都是按双通道处理
+    short block_size;             //帧长，目前为128点长度
 	
-	int fade_in_time_ms;        //淡入长度，[50 100 200 300 400 500]ms
-    int fade_out_time_ms;       //淡出长度，[50 100 200 300 400 500]ms
-    int mute_time_ms;           //静音长度，长度没有限制，单位ms
-
-    int fade_in_flag;           //淡入标志位，置1表示下一帧开始淡入
-    int fade_out_flag;          //淡出标志位，置1表示下一帧开始淡出
-    int mute_flag;              //静音标志位，置1表示下一帧开始静音
+	short fade_in_time_ms;        //淡入长度，[50 100 200 300 400 500]ms
+    short fade_out_time_ms;       //淡出长度，[50 100 200 300 400 500]ms
+    short mute_time_ms;           //静音长度，长度没有限制，单位ms
+    short fade_in_flag;           //淡入标志位，置1表示下一帧开始淡入
+    short fade_out_flag;          //淡出标志位，置1表示下一帧开始淡出
+    short mute_flag;              //静音标志位，置1表示下一帧开始静音
 	
-    int DAE_init_flag;          //初始化标识位
-    int DAE_change_flag;        //DAE全部参数改变标识位
+    short DAE_init_flag;          //初始化标识位
+    short DAE_change_flag;        //DAE全部参数改变标识位
     short  output_channel_config;//1:左右声道交换 2: 单端耳机应用(L=R=原始的(L/2 + R/2)), 0 or 其它值, 跟原始的左右声道一致；该功能与音效无关，不受 BYPASS 影响
     short  bypass;               //bypass,1表示直通，0表示DAE处理
-    int precut;                 //预衰减，初始化为0；precut 不受 BYPASS 影响
+    short precut;                 //预衰减，初始化为0；precut 不受 BYPASS 影响
 	/***********************************/
 
 //确保4字节对齐
@@ -71,23 +80,31 @@ typedef struct
     short SpeakerCompensation_enable;//SpeakerCompensation开关
     short Limiter_enable;       //Limiter开关
     short MultibandDRC_enable;  //MDRC开关
-    short reserve_0;
+    short DownwardExpander_enable; //downward expander(noise gate)开关	//确保4字节对齐
+    /***********************************/
 #if (SUPPORT_MULTI_FREQ_MULTI_BAND_SETTING == 1)    
     short MultiFreqBandEnergy_enable;//多频段能量计算开关
     short FreqSpetrumDisplay_enable;//多频点能量计算开关
-#endif   
+#endif  
+
+    /*******for noise reduction*********/
+	short DownExp_attack_time;				//default: 100ms,step 0.01ms, set 10*100 = 1000
+	short DownExp_release_time;				//default: 10ms,step 1ms, set 10
+	short DownExp_set0_threshold;				//default: 5, step 1, set 5;表示采样值在该值以下直接清0
+	short DownExp_threshold;					//default: -75dB(min), step 0.1dB, set -750
+	short DownExp_ratio;						//default: 5(greater than 1)
 
 //确保4字节对齐
     /***********************************/
-    int Vbass_low_cut_off_frequency;//vbass低音频率，初始化建议80hz
-    int Vbass_gain;             //vbass增益,单位为0.1dB，-120：10：120dB，初始化建议60dB
+	short Vbass_low_cut_off_frequency;
+	short Vbass_gain;
     int Vbass_type;             //虚拟低音的类型
     /***********************************/
-    int Surround_angle;         //10:10:60°,双扬声器到人头的夹角，初始化为10°
-    int Surround_gain;          //环绕声增益，-60:1:0dB，初始化为-3dB
+	short Surround_angle;
+	short Surround_gain;
     /***********************************/
-    int Treble_frequency;       //高音增强开始频率，8000:1000:20000Hz，初始化为10000Hz
-    int Treble_gain;            //高音增强幅度,单位为0.1dB，0:10:150dB，初始化为100dB
+	short Treble_frequency;
+	short Treble_gain;
     /***********************************/
     //int MDRC_change_flag;     //MDRC单独的参数改变标识位，MDRC参数改变时置1，同时DAE_change_flag置1
     int crossover_freqency[MDRC_NUM_BANDS-1];
@@ -111,13 +128,12 @@ typedef struct
     /**************Multi-freq band energy*********************/
     short duration_ms;                      //统计时长，单位ms
     short num_band;                         //频段数,算法内部最多支持10段
-    short f_low[MFBE_BANDS];                //带通下限，若为0且对应的f_high不为0则为低频段
-    short f_high[MFBE_BANDS];               //带通上限
-    short energys[MFBE_BANDS];              //计算出来的频段能量，供方案端读!!!
-    /**************freq spetrum display*********************/
-    int num_freq_point;                     //频点数,算法内部最多支持12点
-    short freq_point[MAX_FREQ_POINT];       //各频点数组
-    short freq_point_mag[MAX_FREQ_POINT];   //计算出来的频点能量，供方案端读!!!
+	short f_c[MFBE_BANDS];					//带通中心频率
+	short energys[MFBE_BANDS];				//计算出来的频段能量，供方案端读!!!
+	/**************freq spetrum display*********************/
+	int num_freq_point;						//频点数,算法内部最多支持12点
+	short freq_point[MAX_FREQ_POINT];			//各频点数组
+	short freq_point_mag[MAX_FREQ_POINT];		//计算出来的频点能量，供方案端读!!!
 #endif
  
     /***********************************/
@@ -132,20 +148,15 @@ typedef struct
     short  energy;     //解码帧pcm平均值
     short  energy_max; //解码帧pcm绝对值最大值
 //以上3个成员必须紧挨着
-    short  reserve_1;
-    short  reserve_2;//确保4字节对齐
-    short  reserve_3;
-    short  reserve_4;
-    short  reserve_5;
-    short  reserve_6;
-    short  reserve_7;
-    short  reserve_8; 
-    /***********************************/
-    int Limiter_threshold;      //阈值，-60:1:0dB，初始化建议-1dB
-    int Limiter_attack_time;    //启动时间，0.05:0.05:10ms，传值扩大100倍，即范围5:5:1000，初始化为10
-    int Limiter_release_time;   //衰减时间，1:1:1000ms，初始化为100
-
-    struct mdrc_band_setting mdrc_band_settings[MDRC_NUM_BANDS]; //MDRC参数
+	
+	/***********************************/
+	short Limiter_threshold;
+	short Limiter_attack_time;
+	short Limiter_release_time;
+	short reserve;
+	
+	struct mdrc_band_setting mdrc_band_settings[MDRC_NUM_BANDS];
+	
 }DAE_para_info_t;
 
 extern DAE_para_info_t g_dae_param_info;

@@ -53,8 +53,8 @@ SECTIONS
         mmm_bp_cmd.o(.text)
 
         /*common ³£×¤´úÂë*/
-      /*  btplay_eg_message_loop.o(.text)*/
-        
+        btplay_eg_message_loop.o(.text)
+        btplay_eg_send_cmd_tws.o(.text.bank2)
         app_timer_rcode_for_engine.o(.text) 
     	message_rcode_for_engine.o(.text)
  		btplay_eg_message_loop.o(.bank)
@@ -98,35 +98,18 @@ SECTIONS
     OFFSET = . & 0x3ffff;
     BANK_CONTROL_1_0    : 
     {
-        ctor.o(.text .rodata)        
+        ctor.o(.text .rodata)  
+        btplay_eg_main.o(.text .rodata)              
     }
 
     /*bank control 1*/
     . = ((. + AP_BANK_SPACE) & (~(AP_BANK_SPACE - 1))) + OFFSET;
      BANK_CONTROL_1_1   : 
     {
-        btplay_eg_main.o(.text .rodata)
-    }  
-    
-    . = ((. + AP_BANK_SPACE) & (~(AP_BANK_SPACE - 1))) + OFFSET;
-    BANK_CONTROL_1_2	: 
-    {
     	btplay_eg_message_handle.o(.text .rodata)
-		btplay_eg_message_loop.o(.text)
-		btplay_eg_send_cmd_tws.o(.text.bank2)
-		/*btplay_eg_send_cmd_tws.o(.text)*/
-    }                
-
-    . = ((. + AP_BANK_SPACE) & (~(AP_BANK_SPACE - 1))) + OFFSET;
-    BANK_CONTROL_1_3	: 
-    {
-       btplay_eg_music_control.o(.text .rodata)
-	   btplay_eg_send_cmd_tws.o(.text)
-    }
-    . = ((. + AP_BANK_SPACE) & (~(AP_BANK_SPACE - 1))) + OFFSET;
-    BANK_CONTROL_1_4	: 
-    {
-      btplay_eg_message_handle.o(.text.bank4)
-	   
-    }
+		btplay_eg_message_loop.o(.bank)
+        btplay_eg_music_control.o(.text .rodata)
+	    btplay_eg_send_cmd_tws.o(.text)	
+	    btplay_eg_message_handle.o(.text.bank4)        
+    }                 
 }

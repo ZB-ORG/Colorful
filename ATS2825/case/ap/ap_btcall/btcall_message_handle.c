@@ -1,14 +1,12 @@
 
-
 /*******************************************************************************
-*                              US282A
-*                 Copyright(c) 2014-2015 Actions (Zhuhai) Microelectronics Co., Limited,
-*                            All Rights Reserved.
-*        brief   响应通话中的操作，处理消息事件
-*      <author>       <time>
-*       Wekan   2015-3-27
-*******************************************************************************/
-
+ *                              US282A
+ *                 Copyright(c) 2014-2015 Actions (Zhuhai) Microelectronics Co., Limited,
+ *                            All Rights Reserved.
+ *        brief   响应通话中的操作，处理消息事件
+ *      <author>       <time>
+ *       Wekan   2015-3-27
+ *******************************************************************************/
 
 #include  "ap_btcall.h"
 
@@ -35,34 +33,38 @@ app_result_e key_EQ_deal(void);
 app_result_e key_EQ_long_deal(void);
 app_result_e key_switch_ap(void);
 
-
 #ifdef __SUPPORT_3_WAY_CALL_
 int com_get_hfp_3way_status(void);
 app_result_e hfp_3way_handle(int8 mode);
+app_result_e key_dbl_next_deal(void);
 #endif //#ifdef __SUPPORT_3_WAY_CALL_
-
 const key_event_map_t __section__(".rodata.ke_maplist") btcall_ke_maplist[] =
 {
 #if (SUPPORT_PHONE_KEY == 1)
-    { { KEY_PHONE, 0, KEY_TYPE_SHORT_UP , 0},                   key_phone_deal },
-    { { KEY_PHONEPLAY, 0, KEY_TYPE_SHORT_UP , 0},               key_phone_deal },
-    { { KEY_PHONE, 0, KEY_TYPE_LONG , KEY_DEAL_FILTER},         key_phone_long_deal },
-    { { KEY_PHONEPLAY, 0, KEY_TYPE_LONG , KEY_DEAL_FILTER},     key_phone_long_deal },
+    { { KEY_PHONE, 0, KEY_TYPE_SHORT_UP , 0}, key_phone_deal},
+    { { KEY_PHONEPLAY, 0, KEY_TYPE_SHORT_UP , 0}, key_phone_deal},
+    { { KEY_PHONE, 0, KEY_TYPE_LONG , KEY_DEAL_FILTER}, key_phone_long_deal},
+    { { KEY_PHONEPLAY, 0, KEY_TYPE_LONG , KEY_DEAL_FILTER}, key_phone_long_deal},
 #else
-    { { KEY_NEXT, 0, KEY_TYPE_SHORT_UP | KEY_TYPE_LONG_UP , 0}, key_next_deal },
-    { { KEY_PREV, 0, KEY_TYPE_SHORT_UP | KEY_TYPE_LONG_UP , 0}, key_prev_deal },
-    { { KEY_NEXT_VOLADD, 0, KEY_TYPE_SHORT_UP , 0},             key_next_deal },
-    { { KEY_PREV_VOLSUB, 0, KEY_TYPE_SHORT_UP , 0},             key_prev_deal },
-    { { KEY_PLAY, 0, KEY_TYPE_SHORT_UP , 0},                    key_play_deal },
 
-    { { KEY_EQ, 0, KEY_TYPE_SHORT_UP , 0},                      key_EQ_deal },
-    { { KEY_EQ, 0, KEY_TYPE_LONG , KEY_DEAL_FILTER},            key_EQ_long_deal },
+#ifdef __SUPPORT_3_WAY_CALL_
+
+    { { KEY_NEXT, 0, KEY_TYPE_DBL_CLICK , 0}, key_dbl_next_deal},
+#endif
+    { { KEY_NEXT, 0, KEY_TYPE_SHORT_UP | KEY_TYPE_LONG_UP , 0}, key_next_deal},
+
+    { { KEY_PREV, 0, KEY_TYPE_SHORT_UP | KEY_TYPE_LONG_UP , 0}, key_prev_deal},
+    { { KEY_NEXT_VOLADD, 0, KEY_TYPE_SHORT_UP , 0}, key_next_deal},
+    { { KEY_PREV_VOLSUB, 0, KEY_TYPE_SHORT_UP , 0}, key_prev_deal},
+    { { KEY_PLAY, 0, KEY_TYPE_SHORT_UP , 0}, key_play_deal},
+    { { KEY_EQ, 0, KEY_TYPE_SHORT_UP , 0}, key_EQ_deal},
+    { { KEY_EQ, 0, KEY_TYPE_LONG , KEY_DEAL_FILTER}, key_EQ_long_deal},
 #endif
     /*! 切换应用模式 */
-    { { KEY_MODE, 0, KEY_TYPE_SHORT_UP, 0 },                    key_switch_ap },
+    { { KEY_MODE, 0, KEY_TYPE_SHORT_UP, 0}, key_switch_ap},
 
     /*! 结束标志 */
-    {{ KEY_NULL, 0, KEY_TYPE_NULL,0}, NULL},
+    { { KEY_NULL, 0, KEY_TYPE_NULL,0}, NULL},
 };
 
 #if (SUPPORT_PHONE_KEY == 0)
@@ -88,30 +90,54 @@ app_result_e key_play_deal(void)
             sys_os_time_dly(10); //不要使用sys_mdelay，这种接口在低优先级任务不准确
         }
         return RESULT_NULL;
-    }    
+    }
 
     if ((g_btcall_cur_info.status == BTCALL_IDLE) || (g_btcall_cur_info.status == BTCALL_STOP))
     {
         return RESULT_NULL;
     }
 
-#if (__SUPPORT_SIRI_ == 1)    
+#if (__SUPPORT_SIRI_ == 1)
     if (((com_get_config_default(BTMANAGER_ENABLE_SIRI)!=0))&&(g_btcall_cur_info.status == BTCALL_SIRI))
     {
         PRINT_INFO("hang up siri\n");
         com_btmanager_hfp_siri_handle();
         return RESULT_NULL;
     }
-#endif //#if (__SUPPORT_SIRI_ == 1)    
+    else
+    {
+        ;//for qac
+    }
+#endif //#if (__SUPPORT_SIRI_ == 1)
+    /* 三方通话状态注释:
+     THREE_WAY_NEW_CALL_IN : phone A active, and new phone B call in,
+     to handle, turn A to held, accept B.
+     THREE_WAY_HOLD_EXIST :  phone A held, and phone B active,
+     to hanle, turn A to active, B to held.
+     */
+#ifdef __SUPPORT_3_WAY_CALL_
+    {
+        uint8 hfp_status;
+        hfp_status = (uint8)com_get_hfp_3way_status();
 
+        if ( (hfp_status == THREE_WAY_NEW_CALL_IN)
+                ||(hfp_status == THREE_WAY_HOLD_EXIST))
+        {
+            //通话过程中接听新来电
+            libc_print("ap:key accept 3-way  new call in.\n", 0, 0);
+            return hfp_3way_handle(THREE_WAY_HOLD_EXIST);
+        }
+    }
+#endif  //__SUPPORT_3_WAY_CALL_
     if (g_btcall_cur_info.status == BTCALL_CALLIN)
     {
         return hfp_accept_call();
     }
-
-    return hfp_hang_up_call();
+    else
+    {
+        return hfp_hang_up_call();
+    }
 }
-
 /******************************************************************************
  * \par  Description:   响应next按键，拒接、挂断、切换音源
  * \param[in]     null0
@@ -129,10 +155,10 @@ app_result_e key_next_deal(void)
         {
             sys_os_time_dly(10); //不要使用sys_mdelay，这种接口在低优先级任务不准确
         }
-        
+
     }
     else
-    {   
+    {
         if (g_btcall_cur_info.status == BTCALL_CALLIN)
         {
             return hfp_reject_call();//拒接 hfp_reject_call
@@ -176,16 +202,16 @@ app_result_e key_prev_deal(void)
         {
             sys_os_time_dly(10); //不要使用sys_mdelay，这种接口在低优先级任务不准确
         }
-        
+
     }
     else
-    { 
+    {
         if (g_btcall_cur_info.status == BTCALL_CALLIN)
         {
             return hfp_reject_call();//拒接 hfp_reject_call
         }
 
-        if((uint8) com_get_config_default(BTCALL_SET_MIC_MUTE_ENABLE) != 0)
+        if ((uint8) com_get_config_default(BTCALL_SET_MIC_MUTE_ENABLE) != 0)
         {
             if (g_btcall_cur_info.status == BTCALL_HFP)
             {
@@ -221,7 +247,7 @@ app_result_e key_phone_deal(void)
 {
 #ifdef __SUPPORT_3_WAY_CALL_
     uint8 hfp_status;
-    hfp_status = com_get_hfp_3way_status();
+    hfp_status = (uint8)com_get_hfp_3way_status();
 #endif
 
     if ((g_btcall_cur_info.status == BTCALL_IDLE) || (g_btcall_cur_info.status == BTCALL_STOP))
@@ -234,7 +260,7 @@ app_result_e key_phone_deal(void)
     if (hfp_status == THREE_WAY_HOLD_EXIST)
     {
         // 三方通话状态，切换到另一方
-        return hfp_3way_handle(2);
+        return hfp_3way_handle(THREE_WAY_HOLD_EXIST);
     }
     else if (hfp_status == THREE_WAY_NEW_CALL_IN)
     {
@@ -245,10 +271,23 @@ app_result_e key_phone_deal(void)
     else
 #endif
 
+#if (__SUPPORT_SIRI_ == 1)
+    if (((com_get_config_default(BTMANAGER_ENABLE_SIRI)!=0))&&(g_btcall_cur_info.status == BTCALL_SIRI))
+    {
+        PRINT_INFO("hang up siri\n");
+        com_btmanager_hfp_siri_handle();
+        return RESULT_NULL;
+    }
+    else
+    {
+        ;//for qac
+    }
+#endif //#if (__SUPPORT_SIRI_ == 1)
     if (g_btcall_cur_info.status == BTCALL_CALLIN)
     {
         return hfp_accept_call();
     }
+
     else
     {
         ;//nothing
@@ -270,7 +309,7 @@ app_result_e key_phone_long_deal(void)
 {
 #ifdef __SUPPORT_3_WAY_CALL_
 
-    uint8 hfp_status = com_get_hfp_3way_status();
+    uint8 hfp_status = (uint8)com_get_hfp_3way_status();
 
     if (hfp_status == THREE_WAY_NEW_CALL_IN)
     {
@@ -289,9 +328,12 @@ app_result_e key_phone_long_deal(void)
     {
         return hfp_reject_call();//拒接
     }
+    else
+    {
+        ;//for qac
+    }
     return RESULT_NULL;
 }
-
 
 /******************************************************************************
  * \par  Description:   短按eq按键，支持3方通话时，功能同phone键
@@ -305,12 +347,16 @@ app_result_e key_phone_long_deal(void)
 
 app_result_e key_EQ_deal(void)
 {
-    #ifdef __SUPPORT_3_WAY_CALL_
+    if (g_app_info_state.stub_tools_type == STUB_PC_TOOL_ATT_MODE)
+    {
+        return RESULT_BLUETEETH_SOUND;
+    }
+#ifdef __SUPPORT_3_WAY_CALL_
     return key_phone_deal();
-    #endif
+#else
     return RESULT_NULL;
+#endif
 }
-
 
 /******************************************************************************
  * \par  Description:   长按eq按键，支持3方通话时，功能同phone键
@@ -322,13 +368,18 @@ app_result_e key_EQ_deal(void)
  *    Wekan   2016-3-10
  *******************************************************************************/
 
-
 app_result_e key_EQ_long_deal(void)
 {
-    #ifdef __SUPPORT_3_WAY_CALL_
+    if (g_app_info_state.stub_tools_type == STUB_PC_TOOL_ATT_MODE)
+    {
+        return RESULT_BLUETEETH_SOUND;
+    }
+
+#ifdef __SUPPORT_3_WAY_CALL_
     return key_phone_long_deal();
-    #endif
+#else
     return RESULT_NULL;
+#endif
 }
 
 /******************************************************************************
@@ -343,7 +394,7 @@ app_result_e key_EQ_long_deal(void)
 
 app_result_e key_switch_ap(void)
 {
-    if(g_app_info_state.stub_tools_type == STUB_PC_TOOL_ATT_MODE)
+    if (g_app_info_state.stub_tools_type == STUB_PC_TOOL_ATT_MODE)
     {
         return RESULT_BLUETEETH_SOUND;
     }
@@ -448,19 +499,18 @@ app_result_e btcall_sys_deal_ignore_when_call(void *ev_param);
 app_result_e btcall_sys_deal_rtcalarm_when_call(void *ev_param);
 const sys_event_map_t __section__(".rodata.se_maplist") btcall_se_maplist[] =
 {
-    {{MSG_UH_IN, 0},      btcall_sys_deal_ignore_when_call},
-    {{MSG_UH_OUT, 0},     btcall_sys_deal_ignore_when_call},
-    {{MSG_SD_IN, 0},      btcall_sys_deal_ignore_when_call},
-    {{MSG_SD_OUT, 0},     btcall_sys_deal_ignore_when_call},
-    {{MSG_LINEIN_IN, 0},  btcall_sys_deal_ignore_when_call},
-    {{MSG_LINEIN_OUT, 0}, btcall_sys_deal_ignore_when_call},
-    {{MSG_RTCALARM, 0},   btcall_sys_deal_rtcalarm_when_call},
-    {{MSG_USB_STICK, 0},  btcall_sys_deal_ignore_when_call},
+    { { MSG_UH_IN, 0}, btcall_sys_deal_ignore_when_call},
+    { { MSG_UH_OUT, 0}, btcall_sys_deal_ignore_when_call},
+    { { MSG_SD_IN, 0}, btcall_sys_deal_ignore_when_call},
+    { { MSG_SD_OUT, 0}, btcall_sys_deal_ignore_when_call},
+    { { MSG_LINEIN_IN, 0}, btcall_sys_deal_ignore_when_call},
+    { { MSG_LINEIN_OUT, 0}, btcall_sys_deal_ignore_when_call},
+    { { MSG_RTCALARM, 0}, btcall_sys_deal_rtcalarm_when_call},
+    { { MSG_USB_STICK, 0}, btcall_sys_deal_ignore_when_call},
 
     /*! 结束标志 */
-    {{MSG_NULL, 0}, NULL},
+    { { MSG_NULL, 0}, NULL},
 };
-
 
 /******************************************************************************
  * \par  Description:    处理通话时，忽略事件
@@ -507,6 +557,23 @@ app_result_e btcall_sys_deal_rtcalarm_when_call(void *ev_param)
 }
 
 #ifdef __SUPPORT_3_WAY_CALL_
+
+app_result_e key_dbl_next_deal(void)
+{
+    uint8 hfp_status = (uint8)com_get_hfp_3way_status();
+
+    if ((hfp_status == THREE_WAY_NEW_CALL_IN)||(hfp_status == THREE_WAY_HOLD_EXIST))
+    {
+
+        /** hand up the current call, and accept the new call.,
+         and the 3-way status not cancel.
+         */
+        return hfp_3way_handle(1);
+
+    }
+    return RESULT_NULL;
+}
+
 int com_get_hfp_3way_status(void)
 {
     msg_apps_t msg;
@@ -534,11 +601,10 @@ app_result_e hfp_3way_handle(int8 mode)
 
     //消息类型(即消息名称)
     msg.type = MSG_BTENGINE_3WAY_HANDLE_SYNC;
-    msg.content.data[0] = mode;
+    msg.content.data[0] = (uint8)mode;
     //发送同步消息
     send_sync_msg_btmanager(g_bt_stack_cur_info.rmt_dev[g_bt_stack_cur_info.hfp_active_id].addr.bytes, &msg, NULL, 0);
 
     return RESULT_NULL;
 }
 #endif //#ifdef __SUPPORT_3_WAY_CALL_
-

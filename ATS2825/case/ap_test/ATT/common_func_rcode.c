@@ -79,7 +79,6 @@ int send_async_msg(uint8 target_id, msg_apps_t *msg)
     if (sys_mq_send((uint32)(target_id), (void *) &cur_send_pmsg) == -1)
     {
         DEBUG_ATT_PRINT("msg full", 0, 0);
-        libc_sem_post(thread_mutex);
         return FALSE;
     }
     return TRUE;

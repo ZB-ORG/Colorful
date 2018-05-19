@@ -25,6 +25,9 @@ app_result_e key_prev_deal(void);
 //app_result_e com_hid_disconnect(void);
 app_result_e deal_btstack_hd_err(void);
 app_result_e deal_dsp_reset(void);
+#ifdef __BQB_TEST_PROFILE_
+app_result_e key_deal_delay_report(void);
+#endif
 
 const sys_event_map_t __section__(".rodata.se_maplist") btplay_se_maplist[] =
 {
@@ -72,6 +75,11 @@ const key_event_map_t __section__(".rodata.ke_maplist") btplay_ke_maplist[] =
     {
         {   KEY_PREV_VOLSUB, 0, KEY_TYPE_LONG_UP, 0}, key_fast_cancel_deal},
 
+#ifdef __BQB_TEST_PROFILE_
+    {
+        {   KEY_PREV, 0, KEY_TYPE_DBL_CLICK, 0}, key_deal_delay_report},
+#endif
+
     /*! 结束标志 */
     {
         {   KEY_NULL, 0, KEY_TYPE_NULL, 0}, NULL},
@@ -86,6 +94,14 @@ void avrcp_tts_play(uint8 tts_id)
 }
 
 #ifdef ENABLE_TRUE_WIRELESS_STEREO
+
+void btplay_tws_sync_deal(uint8 sync_val)
+{
+	 msg_apps_t msg;
+   msg.type = MSG_BTSTACK_TWS_DEAL_MSG_SYNC;
+   msg.content.data[0] = sync_val;
+   send_sync_msg_btmanager(NULL, &msg, NULL, 0);	
+}
 
 #if 0
 void send_cmd_to_other(uint8 op)
@@ -168,6 +184,7 @@ void __section__(".text.autoplay") check_tws_play_tts(void)
             else
             {
                 flag2=1;   
+                btplay_tws_sync_deal(4);   
             }
            // flag2=1;
         }
@@ -236,30 +253,30 @@ app_result_e a2dp_play_deal(void)
     {
         sys_os_time_dly(10); //不要使用sys_mdelay，这种接口在低优先级任务不准确
     }
-
+#ifndef __BQB_TEST_PROFILE_
     if ((g_bt_stack_cur_info.rmt_dev[g_bt_stack_cur_info.a2dp_active_id].serv_conn & AVRCP_CONNECTED_MY) != 0)
     {
 #ifdef ENABLE_TRUE_WIRELESS_STEREO
 #ifdef ENABLE_PLAY_PAUSE_TTS
         if(g_bt_stack_cur_info.dev_role!=0)
         {
-           if ((g_avrcp_tts_enable ==TRUE)&&(sys_comval->tts_enable!=FALSE))           
-           {
-                 //发送卸载中间件命令给从箱
-                    if(g_bt_stack_cur_info.dev_role==TWS_SLAVE)
-                    {
-                     //   g_app_info_state_all.g_send_exit_mmm_tts=1;
-                     }
-           }
-           else
-           {
+            if ((g_avrcp_tts_enable ==TRUE)&&(sys_comval->tts_enable!=FALSE))           
+            {
+                //发送卸载中间件命令给从箱
+                if(g_bt_stack_cur_info.dev_role==TWS_SLAVE)
+                {
+                //   g_app_info_state_all.g_send_exit_mmm_tts=1;
+                }
+            }
+            else
+            {
                 if(g_bt_stack_cur_info.dev_role==TWS_MASTER)
                 {
                     //发送卸载中间件命令给从箱
                      g_app_info_state_all.g_send_exit_mmm_tts=2;
 
                 }
-           }
+            }
         }
 #endif
 #endif
@@ -271,6 +288,7 @@ app_result_e a2dp_play_deal(void)
         avrcp_tts_play(TTS_PAUSE_SONG);
 #endif
     }
+#endif
 
     return RESULT_NULL;
 }
@@ -360,6 +378,13 @@ uint32 key_mute_fun(void)
 app_result_e key_play_deal(void)
 {
     uint32 cru_time;
+    
+#ifdef __BQB_TEST_PROFILE_
+    libc_print("-BTPLAY-", g_btplay_cur_info.status, 2);
+    a2dp_play_deal();
+    return RESULT_NULL;
+#endif
+
 #ifdef ENABLE_TRUE_WIRELESS_STEREO  
     g_last_btplay_status_before_unlink=0;
     if (check_tws_tts_play() == FALSE)
@@ -589,4 +614,13 @@ app_result_e deal_dsp_reset(void)
 
     return RESULT_NULL;
 }
+
+#ifdef __BQB_TEST_PROFILE_
+app_result_e key_deal_delay_report(void)
+{
+    libc_print("key_deal_delay_report", 0, 0);
+    com_btmanager_delay_report();
+    return RESULT_NULL;
+}
+#endif
 

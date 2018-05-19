@@ -248,8 +248,6 @@ int main(int argc, const char *argv[])
     //…±À¿¿∂—¿∫ÛÃ®
     com_btmanager_exit(FALSE, TRUE);
     
-    
-
     irq_save = sys_local_irq_save();
 
     adjust_freq_set_level(AP_FRONT_LOW_PRIO, FREQ_LEVEL11, FREQ_NULL);//max frequency

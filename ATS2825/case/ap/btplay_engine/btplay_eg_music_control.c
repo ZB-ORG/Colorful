@@ -21,10 +21,16 @@ void a2dp_decode_init(uint8 media_type)
     int mmm_init_ret;
     int result;
     mmm_bp_set_type_param_t type_pram;
+    mmm_bp_aout_setting_t mmm_bp_aout_param;
     char *mmm_name =
     { "mmm_bp.al" };
 
     btplay_gl_var.media_type = media_type;
+    {
+    	  mmm_bp_aout_param.asrc_index = K_OUT0_U0;
+        mmm_bp_aout_param.asrc_mode_sel = 2;
+        mmm_bp_aout_param.dac_chanel = DAF0_EN; 
+    }
 
     if (media_type == A2DP_CODEC_SBC)
     {
@@ -108,7 +114,12 @@ void a2dp_decode_init(uint8 media_type)
     mmm_init_ret = mmm_bp_cmd(&mp_handle, MMM_BP_OPEN, (unsigned int) NULL);
     if (mmm_init_ret == 0)
     {
-        mmm_bp_cmd(mp_handle, MMM_BP_AOUT_OPEN, (unsigned int) NULL);
+        if(1 == g_app_info_state_all.fix_sample_rate_flag)
+        {
+            mmm_bp_cmd(mp_handle, MMM_BP_FIX_SAMPLE_RATE, (unsigned int) NULL);
+        }
+        
+        mmm_bp_cmd(mp_handle, MMM_BP_AOUT_OPEN, (unsigned int) &mmm_bp_aout_param);
 
         mmm_bp_cmd(mp_handle, MMM_BP_SET_MUSIC_TYPE, (unsigned int) &type_pram);
 
@@ -143,10 +154,13 @@ void a2dp_decode_init(uint8 media_type)
             ;// do nothing
         }
 #endif
+        //SBC±à½âÂëÊ±ÊÇ·ñÒÖÖÆÔëÉù
+        result = mmm_bp_cmd(mp_handle, MMM_BP_RESTRAIN_NOISE,TRUE);
 
 #ifdef WAVES_ASET_TOOLS
          //·¢ËÍ²¥·ÅÃüÁî
-        result = mmm_bp_cmd(mp_handle, MMM_BP_PLAY, support_waves_pc_tools_bt); 
+        g_waves.bin_number = g_app_info_state_all.bin_number;
+        result = mmm_bp_cmd(mp_handle, MMM_BP_PLAY, (unsigned int) &g_waves); 
 #else
         //·¢ËÍ²¥·ÅÃüÁî
         result = mmm_bp_cmd(mp_handle, MMM_BP_PLAY, (unsigned int) NULL);      
@@ -189,7 +203,7 @@ void a2dp_decode_quit(void)
 #endif        
         g_app_info_state_all.energy_available_flag = FALSE;
 #ifdef WAVES_ASET_TOOLS
-        mmm_bp_cmd(mp_handle, MMM_BP_STOP, support_waves_pc_tools_bt);    
+        mmm_bp_cmd(mp_handle, MMM_BP_STOP, (unsigned int) &g_waves);    
 #else
         mmm_bp_cmd(mp_handle, MMM_BP_STOP, (unsigned int) NULL);    
 #endif
@@ -201,9 +215,11 @@ void a2dp_decode_quit(void)
         sys_free_mmm(TRUE);
         mp_handle = NULL;
 #ifdef ENABLE_TRUE_WIRELESS_STEREO
+#if 0
        temp_flag = sys_local_irq_save();
        g_p_tws_info->tws_send_buf_base = 0x9fc38000;
        sys_local_irq_restore(temp_flag);
+#endif
 #endif        
     }
     btplay_gl_var.codec_flag = FALSE;

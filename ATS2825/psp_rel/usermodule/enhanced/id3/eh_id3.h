@@ -31,8 +31,8 @@ typedef struct
 
 extern HANDLE id3_handle;
 
-extern uint8 id3_temp_buf[SECTOR_SIZE];
-extern uint8 key_buf[KEY_BUF_LEN];
+extern uint8 *id3_temp_buf;
+extern uint8 *key_buf;
 extern uint8 check_count;
 extern uint8 check_flag[8];     //查找ID3要素标记
 extern uint16 id3_pos_buffer;     //当前TempBuf未处理字符的索引

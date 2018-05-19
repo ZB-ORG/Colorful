@@ -8,7 +8,7 @@
 
 #include "common_tts.h"
 #include "common_keytone.h"
-
+#include "common_func.h"
 /******************************************************************************/
 /*!
  * \par  Description:
@@ -74,6 +74,7 @@ bool tts_play_init(uint16 tts_mode, void* tts_ptr)
     uint8 section_cnt;
     int install_ret;
     uint8 dac_chan;
+    uint8 system_vol = 0;
     
     //TTS开始播报，返回不允许播报
     if (com_tts_state_sync(tts_mode, TRUE) == FALSE)
@@ -84,7 +85,10 @@ bool tts_play_init(uint16 tts_mode, void* tts_ptr)
 
     //install tts driver
     sys_os_sched_lock();
-    dac_chan = (uint8)((g_keytone_infor.dac_chan == DAF0_EN)? DAF1_EN : DAF0_EN); //可能与按键音冲突，后续必须与按键音互斥
+    
+    //可能与按键音冲突，后续必须与按键音互斥
+    dac_chan = (uint8)((g_keytone_infor.dac_chan == DAF0_EN)? DAF1_EN : DAF0_EN); 
+    
     install_ret = sys_drv_install(DRV_GROUP_TTS, dac_chan, "tts_play.drv");
     sys_os_sched_unlock();
     if (install_ret == -1)
@@ -119,14 +123,14 @@ bool tts_play_init(uint16 tts_mode, void* tts_ptr)
 
     if (section_cnt == 0)
     {
-        PRINT_WARNING("tts sections zero!");
+        PRINT_WARNING("tts secti zero");
         ret = FALSE;
         goto tts_ret;
     }
 
     if (tts_status_play_init(g_tts_play_info.section_ids, section_cnt, tts_ptr) == -1)
     {
-        PRINT_WARNING("tts play init fail!");
+        PRINT_WARNING("tts play init fail");
         ret = FALSE;
         goto tts_ret;
     }
@@ -138,16 +142,17 @@ bool tts_play_init(uint16 tts_mode, void* tts_ptr)
     if (ret == TRUE)
     {
         //DAE模式切换时必须保证按键音已播完
-        keytone_play_deal_wait();
+        //keytone_play_deal_wait();
 
-        com_set_dae_onoff(FALSE);
+        //com_set_dae_onoff(FALSE);
 
-        sys_comval->volume_current_temp = sys_comval->volume_current;
-        if (sys_comval->volume_current < 8)
+        system_vol = sys_comval->volume_current;
+        if (system_vol < TTS_MIN_VOL)
         {
-            sys_comval->volume_current = 8;
+            g_keytone_infor.kt_mute = 1;
+            system_vol = TTS_MIN_VOL;
+            com_set_phy_volume(system_vol); 
         }
-        com_set_phy_volume(sys_comval->volume_current);        
     }
     
     return ret;
@@ -160,29 +165,42 @@ void tts_play_exit(uint16 tts_mode)
     //主动调一次tts_play_exit,那么等第二个播放完，第一个回到退出的地方又会再
     //调一次，由于资源已释放造成问题，因此资源释放放到TTS子线程中处理
     //tts_status_play_exit();
-
+    uint8 system_vol = 0;
+    
     g_tts_play_info.status = TTS_STATUS_IDLE;
 
     g_tts_play_info.option &= (~FORCE_STOP_TTS); //表示终止tts
-
-    //TTS播报完成
-    com_tts_state_sync(tts_mode, FALSE);
-
+    
     //tts exit close dsp
     sys_drv_uninstall(DRV_GROUP_TTS);
     
     //DAE模式切换时必须保证按键音已播完
     keytone_play_deal_wait();
     
-    com_set_dae_onoff(TRUE);
-
-    sys_comval->volume_current = sys_comval->volume_current_temp;
-    if (sys_comval->volume_current == 0xff)
+    //恢复播报TTS之前的音效开关状态
+    if (FALSE == sys_comval->bypass_temp)     //TTS播报之前音效是打开的状态
     {
-        sys_comval->volume_current = 0;
+        com_set_dae_onoff(TRUE);              //打开音效 
     }
-    com_set_phy_volume(sys_comval->volume_current);
+    else if (TRUE == sys_comval->bypass_temp) //TTS播报之前音效是关闭的状态
+    {
+        com_set_dae_onoff(FALSE);             //关闭音效
+    }
+    else
+    {
+        ;//nothing
+    }
 
+    system_vol = sys_comval->volume_current; 
+
+    if (system_vol < TTS_MIN_VOL)
+    {
+        com_set_phy_volume(system_vol);
+        g_keytone_infor.kt_mute = 0;
+    }
+ 
+    //TTS播报完成
+    com_tts_state_sync(tts_mode, FALSE);
 }
 
 void tts_play_loop(void)

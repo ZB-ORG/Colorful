@@ -68,9 +68,16 @@ typedef struct
 //for comunication
 typedef struct
 {
-    uint32 line_sta;//if is insert
-    uint32 set_sample;//sample flag
+    uint8 set_sample;//sample flag
+    uint8 set_adc_sample;//adc sample flag
+    uint8 set_dac_sample;//dac sample flag
+    uint8 no_empty_fla;
+    uint8 data_in_flag;
+    uint16 line_sta;//if is insert
+    uint16 switch_flag;//if need switch_to stub 
     uint32 sample_rate;//rate
+    uint32 adc_sample_rate;//adc rate
+    uint32 dac_sample_rate;//dac rate
     uint32 start_play;//if is start play
     uint32 start_record;//if is start record
     uint32 volume_chg;//if voluem syn
@@ -88,6 +95,7 @@ typedef struct
     uint32 switch_to_adfu;//need to switch toa adfu
     uint32 reset_count;//reset times
     uint32 remove_card;//need remove card
+    uint32 pop_out;
 } ureader_status_t;
 
 //for comunication
@@ -107,8 +115,13 @@ typedef enum
     SET_VOLUME_FLAG,//volume syn flag
     SET_HID_CHANGE,//hid need report
     SET_CARD_INOUT,
+    CLR_REMOVAL,
     SET_TTS_FLAG,
-	SET_USPEAKER_24BIT,
+    SET_USPEAKER_24BIT,
+    FIX_SAMPLE_RATE,
+    SET_VOLUME,
+    CLR_SWITCH_FLAG,
+    SET_MUTE_FLAG,
 //deal card pull plug
 } usound_set_cmd_e;
 

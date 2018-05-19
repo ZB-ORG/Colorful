@@ -3,20 +3,23 @@
 /* COMMON set/get/control类命令回调函数注册表 */
 const rcp_cmd_cb_t music_rcp_cmd_cb_tbl[] =
 {
-    { RCP_CMD_SETTING, SETTING_ID_MUSIC_SETTING, (void *) music_set_music_setting },
-    { RCP_CMD_SETTING, SETTING_ID_SONG_SEQ, (void *) music_set_song_seq },
-    { RCP_CMD_SETTING, SETTING_ID_MUSIC_PLIST, (void *) music_set_music_plist },
+    { RCP_CMD_SETTING, SETTING_ID_MUSIC_SETTING, (void *) music_set_music_setting },//设置循环模式
+    { RCP_CMD_SETTING, SETTING_ID_SONG_SEQ, (void *) music_set_song_seq },//数字点歌
+    { RCP_CMD_SETTING, SETTING_ID_MUSIC_PLIST, (void *) music_set_music_plist },//设置文件列表
     { RCP_CMD_SETTING, SETTING_ID_MUSIC_DISK, (void *) music_set_music_disk },
 
-    { RCP_CMD_QUERY, QUERY_ID_GLOBAL_RCP_INFO, (void *) music_get_global_rcp_info },
-    { RCP_CMD_QUERY, QUERY_ID_MUSIC_INFO, (void *) music_get_music_info },
-    { RCP_CMD_QUERY, QUERY_ID_MUSIC_LYRIC, (void *) music_get_music_lyric },
-    { RCP_CMD_QUERY, QUERY_ID_MUSIC_PLIST, (void *) music_get_music_plist },
+    { RCP_CMD_QUERY, QUERY_ID_GLOBAL_RCP_INFO, (void *) music_get_global_rcp_info },//music全局信息
+    { RCP_CMD_QUERY, QUERY_ID_MUSIC_INFO, (void *) music_get_music_info },//获取歌曲id3等信息
+    { RCP_CMD_QUERY, QUERY_ID_MUSIC_LYRIC, (void *) music_get_music_lyric },//获取歌词信息
+    { RCP_CMD_QUERY, QUERY_ID_MUSIC_PLIST, (void *) music_get_music_plist },//获取文件列表
 
-    { RCP_CMD_CONTROL, CONTROL_KEY_PLAY, (void *) music_apk_key_play },
-    { RCP_CMD_CONTROL, CONTROL_KEY_PAUSE, (void *) music_apk_key_pause },
-    { RCP_CMD_CONTROL, CONTROL_KEY_PREV, (void *) music_apk_key_prev },
-    { RCP_CMD_CONTROL, CONTROL_KEY_NEXT, (void *) music_apk_key_next },
+    { RCP_CMD_CONTROL, CONTROL_KEY_PLAY, (void *) music_apk_key_play },//播放
+    { RCP_CMD_CONTROL, CONTROL_KEY_PAUSE, (void *) music_apk_key_pause },//暂停
+    { RCP_CMD_CONTROL, CONTROL_KEY_PREV, (void *) music_apk_key_prev },//上一曲
+    { RCP_CMD_CONTROL, CONTROL_KEY_NEXT, (void *) music_apk_key_next },//下一曲
+
+    { RCP_CMD_QUERY, QUERY_ID_MUSIC_STATUS, (void *) music_get_dir_list_status },//获取目录状态
+    { RCP_CMD_QUERY, QUERY_ID_MUSIC_DLIST, (void *) music_get_music_dir_list },//获取目录列表
 
     /* 结束项 */
     { 0, 0, NULL },

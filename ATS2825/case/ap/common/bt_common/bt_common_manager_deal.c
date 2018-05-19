@@ -29,7 +29,7 @@ void __section__(".rcode") get_bt_stack_info(void)
 {
     if (sys_share_query_read(APP_ID_BTSTACK, &g_bt_stack_cur_info) == -1)
     {
-        PRINT_ERR("btstack share query not exist!!");
+        PRINT_ERR("shqry err");
         while (1)
         {
             ; //nothing
@@ -243,7 +243,7 @@ void __section__(".rcode") com_btmanager_discoverable_handle(void)
 
 void start_avrcp_volume_update_timer(void)
 {
-    PRINT_INFO("status change");
+    PRINT_INFO("#status change");
 #ifdef ENABLE_TRUE_WIRELESS_STEREO
     if ((g_btmanager_gl_var.avrcp_timer_id == -1)
             && (g_btmanager_gl_var.enable_avrcp_volume_sync == 1)
@@ -311,6 +311,13 @@ void __section__(".rcode") com_btmanager_a2dp_handle(void)
 {
     if (g_this_app_info->app_id == APP_ID_BTPLAY)
     {
+#ifdef ENABLE_TRUE_WIRELESS_STEREO
+        if((g_btmanager_gl_var.last_a2dp_status==A2DP_STATUS_NONE)&&(g_bt_stack_cur_info.dev_role==TWS_SLAVE))
+        {
+            //libc_print("updat stack vol ",0,0);
+            com_btmanager_tws_send(VOLUME_VALUE_FLAG,sys_comval->volume_current,NULL,NULL,MSG_BTSTACK_TWS_VOLUME_SYNC);
+        }
+#endif    
         if (g_bt_stack_cur_info.rmt_dev[g_bt_stack_cur_info.a2dp_active_id].a2dp_status != A2DP_STATUS_PLAY)
         {
             /*延迟检测是否需要切换音频，如果当前设备在推歌，然后来电，播放状态会变成暂停，马上
@@ -402,7 +409,7 @@ void __section__(".rcode") com_btmanager_hfp_handle(void)
 //    {
 //        if (g_bt_stack_cur_info.rmt_dev[g_bt_stack_cur_info.hfp_active_id].hfp_status == HFP_STATUS_PHONE)
 //        {
-//            for(i=0; i<RMT_DEV_NUM; i++)
+//            for(i=0; i<g_btmanager_gl_var.support_dev_num; i++)
 //            {
 ////                if (i == active)
 ////                {
@@ -497,15 +504,19 @@ void __section__(".rcode") check_sniff_status(void)
             if ((g_bt_stack_cur_info.rmt_dev[i].sniff_status == 0)
                     && ((g_bt_stack_cur_info.rmt_dev[i].a2dp_status != A2DP_STATUS_NONE)
                             || (g_bt_stack_cur_info.rmt_dev[i].hfp_status == HFP_STATUS_LINKED))
-                    && (/*(g_bt_stack_cur_info.dev_role == 2)
-                          ||*/ (g_bt_stack_cur_info.rmt_dev[i].dev_type == NO_TWS_DEV)))
+                    && ((g_bt_stack_cur_info.dev_role == 0)
+                          /*|| (g_bt_stack_cur_info.rmt_dev[i].dev_type == NO_TWS_DEV)*/))
 #else
             if ((g_bt_stack_cur_info.rmt_dev[i].sniff_status == 0)
                     && ((g_bt_stack_cur_info.rmt_dev[i].a2dp_status != A2DP_STATUS_NONE)
                             || (g_bt_stack_cur_info.rmt_dev[i].hfp_status == HFP_STATUS_LINKED)))
 #endif
             {
-                check_sniff_status_send_cmd(i);
+//#ifdef ENABLE_TRUE_WIRELESS_STEREO
+              //do no    
+//#else
+              check_sniff_status_send_cmd(i);
+//#endif
             }
         }
     }
@@ -558,6 +569,40 @@ void change_btmanager_status(btmanager_status_e status)
     }
 }
 
+#ifdef ENABLE_TRUE_WIRELESS_STEREO
+
+void __section__(".bank") com_btmanager_ble_deal(void)
+{
+	 if(g_bt_stack_cur_info.dev_role==TWS_SLAVE)
+	 {
+	     if(g_bt_stack_cur_info.ble_con_flag==0)
+	     {
+	     	   //disable advertise
+	     	   com_set_ble_discoverable(0);
+	     	   g_btmanager_gl_var.last_role = g_bt_stack_cur_info.dev_role;
+	     }
+	     else 
+	     {
+	     	  //disconect ble
+	     	  com_btmanager_unlink_spp_ble_profile(1);
+	     }
+	 }
+	 else 
+	 {
+	     if(g_btmanager_gl_var.last_role == TWS_SLAVE)
+	     {
+	         //disable advertise
+	         com_set_ble_discoverable(1);
+	     }
+	     g_btmanager_gl_var.last_role = g_bt_stack_cur_info.dev_role;
+	 }
+	 
+}
+
+void com_btmanager_ble_deal(void) __FAR__;
+
+#endif //#ifdef ENABLE_TRUE_WIRELESS_STEREO
+
 app_result_e __section__(".rcode") com_btmanager_loop(bool tts_flag)
 {
     btstack_event_t btstack_ev;
@@ -581,10 +626,10 @@ app_result_e __section__(".rcode") com_btmanager_loop(bool tts_flag)
 #ifdef ENABLE_TRUE_WIRELESS_STEREO
 		for (i = 0; i < g_btmanager_gl_var.support_dev_num; i++)
 		{
-		         if ((g_bt_stack_cur_info.conn_status != CONN_STATUS_LINKED)
+		        // if ((g_bt_stack_cur_info.conn_status != CONN_STATUS_LINKED))
 	            //    || (g_bt_stack_cur_info.rmt_dev[i].sniff_status == 1)||(g_bt_stack_cur_info.dev_role==2)
-	                || (g_bt_stack_cur_info.rmt_dev[i].sniff_status == 1)||(g_bt_stack_cur_info.dev_role!=0)
-	                ||(g_bt_stack_cur_info.tws_master_phonecon==1)) //TODO 多手机还不支持
+	            //    || (g_bt_stack_cur_info.rmt_dev[i].sniff_status == 1)||(g_bt_stack_cur_info.dev_role!=0)
+	            //    ||(g_bt_stack_cur_info.tws_master_phonecon==1)) //TODO 多手机还不支持
 		        {
 		            //设置BT MANAGER状态为“空闲”
 		            if (g_btmanager_gl_var.btmanager_status != BTMANAGER_STATUS_IDLE)
@@ -639,6 +684,10 @@ app_result_e __section__(".rcode") com_btmanager_loop(bool tts_flag)
 
 #ifdef ENABLE_TRUE_WIRELESS_STEREO
     com_btmanager_mod_change();
+    if(g_btmanager_gl_var.last_role != g_bt_stack_cur_info.dev_role)
+    {
+        com_btmanager_ble_deal();
+    }    
 #endif
 
     //接收蓝牙协议栈事件，包括RCP事件
@@ -663,6 +712,52 @@ app_result_e __section__(".rcode") com_btmanager_loop(bool tts_flag)
     g_btmanager_gl_var.last_a2dp_status = g_bt_stack_cur_info.rmt_dev[g_bt_stack_cur_info.a2dp_active_id].a2dp_status;
 
     return result;
+}
+
+void com_btmanager_set_scan_mode(uint8 mode)
+{
+    msg_apps_t msg;
+
+    //g_btmanager_gl_var.discoverable_flag = mode;
+    //0 is default mode 1 is fast mode 
+
+    msg.type = MSG_BTSTACK_SET_SCAN_MODE;
+    msg.content.data[0] = mode;
+
+    send_sync_msg_btmanager(NULL, &msg, NULL, 0);
+}
+
+
+void __section__(".bank") com_btmanager_fast_discover_timer_proc(void)
+{
+	  g_fast_discoverable_cnt++;
+	  if(g_fast_discoverable_cnt>=50)
+	  {
+	  	  kill_app_timer(g_fast_discoverable_timer);
+        g_fast_discoverable_timer = -1;
+        //send message to bt stack to change back san time
+        com_btmanager_set_scan_mode(0);
+	  } 
+}
+
+
+void __section__(".bank") com_btmanager_fast_discover_deal(uint8 type)
+{
+	   //init 
+	   if(type == 1)
+	   {
+	       g_fast_discoverable_cnt = 0;
+	       g_fast_discoverable_timer = set_app_timer(APP_TIMER_ATTRB_COM_CONTROL, 1000, com_btmanager_fast_discover_timer_proc);
+	       //send message to bt stack to change back san time
+	       com_btmanager_set_scan_mode(1);
+	   }
+	   else 
+	   {
+	   	  kill_app_timer(g_fast_discoverable_timer);
+        g_fast_discoverable_timer = -1;
+        //send message to bt stack to change back san time
+        com_btmanager_set_scan_mode(0);
+	   }
 }
 
 //有什么需要系统处理的可以通过发送系统消息来实现
@@ -717,6 +812,12 @@ void com_btmanager_conn_status_change_handle(bool init_flag)
                 sys_mq_send(MQ_ID_SYS, &msg);
             }
         }
+        //for set fast timer
+        if(g_fast_discoverable_timer == -1)
+        {
+            //g_fast_discoverable_timer = set_app_timer(APP_TIMER_ATTRB_COM_CONTROL, 1000, com_btmanager_autoconnect);
+            com_btmanager_fast_discover_deal(1);
+        } 
         break;
 
         case CONN_STATUS_LINKED:
@@ -739,6 +840,12 @@ void com_btmanager_conn_status_change_handle(bool init_flag)
             msg.type = MSG_BT_CONNECTED;
             sys_mq_send(MQ_ID_SYS, &msg);
         }
+        
+        if(g_fast_discoverable_timer != -1)
+        {
+        	  com_btmanager_fast_discover_deal(0);
+        }
+        
         break;
 
         case CONN_STATUS_ERROR:

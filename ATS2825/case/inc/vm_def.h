@@ -39,6 +39,14 @@
 //BTMANAGER_ENABLE_HFP_PHONEBOOK 只有该配置项打开才会使用该VRAM区
 #define  VM_BTPHONEBOOK         0x00100000//0x10 蓝牙电话本信息，该功能VRAM保存有问题，下次更新 2015-9-18
 
+//安排这部分VRAM数据在这个index，保证数据不会丢失
+//!!!注意这部分index不能和其他模块复用,电话本功能暂时关闭
+#define VM_S3BT_APP_GLOBAL      0x00100000   //28bytes
+#define VM_S3BT_BT_MANAGER      0x00110000   //78bytes
+#define VM_S3BT_APP_STATUS      0x00120000   //3bytes
+//安排这部分VRAM数据，当VRAM发生merge的时候丢弃这部分数据
+#define VM_S3BT_BT_STACK        0x00400000   //0x6000
+
 //SUPPORT_RING_FOLDER 只有该宏配置为1才会使用该VRAM区
 #define  VM_RING_FOLDER_BASE    0x001c0000//0x1c ~ 0x1f 每个文件名字32字节，可以保存64个文件，共2KB，分4个INDEX存放
 #define  VM_DEW_PARAM_BASE      0x00130000//13 ~ 14 音效增强和减弱参数区
@@ -56,8 +64,12 @@
 //FT mode / bqb mode标志
 #define  VM_API_FLAG           0x00190000
 
+#define VM_DIR_LIST             0x001a0000
+
+#define  ATT_MAGIC              0xABCD
 
 
+#define VM_S3BT_BT_STACK_LEN   0x6000
 
 
 /* AP VRAM 数据区标志 = 0x55AA + ID (0x00 - 0x1f) */
@@ -71,7 +83,9 @@
 #define  NOR_S3BT_BT_STACK      (8) //size = 24KB
 
 //S3BT备份和恢复SRAM地址
-#define  SRAM_S3BT_BUFFER       (0x9fc32000) //0x8000 = 28KB
+#define  SRAM_S3BT_BUFFER       (0x9fc35800) //0x8000 = 28KB
+
+#define  SRAM_S3BT_SIZE         (0x6000)
 
 //RTC BAK0 分配
 #define MY_RTC_S3BT         0  //bit0表示进入S3BT

@@ -30,4 +30,6 @@ sd_handle __section__(".applib_globe_data.config_fp") config_fp;
 app_info_state_all_t __section__(".applib_globe_data.g_app_info_state_all") g_app_info_state_all;
 
 uint32 __section__(".applib_globe_data.g_app_info_state_all") g_customer_state;//预留客户全局配置项
+bool __section__(".applib_globe_data.g_app_info_state_all")g_neednot_tts_play_timeout1;//规避LT_ADDR
+
 

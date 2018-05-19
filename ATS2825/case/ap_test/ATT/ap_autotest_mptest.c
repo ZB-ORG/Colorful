@@ -28,7 +28,6 @@ uint8 g_SUT_state;
 uint8 g_cfo_test_retry_num;
 uint8 g_add_cfo_result_flag; //当cfo测出多组异常时，尽量多采集几组cfo值标志位
 uint8 g_cfo_return_num;
-uint8 g_bt_drv_patch_download;
 #if 1
 //DH1的update命令字
 const uint8 update_cmd0[] = { 0x01, 0x4a, 0xfd, 0x04, 0x82, 0xf1, 0xff, 0x00 };
@@ -181,7 +180,7 @@ uint32 att_write_hci_pkt(uint32 pkt_index)
     return TRUE;
 }
 
-uint32 libc_abs(int32 value)
+static uint32 libc_abs(int32 value)
 {
     if (value > 0)
     {
@@ -306,7 +305,7 @@ uint32 att_parse_cfo_result(mp_test_arg_t *mp_arg, cfo_return_arg_t *cfo_return_
 
         cfo_val = ori_cfo_val + mp_arg->cfo_upt_offset;
 
-        print_log("cfo result num[%d]: %d hz, pwr: %d\n", i, cfo_val, pwr_val);
+        //print_log("cfo result num[%d]: %d hz, pwr: %d\n", i, cfo_val, pwr_val);
 
         if (ori_cfo_val != INVALID_CFO_VAL)
         {
@@ -389,8 +388,8 @@ uint32 att_parse_cfo_result(mp_test_arg_t *mp_arg, cfo_return_arg_t *cfo_return_
         //判断离散程度最大的点是否超过限制，如果超过限制，剔除该点，重复计算下一点
         if (max_diff_val > MAX_CFO_DIFF_VAL)
         {
-            print_log("CFO INVALID[%d]: %d hz\n", max_diff_index, data_buffer[max_diff_index << 1]
-                    + mp_arg->cfo_upt_offset);
+            //print_log("CFO INVALID[%d]: %d hz\n", max_diff_index, data_buffer[max_diff_index << 1]
+            //        + mp_arg->cfo_upt_offset);
 
             //标记该点为无效点
             data_buffer[max_diff_index << 1] = INVALID_CFO_VAL;
@@ -476,38 +475,38 @@ uint32 att_cfo_test_tx_stop(mp_test_arg_t *mp_arg, cfo_return_arg_t *cfo_return_
     uint32 read_len;
     int32 cfo_temp_buffer[30* 2 ]; //最多30组记录，每组记录8个字节
 
-            ret_val = att_write_data(STUB_CMD_ATT_CFO_TX_STOP, 0, STUB_ATT_RW_TEMP_BUFFER);
+    ret_val = att_write_data(STUB_CMD_ATT_CFO_TX_STOP, 0, STUB_ATT_RW_TEMP_BUFFER);
 
-            if(g_SUT_state == 1)
-            {
-                att_write_hci_pkt(PKT_CFO_STOP_INDEX);
-            }
+    if(g_SUT_state == 1)
+    {
+        att_write_hci_pkt(PKT_CFO_STOP_INDEX);
+    }
 
-            if(ret_val == 0)
-            {
-                read_len = g_cfo_return_num * 2 * 4;
+    if(ret_val == 0)
+    {
+        read_len = g_cfo_return_num * 2 * 4;
 
-                ret_val = att_read_data(STUB_CMD_ATT_CFO_TX_STOP, read_len, STUB_ATT_RW_TEMP_BUFFER);
+        ret_val = att_read_data(STUB_CMD_ATT_CFO_TX_STOP, read_len, STUB_ATT_RW_TEMP_BUFFER);
 
-                if((ret_val == 0) && (g_SUT_state == 1))
-                {
-                    pdata = (uint8 *)STUB_ATT_RW_TEMP_BUFFER;
+        if((ret_val == 0) && (g_SUT_state == 1))
+        {
+            pdata = (uint8 *)STUB_ATT_RW_TEMP_BUFFER;
 
-                    libc_memcpy(cfo_temp_buffer, &pdata[6], g_cfo_return_num * 8);
+            libc_memcpy(cfo_temp_buffer, &pdata[6], g_cfo_return_num * 8);
 
-                    ret_val = att_parse_cfo_result(mp_arg, cfo_return_arg, g_cfo_return_num, cfo_temp_buffer);
-                }
-            }
-
-            if (g_update_timer_id != -1)
-            {
-                libc_print("kill timer", 0, 0);
-                sys_del_irq_timer1(g_update_timer_id);
-                g_update_timer_id = -1;
-            }
-
-            return ret_val;
+            ret_val = att_parse_cfo_result(mp_arg, cfo_return_arg, g_cfo_return_num, cfo_temp_buffer);
         }
+    }
+
+    if (g_update_timer_id != -1)
+    {
+        //libc_print("kill timer", 0, 0);
+        sys_del_irq_timer1(g_update_timer_id);
+        g_update_timer_id = -1;
+    }
+
+    return ret_val;
+}
 
 int32 att_get_cfo_val(uint32 index, mp_test_arg_t *mp_arg, cfo_return_arg_t *cfo_return_arg, uint32 test_mode)
 {
@@ -559,6 +558,19 @@ int32 att_get_cfo_val(uint32 index, mp_test_arg_t *mp_arg, cfo_return_arg_t *cfo
 
     ret_val = att_cfo_test_tx_stop(mp_arg, cfo_return_arg);
 
+    /** 判断获取的RSSI是否在正常范围内
+    */
+    if(mp_arg->pwr_test == 1)
+    {
+        if((cfo_return_arg->pwr_val < mp_arg->pwr_threshold_low) ||
+            (cfo_return_arg->pwr_val > mp_arg->pwr_threshold_high))
+        {
+            print_log("RSSI is wrong : %d", cfo_return_arg->pwr_val);
+    		ret_val = FALSE;
+        }
+    }
+    
+
     if (ret_val == FALSE)
     {
         if (g_cfo_test_retry_num < CFO_TEST_RETRY_NUM)
@@ -566,16 +578,16 @@ int32 att_get_cfo_val(uint32 index, mp_test_arg_t *mp_arg, cfo_return_arg_t *cfo
             print_log("retry index %d...", index);
 
             //先stop
-            g_SUT_state = 2;
+            //g_SUT_state = 2;
 
-            att_cfo_test_tx_begin(mp_arg);
+            //att_cfo_test_tx_begin(mp_arg);
 
-            att_cfo_test_tx_stop(mp_arg, cfo_return_arg);
+            //att_cfo_test_tx_stop(mp_arg, cfo_return_arg);
 
-            g_SUT_state = 0;
+            //g_SUT_state = 1;
 
             //强制SUT重新初始化
-            att_cfo_test_tx_begin(mp_arg);
+            //att_cfo_test_tx_begin(mp_arg);
 
             g_cfo_test_retry_num++;
 
@@ -599,34 +611,7 @@ int32 att_get_cfo_val(uint32 index, mp_test_arg_t *mp_arg, cfo_return_arg_t *cfo
     return ret_val;
 }
 
-static int32 att_cfo_test_start(mp_test_arg_t *mp_arg)
-{
-    int32 ret_val;
 
-    btt_priv_data_t btt_priv_data;
-
-    g_SUT_state = 0;
-
-    g_cfo_test_retry_num = 0;
-
-    g_add_cfo_result_flag = FALSE;
-
-    g_cfo_return_num = MP_RETURN_RESULT_NUM;
-
-    //这个函数不能切bank，因发完这个命令PC工具就进行SUT的初始化，这个时候
-    //不会响应工具的任何命令请求，因此重新实现一样的函数，避免bank切换
-    att_cfo_test_tx_begin(mp_arg);
-
-    if (g_bt_drv_patch_download == FALSE)
-    {
-        btt_priv_data.download_patch = FALSE;
-        btt_priv_data.reset_controller = TRUE;
-
-        ret_val = bt_drv_down_patchcode(TRUE, BT_BTT_MODE, &btt_priv_data);
-
-        g_bt_drv_patch_download = TRUE;
-    }
-}
 
 uint32 read_cfo_index(void)
 {
@@ -712,7 +697,11 @@ uint32 att_cfo_test(mp_test_arg_t *mp_arg, cfo_return_arg_t *cfo_return_arg, uin
 
     adjust_direction = 0;
 
-    att_cfo_test_start(mp_arg);
+    g_cfo_test_retry_num = 0;
+
+    g_add_cfo_result_flag = FALSE;
+
+    g_cfo_return_num = MP_RETURN_RESULT_NUM;    
 
     retry: while (left <= right)
     {
@@ -880,6 +869,8 @@ uint32 att_cfo_test(mp_test_arg_t *mp_arg, cfo_return_arg_t *cfo_return_arg, uin
     if (g_SUT_state == 1)
     {
         g_SUT_state = 2;
+
+        //print_log("test fail stop\n");
 
         att_cfo_test_tx_begin(mp_arg);
 

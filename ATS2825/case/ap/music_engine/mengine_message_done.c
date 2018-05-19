@@ -313,17 +313,17 @@ void mengine_save_errno_no(void)
 
         case MMM_MP_ERR_FILE_NOT_SUPPORT: //文件格式不支持
         err_status = EG_ERR_NOT_SUPPORT;
-        PRINT_ERR("格式不支持");
+        PRINT_ERR("FILE NOT SUPPORT");
         break;
 
         case MMM_MP_ERR_FILE_DAMAGED: //文件损毁
         err_status = EG_ERR_NOT_SUPPORT;
-        PRINT_ERR("损毁");
+        PRINT_ERR("FILE DESTORY");
         break;
 
         case MMM_MP_ERR_DECODER_ERROR: //解码出错
         err_status = EG_ERR_DECODER_ERROR;
-        PRINT_ERR("解码出错");
+        PRINT_ERR("DECODER ERROR");
         break;
 
         case MMM_MP_ERR_NO_LICENSE: //无license
@@ -337,7 +337,12 @@ void mengine_save_errno_no(void)
         case MMM_MP_ERR_LICENSE_INFO: //播放次数已满或是播放时间已经到期
         err_status = EG_ERR_DRM_INFO;
         break;
-
+        
+        case MMM_MP_SAMPLE_RATE_NOT_SUPPORT: //采样率不支持
+        err_status = EG_ERR_NOT_SUPPORT;
+        PRINT_ERR("SAMPLE RATE NOT SUPPORT");
+        break;   
+        
         default:
         err_status = EG_ERR_DECODER_ERROR; //解码出错
         break;

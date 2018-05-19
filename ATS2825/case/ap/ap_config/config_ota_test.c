@@ -65,7 +65,7 @@ void write_part_data(ota_write_item_t *p_write_item, uint32 fp, uint32 file_sys_
 
         base_ota_part_write(&write_param);
 
-        write_param.part_write_offset += once_write_size;
+        write_param.part_write_offset += (uint16)once_write_size;
 
         write_size -= once_write_size;
     }
@@ -82,7 +82,7 @@ void sys_reboot(void)
 
     while(1)
     {
-        ;
+        ;//nothing
     }  
 }
 
@@ -93,7 +93,7 @@ void config_ota_write_tag(void)
     g_ota_bkinfo.dowmload_statue = 2;
     g_ota_bkinfo.updata_statue = 0;
     g_ota_bkinfo.reboot_flg = 1;
-	g_ota_bkinfo.ud_att = 1;
+    g_ota_bkinfo.ud_att = 1;
     sys_vm_write(&g_ota_bkinfo, VM_OTA, sizeof(g_ota_bkinfo));
 
 }
@@ -143,9 +143,9 @@ void config_ota_test(uint32 fp, uint32 file_sys_id)
 
     for(i = 0; i < p_ota_write_info->part_total; i++)
     {
-        p_ota_write_info->part_info[i].part_id = part_head->part_item[i].part_id;
+        p_ota_write_info->part_info[i].part_id = (uint8)part_head->part_item[i].part_id;
 
-        p_ota_write_info->part_info[i].part_size = (part_head->part_item[i].part_size>>9);
+        p_ota_write_info->part_info[i].part_size = (uint16)(part_head->part_item[i].part_size>>9);
 
         p_ota_write_info->part_info[i].write_mode = 0;
 
@@ -175,6 +175,9 @@ void config_ota_test(uint32 fp, uint32 file_sys_id)
         libc_print("part unable write", 0, 0);
     }
 
-    while(1);
+    while(1)
+    {
+        ;//nothing
+    }
 }
 

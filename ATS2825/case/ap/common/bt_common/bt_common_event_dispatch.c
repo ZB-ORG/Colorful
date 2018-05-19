@@ -122,20 +122,39 @@ app_result_e com_btmanager_event_dispatch_bank(btstack_event_t *p_event, bool tt
 
         case MSG_BTSTACK_ERR_CONNECTION_TIMEOUT:
         {
-            g_bt_auto_connect_ctrl.need_auto_connect = 0x01;
-            g_bt_auto_connect_ctrl.auto_connect_type = AUTO_CONNECT_TYPE_TIMEOUT;
-            g_need_reset_controller_timeout = 1;
-            g_neednot_tts_play_timeout = 1;
-            for (i = 0; i < g_btmanager_gl_var.support_dev_num; i++)
+           
+            if(p_event->reserve[0]==3)
             {
-                if (g_bt_auto_connect_ctrl.dev_info[i].conn_flag == 0)
+                PRINT_INFO("page time out");
+                p_event->reserve[0]=0;
+                g_bt_auto_connect_ctrl.connect_tick_cnt = g_bt_auto_connect_ctrl.auto_connect_interval;
+            }
+            else
+            {
+                g_bt_auto_connect_ctrl.need_auto_connect = 0x01;
+                g_bt_auto_connect_ctrl.auto_connect_type = AUTO_CONNECT_TYPE_TIMEOUT;
+                //sys_del_mpu_irq(0);
+                g_need_reset_controller_timeout = 1;
+                g_neednot_tts_play_timeout = 1;
+                //g_neednot_tts_play_timeout1=1;
+                for (i = 0; i < g_btmanager_gl_var.support_dev_num; i++)
                 {
-                    g_bt_auto_connect_ctrl.dev_info[i].conn_flag = 1;
-                    libc_memcpy(g_bt_auto_connect_ctrl.dev_info[i].remote_addr.bytes,
-                            p_event->bd_addr, 6);
-                    g_bt_auto_connect_ctrl.dev_info[i].support_profile = p_event->msg.content.data[0];
-                    PRINT_INFO_INT("recv profile:", p_event->msg.content.data[0]);
-                    break;
+                    if (g_bt_auto_connect_ctrl.dev_info[i].conn_flag == 0)
+                    {
+                        g_bt_auto_connect_ctrl.dev_info[i].conn_flag = 1;
+                        if(p_event->reserve[0]==2)
+                        {
+                            g_neednot_tts_play_timeout1=1;
+                            p_event->reserve[0]=0;
+                            g_bt_auto_connect_ctrl.connect_tick_cnt = g_bt_auto_connect_ctrl.auto_connect_interval*2; 
+                        }
+                        libc_memcpy(g_bt_auto_connect_ctrl.dev_info[i].remote_addr.bytes,
+                        p_event->bd_addr, 6);
+                        g_bt_auto_connect_ctrl.dev_info[i].support_profile = p_event->msg.content.data[0];
+                        PRINT_INFO_INT("recv profile:", p_event->msg.content.data[0]);
+                        break;
+                    }
+
                 }
             }
         }
@@ -160,8 +179,12 @@ app_result_e com_btmanager_event_dispatch_bank(btstack_event_t *p_event, bool tt
 
             //转发给COMMON，由COMMON重新装载BT STACK，且需要恢复回连
             msg_apps_t msg;
-
+#ifdef ENABLE_TRUE_WIRELESS_STEREO
+            if ((g_this_app_info->app_id == APP_ID_BTPLAY)
+            	  ||(g_this_app_info->app_id == APP_ID_LINEIN))
+#else
             if (g_this_app_info->app_id == APP_ID_BTPLAY)
+#endif
             {
                 msg.type = MSG_BTSTACK_ERR_HARDWARE_EXCEPTION;
             }
@@ -182,6 +205,91 @@ app_result_e com_btmanager_event_dispatch_bank(btstack_event_t *p_event, bool tt
             broadcast_msg(&msg, TRUE);
         }
         break;
+        
+        case MSG_BTSTACK_TWS_APSWITCH_SYNC:
+        {
+        	//libc_print("@ap switch#",0,0);
+        	
+        	//高4bit 代表主从,全为1则为主
+        	uint8 tmp_val = p_event->msg.content.data[0];
+        	libc_print("@val:",p_event->msg.content.data[0],2);
+        	
+        	if ((tmp_val&0xf) == 1)
+        	{
+        		libc_print("@switch s#",0,0);
+        		//com_key_deal_switch_app();
+        		
+        		if (tmp_val == 0xf1)
+            {
+            	g_tws_m_linein_flag  = 0;
+            }
+        		
+        		if (get_cur_func_id() == APP_FUNC_PLAYLINEIN)
+        		{
+        			 msg_apps_t msg;           
+               msg.type = MSG_BTSTACK_TWS_APSWITCH_SYNC;
+               broadcast_msg(&msg, TRUE);
+        		}		 
+        	} 
+        	else if ((tmp_val&0xf) == 2)
+        	{
+        		if (get_cur_func_id() != APP_FUNC_PLAYLINEIN)
+        		{	
+        		  if (tmp_val == 0xf2)
+              {
+            	  g_tws_m_linein_flag  = 1;
+            	  g_tws_m_switchap_flag = 1;
+              }
+        		  
+        		  msg_apps_t msg;
+              msg.type = EVENT_ENTER_LINEIN;
+              broadcast_msg(&msg, TRUE);
+             
+            }
+        	}
+        	else if (tmp_val == 3)
+        	{
+        		if (get_cur_func_id() == APP_FUNC_BTPLAY)
+        		{
+        			 msg_apps_t msg;           
+               msg.type = MSG_BTSTACK_TWS_APSWITCH_SYNC;
+               broadcast_msg(&msg, TRUE);
+        		}        		
+        	}
+        	else if (tmp_val == 4)
+        	{
+        		if (get_cur_func_id() != APP_FUNC_BTPLAY)
+        		{
+        		     msg_apps_t msg;
+                           msg.type = EVENT_ENTER_BTPLAY;
+                           broadcast_msg(&msg, TRUE);
+                           g_tws_m_switchap_flag = 1;
+        		}	        		
+        	}
+        	else
+        	{
+        	  ;//do nothing	
+        	}					
+
+        }
+        break;	
+        case MSG_BTSTACK_PARSE_GENARAL_CMD:
+        {
+           uint8 buffer[4]={0};
+           //cmd flag,
+           buffer[0]=p_event->msg.content.data[0];
+           libc_print("vol#:",buffer[1],2);
+           buffer[1]=p_event->msg.content.data[1];
+           buffer[2]=p_event->msg.content.data[2];
+           buffer[3]=p_event->msg.content.data[3];
+            if(buffer[0]==MUTE_STATE_FLAG)
+            {
+                //com_switch_mute(0);
+                com_switch_mute(0,2,buffer[1]);
+            }
+        }
+        break;
+
 #endif
 
         default:

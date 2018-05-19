@@ -92,6 +92,7 @@ uint16 music_rcp_first_get(void)
             sizeof(g_sector_buf));
     g_sector_no = 1;
     g_vmfile_total = ((list_head_info_t *) g_sector_buf)->file_total;
+    libc_print("get file num",g_vmfile_total,2);
     g_vmdir_total = ((list_head_info_t *) g_sector_buf)->dir_total;
     
     g_vmdisk_flag = ((list_head_info_t *) g_sector_buf)->cur_disk;
@@ -240,9 +241,8 @@ bool music_rcp_fs_init(uint8 disk_type, uint8 drv_mode)
     
     if (eh_vfs_mount != -1)
     {
-    	  return TRUE;
+        return TRUE;
     }
-
     if (disk_type == DISK_H)
     {
         drv_type = DRV_GROUP_STG_CARD;

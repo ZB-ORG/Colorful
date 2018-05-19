@@ -270,6 +270,9 @@ void key_adc_init(void)
 
 int key_init(void* null0, void *null1, uint32 key_para)
 {
+#ifdef SUPPORT_UART_SIM_KEY
+    uart1_rx_init(115200);
+#endif
     //gpio key init
 #if( SUPPORT_HPY_DRIVER  == 1)
     key_gpio_init();

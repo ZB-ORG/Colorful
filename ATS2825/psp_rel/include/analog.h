@@ -38,6 +38,8 @@ extern int32 audio_device_set_dac_rate(uint32 dac_rate, uint32 chanel_no, void* 
 
 extern int32 audio_device_get_dac_rate(void* null1, void* null2, void* null3) __FAR__;
 
+extern int32 audio_device_get_adc_rate(void* null1, void* null2, void* null3) __FAR__;
+
 extern int32 audio_device_enable_ain(uint32 ain_type, uint32 ain_gain, void* null3) __FAR__;
 
 extern int32 audio_device_disable_ain(uint32 ain_type, void* null2, void* null3) __FAR__;

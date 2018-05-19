@@ -21,6 +21,8 @@
 #include "app_msg.h"
 #include "TWI.h"
 
+//#define SUPPORT_UART_SIM_KEY
+
 //#define lock_key
 
 #define DOWN_KEY_TIMER  3//按键按下消息时间为60ms
@@ -111,11 +113,13 @@ extern void key_ir_status_check(void);
 
 extern bool post_key_msg(key_phy_type_e key_type, key_phy_status_e key_status, uint8 key_id);
 
+extern int exp_fast(int db);
+
 //电池及其充电接口
 extern void ker_battery_charge_deal(void);
 extern void key_inner_battery_charge_open(chg_current_e CurrentMA, chg_voltage_e VoltageMV, void* null2);
 extern void key_inner_battery_charge_stop(void* null0, void* null1, void* null2);
-battery_status_e key_inner_battery_get_status(uint8 *ad_val, int8* vol_limit, void* null2);
+battery_status_e key_inner_battery_get_status(uint32 *ad_val, int8* vol_limit, uint8* app_id);
 extern void key_bat_charge_init(chg_current_e CurrentMA, chg_voltage_e VoltageMV) __FAR__;
 extern void key_sampling_battery_voltage_init(void) __FAR__;
 extern void adjust_freq_do_init(void) __FAR__;
@@ -153,6 +157,8 @@ extern int32 key_inner_set_effect_param(uint32 set_type, void *param_ptr, void *
 extern int32 key_inner_get_feature_info(uint32 set_type, void *info_ptr, void *null3);
 
 extern int32 key_inner_set_waves_effect_param(uint32 set_type, void *param_ptr, void *null3);
+extern void dae_param_print(uint8 audiopp_type);
+extern void dae_param_print1(uint8 audiopp_type);
 
 
 

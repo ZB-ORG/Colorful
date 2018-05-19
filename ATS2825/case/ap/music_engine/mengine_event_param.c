@@ -85,7 +85,7 @@ bool switch_disk_file_init(void)
         {
             //比较后缀名
             vfs_get_name(g_file_sys_id, exname, 0);
-            if (libc_strncmp(exname, loact_ptr->filename, sizeof(exname)) != 0)
+            if (libc_strncmp(exname, loact_ptr->file_info.file_extend_info.file_ext, sizeof(exname)) != 0)
             {
                 init_result = FALSE;
             }
@@ -98,7 +98,7 @@ bool switch_disk_file_init(void)
             libc_memset(&g_eg_cfg_p->bk_infor, 0, sizeof(mmm_mp_bp_info_t));
 
             //获取当前模式下的第一个可播放文件
-            init_result = fsel_get_nextfile(loact_ptr->filename);
+            init_result = fsel_get_nextfile(loact_ptr->file_info.file_extend_info.file_ext);
             //找到可播放文件
             if (init_result == TRUE)
             {
@@ -190,7 +190,7 @@ app_result_e mengine_switch_disk(void* msg_ptr)
         if (g_eg_cfg_p->bk_infor.bp_time_offset != 0)
         {
             //修改插拔磁盘时wav的文件位置信息出错导致断点无法播放的问题
-            if (libc_strncmp(g_eg_cfg_p->location.dirlocation.filename, temp_buf, 4) == 0)
+            if (libc_strncmp(g_eg_cfg_p->location.dirlocation.file_info.file_extend_info.file_ext, temp_buf, 4) == 0)
             {
                 //清除文件位置信息
                 g_eg_cfg_p->bk_infor.bp_file_offset = 0;
@@ -275,7 +275,7 @@ app_result_e mengine_set_filepath(void* msg_ptr)
 
     if (cur_type == FSEL_TYPE_SDFILE)
     {
-        libc_memcpy(g_file_name, locat_info->file_path.dirlocation.filename, 12);
+        libc_memcpy(g_file_name, locat_info->file_path.dirlocation.file_info.file_extend_info.file_ext, 12);
         ret_vals = TRUE;
         g_mengine_enter_mode = ENTER_ALARM;
     }

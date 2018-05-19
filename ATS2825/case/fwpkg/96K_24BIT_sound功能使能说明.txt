@@ -6,14 +6,3 @@ SETTING_AUDIO_OUTPUT_CHANNAL{40} = 1[0,1,2,3,4];//音频输出通道：0-DAC，1-I2S，2-
 
 USOUND_TYPE{250} = 2[0,1,2];     //usb声卡or音箱选择（0，声卡；1，音箱；2，24-bit音箱，需修改声音输出通道为1）
 修改为24BIT
-
-
-	
-AFI.CFG:
-
-使能		FWIM="usound24.drv";
-
-
-
-ccd/STA339BWS.h:
-使能宏定义	#define	__PACFG339_H__

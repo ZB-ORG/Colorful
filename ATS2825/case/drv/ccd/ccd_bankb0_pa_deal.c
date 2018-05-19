@@ -122,17 +122,54 @@ int pa_get_reg(uint8 reg_addr, uint8 *reg_data, uint8 get_len)
     return ret;
 }
 
+uint16 pa_op_get_volume(void)
+{
+    //get val from register
+#ifdef __PACFG339_H__ 
+    uint8 ret_vol;
+
+    uint8 reg_data;
+
+    if((pa_get_reg(MAIN_VOL,&reg_data,1)) == 0)
+    {
+        return 0;
+    }
+    ret_vol = reg_data;
+#else
+    uint32 read_val;
+
+    uint16 ret_vol;
+
+    uint8 reg_data[2];
+    if (pa_get_reg(TI_TAS5707_MASTER_VOL, reg_data, 2) == 0)
+    {
+        return 0;
+    }
+
+    read_val = ((uint32) reg_data[0] << 8) | reg_data[1];
+    
+    ret_vol = read_val;
+#endif
+
+    return ret_vol;
+}
+
 void pa_op_set_volume(uint16 vol)
 {
 #ifdef __PACFG339_H__ 
-    uint32 reg_vol = vol/2;
+    uint32 reg_vol = vol/4;
     if(reg_vol > 0xff)
+    {
         reg_vol = 0xff;
-    pa_set_reg(MAIN_VOL,0xa4,1);   
-//    pa_set_reg(MAIN_VOL,(reg_vol),1);
+    }
+//    pa_set_reg(MAIN_VOL,0xa4,1);   
+    if(pa_set_reg(MAIN_VOL,&reg_vol,1) == 0)
+    {
+        return;
+    }
 //    pa_set_reg(CHN1_VOL,(reg_vol),1);
 //    pa_set_reg(CHN2_VOL,(reg_vol),1);
-    libc_print("set volume",reg_vol,2);
+    //libc_print("set volume:",reg_vol,2);
 #else
     uint32 reg_val;
     uint8 reg_data[2];
@@ -142,32 +179,6 @@ void pa_op_set_volume(uint16 vol)
     //set val to register
     pa_set_reg(TI_TAS5707_MASTER_VOL, reg_data, 2);
 #endif    
-}
-
-uint16 pa_op_get_volume(void)
-{
-    uint32 read_val;
-    uint8 reg_data[2];
-    uint16 ret_vol;
-
-    //get val from register
-#ifdef __PACFG339_H__  
-    if((pa_get_reg(MAIN_VOL,reg_data,1)) == 0)
-    {
-        return 0;
-    }
-    ret_vol = reg_data;
-#else
-    if (pa_get_reg(TI_TAS5707_MASTER_VOL, reg_data, 2) == 0)
-    {
-        return 0;
-    }
-
-    read_val = ((uint32) reg_data[0] << 8) | reg_data[1];
-#endif    
-    ret_vol = read_val;
-
-    return ret_vol;
 }
 
 void pa_op_set_clock(uint8 rate)

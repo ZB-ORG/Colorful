@@ -67,6 +67,7 @@ typedef struct
      uint8 sub_quit_bl_flag;
      uint8 pri_full_exit_flag;
      uint8 pri_empty_exit_mmm;
+     uint8 tws_sync_cmd;
      uint8 asrc_change_flag;  //src 发生调节标志
      uint8 tws_play_sync_flag; //tws 从箱播放同步
      uint16 tws_sub_pipe_length;
@@ -116,8 +117,9 @@ typedef enum
     /*! 设置淡入时间 */
     MMM_BP_FADE_IN_TIME,
     /*! 设置淡出时间 */
-    MMM_BP_FADE_OUT_TIME,
-
+    MMM_BP_FADE_OUT_TIME,    
+    /*! 设置噪音衰减参数 */    
+    MMM_BP_SET_NOISE_REDUCTION_PARA,
     /*! 播放 */
     MMM_BP_PLAY,
     /*! 停止 */
@@ -146,6 +148,10 @@ typedef enum
     MMM_BP_TWS_SYNC_START,
     /*! tws sample count*/
     MMM_BP_TWS_GET_SAMPLE_COUNT,
+    /*! fix sample rate*/
+    MMM_BP_FIX_SAMPLE_RATE,
+    /*! 抑制噪声:只是对SBC编码的信号进行处理*/
+    MMM_BP_RESTRAIN_NOISE, 
 } mmm_bp_cmd_e;
 
 /*!
@@ -281,6 +287,18 @@ typedef struct
     mmm_bp_performance_t cur_perform;
 
 } music_bt_player_info_t;
+
+typedef struct
+{
+    /*!asrc index*/
+    int asrc_index;
+    /*!dac param dac chanel*/
+    int dac_chanel;
+    /*!asrc mode select */
+    int asrc_mode_sel;
+
+} mmm_bp_aout_setting_t;
+
 
 /*!
  *  \brief

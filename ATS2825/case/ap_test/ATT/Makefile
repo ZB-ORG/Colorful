@@ -137,7 +137,7 @@ all : creat_dir $(IMAGE_ELF)
 	$(AP_BUILDER) $(IMAGE_ELF) $(TARGET_AP) $(AP_PRIO) $(AP_STK_POS) $(AP_STK_LEN)
 #	cp -f $(TARGET_AP) $(OBJECT_BIN_PATH)	
 
-	./att_maker.exe actionstest.atf 6 acttest.ap config.xml  mpdata.bin SutPatch.bin UPGRADE.HEX config.txt 
+	./att_maker.exe actionstest.atf 8 acttest.ap config.xml  mpdata.bin SutPatch.bin UPGRADE.HEX attcheck.exe berdata.bin config.txt 
 			
 	date +%T
 

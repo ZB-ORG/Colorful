@@ -47,7 +47,7 @@ const ap_switch_info_t ap_switch_info[] =
     { APP_ID_MUSIC, PARAM_RECORD_UPLAY, 1, RESULT_RECORD_UPLAY, APP_FUNC_PLAYURECORD },
 
     { APP_ID_BTCALL, 0, 1, RESULT_ENTER_ASQT_HF_TEST, APP_FUNC_BTCALL },
-	
+    
     { APP_ID_OTA_UPGRADE, 0, 1, RESULT_ENTER_OTA_UPGRADE, APP_FUNC_UPGRADE },
     //{ APP_ID_USER1, 0, 1, RESULT_ENTER_USER1, APP_FUNC_USER1 },
 };
@@ -124,7 +124,12 @@ void com_ap_switch_deal(app_result_e app_result)
 
     if (app_result == RESULT_ESD_RESTART)
     {
-        cur_index = (uint8) ((act_readl(RTC_BAK0) & (0xff << MY_RTC_FUNC_INDEX)) >> MY_RTC_FUNC_INDEX);
+        //del  cur_index = (uint8) ((act_readl(RTC_BAK0) & (0xff << MY_RTC_FUNC_INDEX)) >> MY_RTC_FUNC_INDEX);
+        cur_index = g_config_var.ap_id;
+        if(ap_switch_info[cur_index].app_func_id == APP_FUNC_UDISK)
+        {
+            g_esd_cardreader_flag = 1;
+        }
         goto ap_switch_create_app_esd_restart;
     }
 
@@ -132,13 +137,13 @@ void com_ap_switch_deal(app_result_e app_result)
     {
         g_ap_switch_var.call_background_status = CALL_BACK_STATUS_IN;
 
-#if 0		
+#if 0        
 #ifdef ENABLE_TRUE_WIRELESS_STEREO
         g_bt_auto_connect_ctrl.need_auto_connect = 0;
         
         if(g_bt_stack_cur_info.dev_role == TWS_MASTER)
         {
-        	//当电话闹铃来，就去断开主副箱之间的连接
+            //当电话闹铃来，就去断开主副箱之间的连接
             msg_apps_t msg;
             msg.type =  MSG_BTSTACK_TWS_FORCE_UNLINK_SYNC;
             tws_auto_info_t *cur_auto_info;
@@ -152,20 +157,20 @@ void com_ap_switch_deal(app_result_e app_result)
             g_ap_switch_var.tws_phon_come_flag=1;
 
             for ( i= 0; i < g_btmanager_gl_var.support_dev_num; i++)
-            {	
+            {    
                 PRINT_DATA(cur_auto_info->bd_addr.bytes,6);
-            	if (libc_memcmp(&g_bt_stack_cur_info.rmt_dev[i].addr.bytes[3],
-        			&cur_auto_info->bd_addr.bytes[3], 3) == 0)		
-            	{
-            		//PRINT_DATA(&g_bt_stack_cur_info.rmt_dev[i].addr.bytes[3],3);
+                if (libc_memcmp(&g_bt_stack_cur_info.rmt_dev[i].addr.bytes[3],
+                    &cur_auto_info->bd_addr.bytes[3], 3) == 0)        
+                {
+                    //PRINT_DATA(&g_bt_stack_cur_info.rmt_dev[i].addr.bytes[3],3);
 
-            		libc_memcpy(g_bt_auto_connect_ctrl.dev_info[i].remote_addr.bytes,
-            						  	 cur_auto_info->bd_addr.bytes, 6);
-            		g_bt_auto_connect_ctrl.dev_info[i].conn_flag=1;
-            		g_bt_auto_connect_ctrl.dev_info[i].support_profile=cur_auto_info->support_profile;		
-            		break;
-            	}				  									   													 
-        	}	
+                    libc_memcpy(g_bt_auto_connect_ctrl.dev_info[i].remote_addr.bytes,
+                                           cur_auto_info->bd_addr.bytes, 6);
+                    g_bt_auto_connect_ctrl.dev_info[i].conn_flag=1;
+                    g_bt_auto_connect_ctrl.dev_info[i].support_profile=cur_auto_info->support_profile;        
+                    break;
+                }                                                                                                              
+            }    
         }
 #endif
 #endif
@@ -174,7 +179,7 @@ void com_ap_switch_deal(app_result_e app_result)
     {
         if (g_ap_switch_var.call_background_status == CALL_BACK_STATUS_IN)
         {
-            g_ap_switch_var.call_background_status = CALL_BACK_STATUS_BACK;			
+            g_ap_switch_var.call_background_status = CALL_BACK_STATUS_BACK;            
         }
         else
         {
@@ -216,23 +221,25 @@ void com_ap_switch_deal(app_result_e app_result)
         //备份 app_info_state_t 和 app_last_state_t
         libc_memset(SRAM_S3BT_BUFFER, 0x0, 0x200);
 
-        if (g_ap_switch_var.s3bt_nor_erase_flag == FALSE)
-        {
-            sd_sec_param.file_offset = NOR_S3BT_ERASE_WRITE;
-            sd_sec_param.sram_addr = SRAM_S3BT_BUFFER;
-            sd_sec_param.sec_num = 1;
-            base_ext_vram_write(&sd_sec_param);
+        //if (g_ap_switch_var.s3bt_nor_erase_flag == FALSE)
+        //{
+        //    sd_sec_param.file_offset = NOR_S3BT_ERASE_WRITE;
+        //    sd_sec_param.sram_addr = SRAM_S3BT_BUFFER;
+        //    sd_sec_param.sec_num = 1;
+        //    base_ext_vram_write(&sd_sec_param);
 
-            g_ap_switch_var.s3bt_nor_erase_flag = TRUE;
-        }
+        //    g_ap_switch_var.s3bt_nor_erase_flag = TRUE;
+        //}
 
         libc_memcpy(SRAM_S3BT_BUFFER, &g_app_info_state, sizeof(app_info_state_t));
-        libc_memcpy(SRAM_S3BT_BUFFER + 0x100, &g_app_last_state, sizeof(app_last_state_t));
+        libc_memcpy(SRAM_S3BT_BUFFER + sizeof(app_info_state_t), &g_app_last_state, sizeof(app_last_state_t));
 
-        sd_sec_param.file_offset = NOR_S3BT_APP_GLOBAL;
-        sd_sec_param.sram_addr = SRAM_S3BT_BUFFER;
-        sd_sec_param.sec_num = 1;
-        base_ext_vram_write(&sd_sec_param);
+        //sd_sec_param.file_offset = NOR_S3BT_APP_GLOBAL;
+        //sd_sec_param.sram_addr = SRAM_S3BT_BUFFER;
+        //sd_sec_param.sec_num = 1;
+        //base_ext_vram_write(&sd_sec_param);
+
+        sys_vm_write(SRAM_S3BT_BUFFER, VM_S3BT_APP_GLOBAL, sizeof(app_info_state_t) + sizeof(app_last_state_t));
     }
 
     ap_switch_create_app_esd_restart:
@@ -242,23 +249,27 @@ void com_ap_switch_deal(app_result_e app_result)
 
     //save cur function index
     set_cur_func_index(cur_index);
-
-    reg_val = (act_readl(RTC_BAK0) & (~(0xff << MY_RTC_FUNC_INDEX)));
+    
+    //reg_val = g_config_var.ap_id;
+    //del  reg_val = (act_readl(RTC_BAK0) & (~(0xff << MY_RTC_FUNC_INDEX)));
     
     if(g_app_info_state.stub_tools_type == 0)
     {
-        reg_val |= ((uint32)(g_app_info_state.cur_func_index) << MY_RTC_FUNC_INDEX);
+        //del  reg_val |= ((uint32)(g_app_info_state.cur_func_index) << MY_RTC_FUNC_INDEX);
+        reg_val = g_app_info_state.cur_func_index;
     }
     else
     {
-        reg_val |= (APP_FUNC_INVALID << MY_RTC_FUNC_INDEX);          
+        //del  reg_val |= (APP_FUNC_INVALID << MY_RTC_FUNC_INDEX);    
+        reg_val = APP_FUNC_INVALID;
     }
-
-    act_writel(reg_val, RTC_BAK0); 
+    g_config_var.ap_id = (uint8)reg_val;
+    sys_vm_write(&g_config_var,VM_AP_CONFIG,sizeof(g_config_var_t));
+    //del  act_writel(reg_val, RTC_BAK0); 
 
     //rtc register
-    act_writel(0xA596, RTC_REGUPDATA);
-    while (act_readl(RTC_REGUPDATA) != 0x5A69)
+    //del  act_writel(0xA596, RTC_REGUPDATA);
+    //del  while (act_readl(RTC_REGUPDATA) != 0x5A69)
     {
         ;//wait for register update
     }      
@@ -356,7 +367,23 @@ static bool com_check_function_in(uint8 func_id)
 
         case APP_FUNC_PLAYLINEIN:
         //linein不在
+#ifndef ENABLE_TRUE_WIRELESS_STEREO
         if (get_linein_state() != LINEIN_STATE_LINEIN_IN)
+#else
+
+#if (SUPPORT_AUX_DETECT == DETECT_NO_SUPPORT)
+        g_tws_m_linein_flag = 1;
+#endif
+        if (g_bt_stack_cur_info.dev_role == NORMAL_DEV)
+        {
+            libc_print("c line flag",0,0);
+            g_tws_m_linein_flag = 0;
+        }
+                        
+        if ( ((get_linein_state() != LINEIN_STATE_LINEIN_IN) && (g_tws_m_linein_flag == 0))
+            || ((get_linein_state() == LINEIN_STATE_LINEIN_IN)&& (g_tws_m_linein_flag == 0)
+                &&(g_bt_stack_cur_info.dev_role == TWS_SLAVE)) )
+#endif            
         {
             return FALSE;
         }
@@ -458,16 +485,30 @@ static uint8 com_app_switch_any_function(uint8 cur_index)
             cur_index = com_get_cfg_func_index(g_ap_switch_var.app_default_func_id);
         }
 
+        if(cur_switch_seq_index >= MAX_FUNCTON_CYCLE)
+        {
+            goto index_err;
+        }
+        
         if (((g_ap_switch_var.app_func_support & (uint32) (1 << ap_switch_info[cur_index].app_func_id)) == 0)
                 || (com_check_function_in(g_ap_switch_var.app_switch_seq[cur_switch_seq_index]) == FALSE))
         {
             cur_switch_seq_index = com_app_switch_next_function(cur_index);
         }
-
+        
+        if(cur_switch_seq_index >= MAX_FUNCTON_CYCLE)
+        {
+            goto index_err;
+        }
+        
         //cur_index是ap_switch_info数组里面的下标
         cur_index = com_get_cfg_func_index(g_ap_switch_var.app_switch_seq[cur_switch_seq_index]);
     }
 
+    return cur_index;
+    
+    index_err:
+    libc_print("index err:",cur_switch_seq_index,2);
     return cur_index;
 }
 
@@ -523,8 +564,8 @@ static uint8 com_ap_switch_next_index(app_result_e app_result)
 
     if (app_result == RESULT_ESD_RESTART)
     {
-        cur_index = (uint8) ((act_readl(RTC_BAK0) & (0xff << MY_RTC_FUNC_INDEX)) >> MY_RTC_FUNC_INDEX);
-
+        //del  cur_index = (uint8) ((act_readl(RTC_BAK0) & (0xff << MY_RTC_FUNC_INDEX)) >> MY_RTC_FUNC_INDEX);
+        cur_index = g_config_var.ap_id;
         return cur_index;
     }
 
@@ -571,17 +612,15 @@ static uint8 com_ap_switch_next_index(app_result_e app_result)
 //恢复 app_info_state_t 和 app_last_state_t
 static void restore_global_status(void)
 {
+    uint8 temp_data[512];
+    
     app_info_state_t tmp_app_info_state;
     app_last_state_t tmp_app_last_state;
-    sd_sec_param_t sd_sec_param;
 
-    sd_sec_param.file_offset = NOR_S3BT_APP_GLOBAL;
-    sd_sec_param.sram_addr = SRAM_S3BT_BUFFER;
-    sd_sec_param.sec_num = 1;
-    base_ext_vram_read(&sd_sec_param);
+    sys_vm_read(temp_data, VM_S3BT_APP_GLOBAL, sizeof(app_info_state_t) + sizeof(app_last_state_t));
 
-    libc_memcpy(&tmp_app_info_state, SRAM_S3BT_BUFFER, sizeof(app_info_state_t));
-    libc_memcpy(&tmp_app_last_state, SRAM_S3BT_BUFFER + 0x100, sizeof(app_last_state_t));
+    libc_memcpy(&tmp_app_info_state, temp_data, sizeof(app_info_state_t));
+    libc_memcpy(&tmp_app_last_state, temp_data + sizeof(app_info_state_t), sizeof(app_last_state_t));
 
     g_app_info_state.card_state = tmp_app_info_state.card_state;
     g_app_info_state.uhost_state = tmp_app_info_state.uhost_state;
@@ -604,14 +643,16 @@ uint32 com_check_ap_func_index_valid(void)
     uint32 cur_index;
     uint32 next_ap_id;
     
-    cur_index = ((act_readl(RTC_BAK0) & (0xff << MY_RTC_FUNC_INDEX)) >> MY_RTC_FUNC_INDEX);
-
-    if(cur_index >= sizeof(ap_switch_info) / sizeof(ap_switch_info_t))
+    //del  cur_index = ((act_readl(RTC_BAK0) & (0xff << MY_RTC_FUNC_INDEX)) >> MY_RTC_FUNC_INDEX);
+    cur_index = g_config_var.ap_id;
+    if(cur_index >= (sizeof(ap_switch_info) / sizeof(ap_switch_info_t)))
     {
         goto err_index;    
     }
 
     next_ap_id = ap_switch_info[cur_index].ap_id;
+
+    libc_print("ESD next ap id: ", next_ap_id, 2);
 
     //过滤config ap的ESD处理流程
     if(next_ap_id == APP_ID_CONFIG)
@@ -621,7 +662,7 @@ uint32 com_check_ap_func_index_valid(void)
 
     return TRUE;
     
-err_index:
+    err_index:
     PRINT_INFO_INT("err index", cur_index);
 
     return FALSE;

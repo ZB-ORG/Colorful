@@ -61,31 +61,6 @@ app_result_e linein_eg_control_block(void)
             break;
         }
 
-        g_check_count++;
-
-        //if vbat is higher than 3.90 we need to stop charging
-        if(g_check_count >= COUNT_BOUND)
-        {
-
-            g_check_count = 0;
-            
-            if (act_readb(BATADC_DATA) > BAT_HIGH_VAL)
-            {
-                act_writel(act_readl(CHG_CTL) & (~CHG_CTL_CHG_CURRENT_MASK), CHG_CTL);
-                act_writel(act_readl(CHG_CTL) & (~(1 << CHG_CTL_CHGEN)), CHG_CTL);
-                
-                g_cha_need_restore = 1;
-            }
-            else if (act_readb(BATADC_DATA) < BAT_LOW_VAL)
-            {
-                act_writel((act_readl(CHG_CTL) & (~CHG_CTL_CHG_CURRENT_MASK)) | g_cha_current, CHG_CTL);  
-            
-                act_writel(act_readl(CHG_CTL) | (1 << CHG_CTL_CHGEN), CHG_CTL);
-
-                g_cha_need_restore = 1;
-            }
-
-        }
         //挂起20ms 多任务交互
         sys_os_time_dly(2);
     }

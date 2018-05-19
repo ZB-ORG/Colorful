@@ -211,6 +211,12 @@ int adjust_freq_do_task_level(int prio, int level)
         goto err;
     }
 
+    if (adjust_id >= ADJUST_RUN_TASK_MAX)
+    {
+        err_no = 3;
+        goto err;
+    }
+
     if (level_a >= FREQ_LEVEL_MAX)
     {
         _FQ_PRINTD_DBG("freq_a is overflow");
@@ -255,12 +261,14 @@ int adjust_freq_do_task_level(int prio, int level)
  *   <author>    <time>
  *    liminxian  2014-8-20
  *******************************************************************************/
-int adjust_freq_do_add_value(int8 freq_a, int8 freq_b)
+int adjust_freq_do_add_value(int16 freq_a, int16 freq_b)
 {
     sys_os_sched_lock();
     add_freq_a = (int16)freq_a;
     add_freq_b = (int16)freq_b;
-
+    //libc_print("m4k_add_freq",freq_a,2);
+    //libc_print("dsp_add_freq",freq_b,2);
+    
 //    if ((add_freq_a < 0) || (add_freq_b < 0))
 //    {
 //        add_freq_a = 0;

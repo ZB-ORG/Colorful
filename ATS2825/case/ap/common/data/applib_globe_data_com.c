@@ -60,4 +60,11 @@ ap_switch_var_t __section__(".gl_com_data") g_ap_switch_var;
 OTA_malloc_param_t __section__(".gl_com_data") *g_OTA_var;
 bool __section__(".gl_com_data")g_rcp_ctrl_quit_flag;
 
+//ESD VRAM变量
+g_config_var_t __section__(".gl_com_data")g_config_var;
+
+//读卡器流程分支标志
+bool __section__(".gl_com_data")g_esd_cardreader_flag;
+
+uint8 __section__(".gl_rcp_buffer") *g_rcp_default_long_buffer;
 

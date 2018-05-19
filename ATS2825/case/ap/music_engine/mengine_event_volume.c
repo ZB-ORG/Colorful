@@ -6,8 +6,10 @@ app_result_e mengine_set_eq(void* msg_ptr)
 
     adjust_freq_add_value(0, g_dae_cfg_shm->run_freq);
 
-    mmm_mp_cmd(g_mp_handle, MMM_MP_SET_EQ, (unsigned int) NULL);
-
+    if (NULL != g_mp_handle)
+    {
+        mmm_mp_cmd(g_mp_handle, MMM_MP_SET_EQ, (unsigned int) NULL);
+    }
     //·µ»Ø³É¹¦
     mengine_reply_msg(msg_ptr, TRUE);
 

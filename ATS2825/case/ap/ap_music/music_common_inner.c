@@ -122,6 +122,18 @@ bool music_get_fileinfo(mmm_mp_file_info_t* fileinfo)
 {
     bool bret;
     bret = music_send_msg(NULL, fileinfo, MSG_MENGINE_GET_FILEINFO_SYNC);
+  
+    if (TRUE == g_music_restore_from_s3bt)
+    {
+        fileinfo->total_time = g_music_config.total_time;
+        
+        g_music_restore_from_s3bt = FALSE; 
+    }
+    else
+    {
+        g_music_config.total_time = fileinfo->total_time;
+    }
+     
     return bret;
 }
 

@@ -73,15 +73,17 @@ void open_pa(void)
         enable_pa(1, 0, AO_SOURCE_I2S);
 #endif
     }
+    else
+    {
+        ;//nothing
+    }
 
     SPEAKER_ON();
     
 #if (CASE_BOARD_TYPE == CASE_BOARD_DVB_ATS2825)
-    //for avoid linein noise in 
-    *((REG32) (ADC_ANACTL)) |= ((0x01 << ADC_ANACTL_OP1LEN) | (0x01 << ADC_ANACTL_OP1REN));
+    sys_avoid_linein_noise(1);
 #elif (CASE_BOARD_TYPE == CASE_BOARD_DVB_ATS2823)
-    //for avoid linein noise in 
-    *((REG32) (ADC_ANACTL)) |= ((0x01 << ADC_ANACTL_OP0LEN) | (0x01 << ADC_ANACTL_OP0REN));
+    sys_avoid_linein_noise(0);
 #endif     
 
     g_app_info_state.inner_pa_inited = TRUE;
@@ -107,8 +109,12 @@ void * pa_thread_open(void* param)
     //初始化创建线程的参数
     g_pa_thread.pthread_param.start_rtn = (void *)open_pa;
     g_pa_thread.pthread_param.arg = param;
-    g_pa_thread.pthread_param.ptos = (void *) AP_FRONT_HIGH_STK_POS;
+    //g_pa_thread.pthread_param.ptos = (void *) AP_FRONT_HIGH_STK_POS;
+    pa_thread_task_addr = sys_malloc_large_data(AP_FRONT_HIGH_STK_SIZE);
+    g_pa_thread.pthread_param.ptos = (void *)(pa_thread_task_addr + AP_FRONT_HIGH_STK_SIZE);
     g_pa_thread.stk_size = AP_FRONT_HIGH_STK_SIZE;
+
+    libc_print("pa thread addr:", pa_thread_task_addr, 2);
 
     //禁止调度
     sys_os_sched_lock();

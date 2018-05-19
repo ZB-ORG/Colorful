@@ -66,9 +66,35 @@ app_result_e load_att_code(int32 file_sys_id, uint8 stg_base)
 
         if (ap_fp == 0)
         {
+            libc_print("atf file open err", 0, 0);
             _config_fs_deinit(stg_base, file_sys_id);
             return RESULT_NULL;
         }
+        
+        //进入调试模式不开启ESD功能，清除之前记忆的AP类型
+        //del  act_writel(act_readl(RTC_BAK0) & (~(0xff << MY_RTC_FUNC_INDEX)), RTC_BAK0);
+    
+        //rtc register
+        //del  act_writel(0xA596, RTC_REGUPDATA);
+        //del  while (act_readl(RTC_REGUPDATA) != 0x5A69)
+        {
+            ;//wait for register update
+        }     
+    
+        //del  act_writel(act_readl(RTC_BAK0) | (APP_FUNC_INVALID << MY_RTC_FUNC_INDEX), RTC_BAK0);
+    
+        //rtc register
+        //del  act_writel(0xA596, RTC_REGUPDATA);
+        //del  while (act_readl(RTC_REGUPDATA) != 0x5A69)
+        {
+            ;//wait for register update
+        }    
+        
+        g_config_var.esd_flag = FALSE;
+        
+        sys_vm_write(&g_config_var, VM_AP_CONFIG, sizeof(g_config_var));   
+
+        sys_disable_use_temp_pool();
         
 #if ((CASE_BOARD_TYPE == CASE_BOARD_ATS2823) || (CASE_BOARD_TYPE == CASE_BOARD_DVB_ATS2823))
         change_card_state(CARD_STATE_CARD_IN);
@@ -131,6 +157,8 @@ app_result_e load_att_code(int32 file_sys_id, uint8 stg_base)
         sys_os_time_dly(10);
     }
     while (test_ap_info.test_stage == 0);
+    
+    g_app_info_state.stub_tools_type = STUB_PC_TOOL_ATT_MODE;
 
     return RESULT_ENTER_ASQT_HF_TEST;
 }

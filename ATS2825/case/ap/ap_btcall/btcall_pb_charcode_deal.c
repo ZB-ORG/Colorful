@@ -1,27 +1,25 @@
-
 /*******************************************************************************
-*                              US282A
-*                 Copyright(c) 2014-2015 Actions (Zhuhai) Microelectronics Co., Limited,
-*                            All Rights Reserved.
-*        brief   字符码转换
-*      <author>       <time>      
-*       Wekan   2015-3-27
-*******************************************************************************/
-
+ *                              US282A
+ *                 Copyright(c) 2014-2015 Actions (Zhuhai) Microelectronics Co., Limited,
+ *                            All Rights Reserved.
+ *        brief   字符码转换
+ *      <author>       <time>
+ *       Wekan   2015-3-27
+ *******************************************************************************/
 
 #include "ap_btcall.h"
 
 const char codepage_table[] = "FTBL_GB.$$$"; //unicode to char转换表
 
 /******************************************************************************
-* \par  Description:   将utf8格式的字符串转换成unicode格式
-* \param[in]    tts_info 
-* \param[out]   tts_info 
-* \return       void 
-* \  note  :   注意参数进和参数出是同一个指针
-*   <author>    <time> 
-*    Wekan   2015-3-27  
-*******************************************************************************/
+ * \par  Description:   将utf8格式的字符串转换成unicode格式
+ * \param[in]    tts_info
+ * \param[out]   tts_info
+ * \return       void
+ * \  note  :   注意参数进和参数出是同一个指针
+ *   <author>    <time>
+ *    Wekan   2015-3-27
+ *******************************************************************************/
 
 void utf8_to_unicode(uint8 *tts_info)
 {
@@ -80,9 +78,9 @@ void utf8_to_unicode(uint8 *tts_info)
         {
             c = 0;
         }
-        *dst_info = (uint8)(c & 0xff);
+        *dst_info = (uint8) (c & 0xff);
         dst_info++;
-        *dst_info = (uint8)(c >> 8);
+        *dst_info = (uint8) (c >> 8);
         dst_info++;
         if (c == 0)
         {
@@ -92,17 +90,16 @@ void utf8_to_unicode(uint8 *tts_info)
     libc_memcpy(tts_info, tmp_buf, MAX_TTS_INFO_LENGTH);
 }
 
-
 /******************************************************************************
-* \par  Description:   查找字库转换表，获取unicode的字符对应的内码编码
-* \param[in]    codepage_hd
-* \param[in]    code_rename
-* \param[out]   null
-* \return       void 
-* \  note  :  
-*   <author>    <time> 
-*    Wekan   2015-3-27  
-*******************************************************************************/
+ * \par  Description:   查找字库转换表，获取unicode的字符对应的内码编码
+ * \param[in]    codepage_hd
+ * \param[in]    code_rename
+ * \param[out]   null
+ * \return       void
+ * \  note  :
+ *   <author>    <time>
+ *    Wekan   2015-3-27
+ *******************************************************************************/
 
 uint16 one_uni_to_char(sd_handle codepage_hd, uint16 code_rename)
 {
@@ -139,17 +136,16 @@ uint16 one_uni_to_char(sd_handle codepage_hd, uint16 code_rename)
     return CharCode;//TRUE;
 }
 
-
 /******************************************************************************
-* \par  Description:  对转换的unicode字符串进行处理
-* \param[in]    codepage_hd
-* \param[in]    str_info
-* \param[out]   null
-* \return      
-* \  note  :  
-*   <author>    <time> 
-*    Wekan   2015-3-27  
-*******************************************************************************/
+ * \par  Description:  对转换的unicode字符串进行处理
+ * \param[in]    codepage_hd
+ * \param[in]    str_info
+ * \param[out]   null
+ * \return
+ * \  note  :
+ *   <author>    <time>
+ *    Wekan   2015-3-27
+ *******************************************************************************/
 
 uint8 string_uni_to_char(sd_handle codepage_hd, uint8 *str_info)
 {
@@ -165,11 +161,11 @@ uint8 string_uni_to_char(sd_handle codepage_hd, uint8 *str_info)
     d_cnt = 0;
     for (s_cnt = 0; s_cnt < MAX_TTS_INFO_LENGTH; s_cnt += 2)
     {
-        if((str[s_cnt] == 0) && (str[s_cnt + 1] == 0))
+        if ((str[s_cnt] == 0) && (str[s_cnt + 1] == 0))
         {
             break;
         }
-        
+
         FontCode = *((uint16 *) &str[s_cnt]);
         if (FontCode == 0x0000)
         {
@@ -196,21 +192,20 @@ uint8 string_uni_to_char(sd_handle codepage_hd, uint8 *str_info)
     return d_cnt;
 }
 
-
 /******************************************************************************
-* \par  Description:  将unicode格式的字符串转换成内码格式
-* \param[in]    str_info
-* \param[out]   null
-* \return      
-* \  note  :  
-*   <author>    <time> 
-*    Wekan   2015-3-27  
-*******************************************************************************/
+ * \par  Description:  将unicode格式的字符串转换成内码格式
+ * \param[in]    str_info
+ * \param[out]   null
+ * \return
+ * \  note  :
+ *   <author>    <time>
+ *    Wekan   2015-3-27
+ *******************************************************************************/
 
 uint8 unicode_to_char(uint8 *str_info)
 {
     sd_handle codepage_hd;
-    
+
     //convert table file
     codepage_hd = sys_sd_fopen(codepage_table);
     //file open fail

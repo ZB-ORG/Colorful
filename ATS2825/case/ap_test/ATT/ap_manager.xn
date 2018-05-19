@@ -57,6 +57,8 @@ BANK_CONTROL_2_ADDR_BASE = (AP_BANK_AUTOTEST << 24) + AP_MANAGER_TEST_BANK1_ADDR
 
 BANK_CONTROL_3_ADDR_BASE = (AP_BANK_AUTOTEST << 24) + 0x10000; 
 
+BANK_CONTROL_4_ADDR_BASE = (AP_BANK_AUTOTEST << 24) + 0x24800; 
+
 /*系统允许的bank的最大空间大小，不能修改*/
 AP_BANK_SPACE = BANK_SPACE;
 
@@ -81,6 +83,7 @@ SECTIONS
         common_func_rcode.o(.text .rcode .rodata)
         ap_autotest_btstack_test.o(.data .bss)
         ap_autotest_mptest.o(.bss .data)
+        ap_autotest_bertest.o(.bss .data)
     }
 
 
@@ -94,6 +97,7 @@ SECTIONS
         ap_autotest_main.o(.text.bank_test)
         common_func.o(.text .rodata)
         ap_autotest_btstack_test.o(.text .rodata .data .bss)
+        ap_autotest_btstack_test_dev.o(.text .rodata .data .bss)
         . = AP_MANAGER_TEST_BANK0_SIZE;
     }=0x0/*对定位符的赋值而产生的空隙由0x0填充*/
 
@@ -156,7 +160,7 @@ SECTIONS
     . = ((. + AP_BANK_SPACE) & (~(AP_BANK_SPACE - 1)))  + OFFSET;
     BANK_CONTROL_1_9 :
     {
-        ap_autotest_channel_test.o(.xdata .text .rodata)
+        ap_autotest_channel_test.o(.xdata .text .rodata .data)
         . = AP_MANAGER_TEST_BANK0_SIZE;
     }  
     
@@ -165,10 +169,50 @@ SECTIONS
     {
         ap_autotest_read_param.o(.xdata .text .rodata)
         . = AP_MANAGER_TEST_BANK0_SIZE;
-    }     
-        
-    . = BANK_CONTROL_3_ADDR_BASE + AP_BANK_SPACE * 20;
-    BANK_CONTROL_1_20 :
+    }    
+    
+    . = ((. + AP_BANK_SPACE) & (~(AP_BANK_SPACE - 1)))  + OFFSET;
+    BANK_CONTROL_1_11 :
+    {
+        ap_autotest_bertest.o(.text .rodata .xdata)
+        . = AP_MANAGER_TEST_BANK0_SIZE;
+    }
+     
+    . = ((. + AP_BANK_SPACE) & (~(AP_BANK_SPACE - 1)))  + OFFSET;
+    BANK_CONTROL_1_12 :
+    {
+        ap_autotest_lradc_test.o(.text .rodata .xdata)
+        ap_autotest_misc_test.o(.text .rodata .data .bss)
+        . = AP_MANAGER_TEST_BANK0_SIZE;
+    }  
+    
+     . = ((. + AP_BANK_SPACE) & (~(AP_BANK_SPACE - 1)))  + OFFSET;
+    BANK_CONTROL_1_13 :
+    {
+        ap_autotest_bertest_sub.o(.text .rodata .xdata)
+        . = AP_MANAGER_TEST_BANK0_SIZE;
+    }    
+
+    . = ((. + AP_BANK_SPACE) & (~(AP_BANK_SPACE - 1)))  + OFFSET;
+    BANK_CONTROL_1_14 :
+    {       
+        ap_autotest_channel_test_SNR.o(.xdata .text .rodata)      
+    }   
+    
+    . = ((. + AP_BANK_SPACE) & (~(AP_BANK_SPACE - 1)))  + OFFSET;
+    BANK_CONTROL_1_15 :
+    {       
+        ap_autotest_channel_test_log_file.o(.xdata .text .rodata)      
+    }      
+     
+    . = BANK_CONTROL_4_ADDR_BASE + AP_BANK_SPACE * 39;
+    BANK_CONTROL_1_39 :
+    {    
+        ap_autotest_channel_test_SNR_data.o(.xdata .text .rodata .data .bss) 
+    }
+             
+    . = BANK_CONTROL_3_ADDR_BASE + AP_BANK_SPACE * 40;
+    BANK_CONTROL_1_40 :
     {
         ABC_03.o(.text .rodata .data .bss)
         ABC_05.o(.text .rodata .data .bss)

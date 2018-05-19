@@ -25,15 +25,15 @@
 uint32 get_true_trim_cap_value(uint32 cap_value, uint32 r_value)
 {
     bool overflow_flag = 0;
-    uint8 bc_value = 0;
-    uint8 tc_value = 0;
+    uint16 bc_value = 0;
+    uint16 tc_value = 0;
     uint32 true_value = 0;
-    bc_value = (cap_value & (0x07 << 5)) >> 5;
-    tc_value = (cap_value & (0x1f << 0)) >> 0;
+    bc_value = (uint16)((cap_value & (0x07 << 5)) >> 5);
+    tc_value = (uint16)((cap_value & (0x1f << 0)) >> 0);
     true_value = bc_value * 30 + tc_value * 1;
     true_value = true_value * r_value / 10000;
-    bc_value = true_value / 30;
-    tc_value = true_value % 30;
+    bc_value = (uint16)(true_value / 30);
+    tc_value = (uint16)(true_value % 30);
     if(bc_value > 0x07)
     {
         overflow_flag = 1;
@@ -50,7 +50,7 @@ uint32 get_true_trim_cap_value(uint32 cap_value, uint32 r_value)
     }
     if(overflow_flag != 0)
     {
-        libc_print("wrong value",0,0);  //系数过大
+        //libc_print("wrong value",0,0);  //系数过大
     }
     cap_value = (bc_value<<5) | (bc_value<<13) | (tc_value<<0) | (tc_value<<8);
     return  cap_value;
@@ -78,7 +78,7 @@ void manager_config_hosc_freq(void)
     else if(ret_val == TRIM_CAP_READ_ADJUST_VALUE)
     {
         //读取到频偏校准值，需要乘以R值
-        if(use_r_value)
+        if(use_r_value == 1)
         {
             com_get_config_struct(SETTING_HARDWARE_FREQ_R_VALUE,(void *)&r_value,4);
             if(r_value != 0)
@@ -97,7 +97,7 @@ void manager_config_hosc_freq(void)
             }
         }
         //读取到频偏校准值，需要加上偏移量
-        else
+        else if(use_r_value == 2)
         {
             com_get_config_struct(SETTING_HARDWARE_FREQ_COMPENSATION_OFFSET, (void*) &adjust_value, 4);
 
@@ -116,6 +116,10 @@ void manager_config_hosc_freq(void)
                 //参数无效
                 return;
             }
+        }
+        else
+        {
+            com_get_config_struct(SETTING_HARDWARE_FREQ_COMPENSATION_DEFAULT_VAL, (void*) &trim_cap_value, 4);
         }
       
     }

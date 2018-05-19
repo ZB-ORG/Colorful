@@ -27,14 +27,10 @@
 #define UPDATE_PEQ_MODE_MDRC_OTHER_STANDARD 14
 #define UPDATE_PEQ_MODE_COMPRESSOR_OTHER_STANDARD 15
 
-
-static uint8 aset_cmd_data[256] _BANK_DATA_ATTR_;
-
 extern dae_config_t *g_p_dae_cfg;
 extern uint32 g_aset_base_timer;
 
 int32 aset_read_mdrc2_data(void);
-static int32  __section__(".bank_2")aset_update_audiopp(void);
 static int32  __section__(".bank_2")aset_read_compressor_standard_mode(void);
 static int32  __section__(".bank_2")aset_read_multibank_drc_data_standard_mode(void);
 static int32 __section__(".bank_2")aset_read_mdrc2_data_standard_mode(void);
@@ -52,7 +48,7 @@ int32 aset_read_data(uint16 cmd, void *data_buffer, uint32 data_len)
 
     ext_param.opcode = cmd;
     ext_param.payload_len = 0;
-    ext_param.rw_buffer = aset_cmd_data;
+    ext_param.rw_buffer = sys_malloc_large_data(256);
 
     ret_val = stub_ext_write(&ext_param);
 
@@ -66,7 +62,7 @@ int32 aset_read_data(uint16 cmd, void *data_buffer, uint32 data_len)
         }
         if (ret_val == 0)
         {
-            libc_memcpy(read_buffer, &aset_cmd_data[6], data_len);
+            libc_memcpy(read_buffer, &(ext_param.rw_buffer[6]), data_len);
 
             //回复ACK
 #ifdef WAVES_ASET_TOOLS
@@ -79,6 +75,8 @@ int32 aset_read_data(uint16 cmd, void *data_buffer, uint32 data_len)
             //break;
         }
     }
+
+    sys_free_large_data(ext_param.rw_buffer);
 
     return ret_val;
 }
@@ -194,32 +192,29 @@ void __section__(".bank_2") update_peq_value(dae_config_t *p_dae, void *aset_dat
                 p_dae->precut_ratio = g_aset_main_gain_value;
                 p_dae->mdrc_precut_ratio = 0;
             }
+
+            p_dae->precut_standard_mode = (int8)g_aset_main_gain_value; //标准模式
         }
         else
         {
             p_dae->precut_ratio = 0;
             p_dae->mdrc_precut_ratio = 0;
             p_dae->equivalent_gain = 0;
-        }
 
-        if (STANDARD_MODE == g_p_dae_cfg->audiopp_type)
-        {
-            p_dae->precut_standard_mode = (int8)g_aset_main_gain_value;
+            p_dae->precut_standard_mode = 0;                            //标准模式
         }
     }
     else if (update_mode == UPDATE_PEQ_MODE_PEQ2)
     {
         aset_peq_data_2_3_t *aset_eq_data_2_3 = (aset_peq_data_2_3_t *) aset_data;
-
+#if 0
         if (EQMAXPOINTCOUNT_ALL >= (EQMAXPOINTCOUNT*2))
         {
             update_peq_point(p_dae, EQMAXPOINTCOUNT, aset_eq_data_2_3->peq_array, EQMAXPOINTCOUNT);
         }
-        else
-        {
-            update_peq_point(p_dae, EQMAXPOINTCOUNT, aset_eq_data_2_3->peq_array, \
-                EQMAXPOINTCOUNT_ALL - EQMAXPOINTCOUNT);
-        }
+#endif        
+        update_peq_point(p_dae, EQMAXPOINTCOUNT, aset_eq_data_2_3->peq_array, \
+            EQMAXPOINTCOUNT_ALL - EQMAXPOINTCOUNT);
     }
     else if (update_mode == UPDATE_PEQ_MODE_PEQ3)
     {
@@ -234,7 +229,14 @@ void __section__(".bank_2") update_peq_value(dae_config_t *p_dae, void *aset_dat
 
         p_dae->vbass_enable = (bool)aset_vbass_data->vbass_enable;
         p_dae->vbass_cut_freq = (uint16) aset_vbass_data->cutoff_freq;
-        p_dae->vbass_ratio = (int16)(aset_vbass_data->vbass_gain);
+        if ((aset_vbass_data->vbass_gain >= 0) && (aset_vbass_data->vbass_gain <= 240))
+        {
+            p_dae->vbass_ratio = (int16)(aset_vbass_data->vbass_gain) - 120; //虚拟低音增益范围转换成(-12.0dB - 12.0dB)
+        }
+        else
+        {
+            p_dae->vbass_ratio = 0;
+        }
     }
     else if (update_mode == UPDATE_PEQ_MODE_TREBLE)
     {
@@ -297,14 +299,11 @@ void __section__(".bank_2") update_peq_value(dae_config_t *p_dae, void *aset_dat
     {
         aset_mDRC2_data_t *aset_mdrc2_data = (aset_mDRC2_data_t *) aset_data;
 
-        if (p_dae->mdrc_enable == 1)
-        {
-            p_dae->mdrc_crossover_freq[0] = (uint16)aset_mdrc2_data->nMidMin;
-            p_dae->mdrc_crossover_freq[1] = (uint16)aset_mdrc2_data->nMaxMid;
-            p_dae->limiter_threshold_diff = (int16)aset_mdrc2_data->limiterThresholdDiff;
-            p_dae->post_precut_ratio = (int8)aset_mdrc2_data->signalPrecut;
-            sys_comval->mdrc_vol_adjust = (int8)aset_mdrc2_data->fMVolume;
-        }
+        p_dae->mdrc_crossover_freq[0] = (uint16)aset_mdrc2_data->nMidMin;
+        p_dae->mdrc_crossover_freq[1] = (uint16)aset_mdrc2_data->nMaxMid;
+        p_dae->limiter_threshold_diff = (int16)aset_mdrc2_data->limiterThresholdDiff;
+        p_dae->post_precut_ratio = (int8)aset_mdrc2_data->signalPrecut;
+        sys_comval->mdrc_vol_adjust = (int8)aset_mdrc2_data->fMVolume;
     }
     else if (update_mode == UPDATE_PEQ_MODE_SEE)
     {
@@ -358,6 +357,7 @@ void __section__(".bank_2") update_peq_value(dae_config_t *p_dae, void *aset_dat
         if (sys_comval->signal_energy_enable == 0)
         {
             p_dae->energy_detect_enable = 0;
+            sys_comval->signal_energy = 0; 
         }
 
         p_dae->period = aset_SignalDete_data->fSignalDetePer * 100; //单位从0.1S转换为1ms
@@ -407,7 +407,8 @@ void __section__(".bank_2") update_peq_value(dae_config_t *p_dae, void *aset_dat
                       
         for (i = 0; i < MDRC_NUM_BANDS_STANDARD_MODE; i++)
         {
-            libc_memcpy((p_dae->p_mdrc_band_standard_mode) + i, &(pDRC_CpVal_Info->stDrcVal_M[i]), sizeof(DRC_CpVal_Info_M));
+            libc_memcpy((p_dae->p_mdrc_band_standard_mode) + i, &(pDRC_CpVal_Info->stDrcVal_M[i]), \
+                sizeof(DRC_CpVal_Info_M));
             p_dae->p_mdrc_band_standard_mode[i].reserve = 0;
         }       
         p_dae->mdrc_enable_standard_mode = (bool)pDRC_CpVal_Info->bDrcEnable;
@@ -418,16 +419,24 @@ void __section__(".bank_2") update_peq_value(dae_config_t *p_dae, void *aset_dat
         
         if (p_dae->mdrc_enable_standard_mode == 1)
         {
-            p_dae->mdrc_extend_para_standard_mode.signal_adjust = (int16)pDRC_TP_Info_M3->fSignalPrecut;
+            p_dae->mdrc_extend_para_standard_mode.signal_adjust = (int16)pDRC_TP_Info_M3->fSignalPrecut;//功率调节
             p_dae->mdrc_extend_para_standard_mode.mdrc_crossover_freq0 = pDRC_TP_Info_M3->nMidMin; 
             p_dae->mdrc_extend_para_standard_mode.mdrc_crossover_freq1 = pDRC_TP_Info_M3->nMaxMid; 
-            p_dae->mdrc_extend_para_standard_mode.makeup_gain = (int16)pDRC_TP_Info_M3->fGainCom; 
-            sys_comval->mdrc_vol_adjust_standard_mode = (int16)pDRC_TP_Info_M3->fMVolume;
+            p_dae->mdrc_extend_para_standard_mode.makeup_gain = (int16)pDRC_TP_Info_M3->fGainCom; //灵敏度
+            sys_comval->mdrc_vol_adjust_standard_mode = (int8)pDRC_TP_Info_M3->fMVolume;
             
             p_dae->mdrc_peak_standard_mode.MDRC_compensation_peak_detect_attack_time = pDRC_TP_Info_M3->fStTime; 
             p_dae->mdrc_peak_standard_mode.MDRC_compensation_peak_detect_release_time = pDRC_TP_Info_M3->nReleaseTime;  
             p_dae->mdrc_peak_standard_mode.MDRC_compensation_threshold = pDRC_TP_Info_M3->fTsVal;  
             p_dae->mdrc_peak_standard_mode.MDRC_compensation_filter_Q = pDRC_TP_Info_M3->fQVal;
+#if 0
+            PRINT_INFO_INT("signal_adjust",pDRC_TP_Info_M3->fSignalPrecut);
+            PRINT_INFO_INT("nMidMin",pDRC_TP_Info_M3->nMidMin);
+            PRINT_INFO_INT("nMaxMid",pDRC_TP_Info_M3->nMaxMid);
+            PRINT_INFO_INT("fGainCom",pDRC_TP_Info_M3->fGainCom);
+            PRINT_INFO_INT("fMVolume",pDRC_TP_Info_M3->fMVolume);
+            PRINT_INFO_INT("fStTime",pDRC_TP_Info_M3->fStTime);
+#endif            
         }
     }
     else
@@ -492,6 +501,7 @@ int32 aset_read_eq_data(void)
         }
     }
 
+#if 0
     if (EQMAXPOINTCOUNT_ALL > (EQMAXPOINTCOUNT*2))
     {
         ret_val = aset_read_data(STUB_CMD_ASET_READ_EQ3_DATA, eq_data_2_3_buffer, sizeof(aset_peq_data_2_3_t));
@@ -502,6 +512,7 @@ int32 aset_read_eq_data(void)
             update_peq_value(g_p_dae_cfg, eq_data_2_3_buffer, UPDATE_PEQ_MODE_PEQ3);
         }
     }
+#endif
 
     return 0;
 }
@@ -690,14 +701,13 @@ int32 __section__(".bank_2")aset_read_SignalD_data(void)
 
 int32 aset_cmd_deal(aset_status_t *aset_status)
 {
-    int32 sound_effect_changed;
+    bool sound_effect_changed = FALSE;
     bool aset_signal_detect_update = FALSE;
-
-    sys_os_task_suspend(AP_PROCESS_MANAGER_PRIO);
-    sound_effect_changed = FALSE;
     
+    //PRINT_DATA(aset_status,sizeof(aset_status_t));    
     if (aset_status->upload_case_info == TRUE)
     {
+        PRINT_INFO_INT("update_audiopp",aset_status->update_audiopp);
         if (aset_status->update_audiopp == TRUE)
         {
             sound_effect_changed = TRUE;
@@ -891,11 +901,6 @@ int32 aset_cmd_deal(aset_status_t *aset_status)
         ; //nothing for QAC
     }
 
-    //使用了manager的bank空间
-    act_writel(0, PageAddr0 + (AP_BANK_MANAGER_PAGE_INDEX << 2));
-
-    sys_os_task_resume(AP_PROCESS_MANAGER_PRIO);
-
     return 0;
 }
 
@@ -918,6 +923,7 @@ void aset_set_dae_init(void)
     {
         ret_val = aset_read_data(STUB_CMD_ASET_READ_STATUS, &aset_status, sizeof(aset_status));
 
+        //PRINT_INFO_INT("aset_status.state",aset_status.state);
         if (aset_status.state == 1)
         {
             aset_status.volume_changed = 1;
@@ -942,7 +948,7 @@ void aset_set_dae_init(void)
                 aset_status.compressor_changed = 0;
                 aset_status.standard_mode_mdrc_changed = 0;
             }
-            else if(STANDARD_MODE == sys_comval->dae_cfg.audiopp_type)
+            else 
             {
                 aset_status.limiter_data_changed = 0;
                 aset_status.multiband_drc_data_changed = 0;  
@@ -959,17 +965,16 @@ void aset_set_dae_init(void)
     g_aset_neednot_take_effect = FALSE;
 }
 
-static int32  __section__(".bank_2")aset_update_audiopp(void)
+int32  __section__(".bank_2")aset_update_audiopp(void)
 {
-    uint32 audiopp_type;
 
-    int ret_val;
+    uint8 audiopp_type;
 
-    ret_val = aset_read_data(STUB_CMD_AUDIOPP_SELECT, &audiopp_type, 4);
+    audiopp_type = get_audiopp_type();
 
-    if (ret_val == 0)
+    if (g_p_dae_cfg->audiopp_type  != audiopp_type)
     {
-        g_p_dae_cfg->audiopp_type = (uint8)audiopp_type;
+        g_p_dae_cfg->audiopp_type = audiopp_type;
         g_p_dae_cfg->audiopp_type_update_flag = 1;
     }
 

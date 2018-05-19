@@ -54,6 +54,7 @@ typedef enum
     MSG_POWER_OFF = MSG_SYS_POWER_OFF, /*0x84*/
     MSG_RECLAIM = MSG_SYS_RECLAIM, /*0x85*/
     MSG_DSP_RESET = MSG_SYS_DSP_RESET, /*0x86*/
+    MSG_MPU_ERROR = MSG_SYS_MPU_ERROR, /*0x87*/
     MSG_USB_STICK = MSG_SYS_USB_STICK, /*0x90*/
     MSG_USB_UNSTICK = MSG_SYS_USB_UNSTICK, /*0x91*/
     MSG_ADAPTOR_IN = MSG_SYS_ADAPTOR_IN, /*0xa0*/
@@ -347,7 +348,8 @@ typedef enum
     MSG_AUTOTEST_SET_SHARE_DATA_SYNC,
     MSG_AUTOTEST_BTT_TEST_SYNC,
     MSG_AUTOTEST_SWITCH_APP,
-
+    MSG_AUTOTEST_SET_PAIRED_DEV2_SYNC,
+    MSG_AUTOTEST_GET_PAIRED_DEV2_SYNC,
     /****************************linein message****************************/
     //LINEIN引擎的消息
     LINEIN_EG_BASE = 0x500,
@@ -368,7 +370,9 @@ typedef enum
     MSG_BTSTACK_A2DP_DISCONNECT_SYNC = 0x604,
     MSG_BTSTACK_AVRCP_CONNECT_SYNC = 0x605,
     MSG_BTSTACK_AVRCP_DISCONNECT_SYNC = 0x606,
-
+#ifdef __BQB_TEST_PROFILE_
+    MSG_BTSTACK_DELAY_REPORT_SYNC = 0x607,
+#endif
     /****************************** BTSTACK HFP ******************************/
     /*注意：为了更好进行bank划分，要求所有HFP相关的消息必须分配在[0x700-0x7ff]*/
     MSG_BTSTACK_HFP_BASE = 0x700,
@@ -440,6 +444,9 @@ typedef enum
     //for hid test 
     MSG_BTSTACK_SET_LM_DISCOVERABLE_SYNC = 0x82a,
     
+    //for fast scan br/edr
+    MSG_BTSTACK_SET_SCAN_MODE = 0x82b,
+    
     /****************************** BTSTACK TWS ******************************/
     MSG_BTSTACK_TWS_BASE = 0x8a0,
     MSG_BTSTACK_TWS_START_PLAY_SYNC = 0x8a1,
@@ -450,6 +457,12 @@ typedef enum
     MSG_BTSTACK_TWS_SUB_MODE_FLAG=0x8a6,
     MSG_BTSTACK_TWS_POWER_OFF=0x8a7,
     MSG_BTSTACK_GET_TWS_PAIRED_LIST_SYNC = 0x8a8,
+    MSG_BTSTACK_TWS_VOLUME_SYNC=0x8a9,
+    MSG_BTSTACK_TWS_DEAL_MSG_SYNC = 0x8aa,
+    MSG_BTSTACK_TWS_UPDATE_PARM = 0x8ab,
+    MSG_BTSTACK_TWS_SYNC_CMD = 0x8ac,
+    MSG_BTSTACK_CLEAR_TWSPAIR_LIST = 0x8ad,
+    MSG_BTSTACK_TWS_FILTER_CTRL_SYNC = 0x8ae,
     
 
     /****************************** BTSTACK EVENT ******************************/
@@ -464,6 +477,8 @@ typedef enum
     
     MSG_BTSTACK_POWER_OFF=0x908,
     MSG_BTSTACK_ERR_HARDWARE = 0x909,
+    MSG_BTSTACK_TWS_APSWITCH_SYNC = 0x90a,
+    MSG_BTSTACK_PARSE_GENARAL_CMD=0x90b,
     
 
     /****************************** BTPLAY ENGINE ******************************/
@@ -488,7 +503,13 @@ typedef enum
     MSG_UENGINE_PREV_SONG_SYNC,
     /*!获取状态*/
     MSG_UENGINE_GET_STATUS_SYNC,
-	
+    /*!音量加*/
+    MSG_UENGINE_VOL_ADD_SYNC,
+    /*!音量减*/
+    MSG_UENGINE_VOL_SUB_SYNC,
+    /*!音量值同步*/
+    MSG_UENGINE_VOL_SEND_SYNC,
+    
     /****************************** HID ******************************/
     MSG_BTSTACK_HID_BASE                = 0xd00,
     MSG_BTSTACK_HID_CONNECT_SYNC        = 0xd01, 

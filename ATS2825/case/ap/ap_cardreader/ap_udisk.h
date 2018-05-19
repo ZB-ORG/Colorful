@@ -30,6 +30,10 @@ extern comval_t g_comval;
 extern const key_event_map_t udisk_ke_maplist[];
 
 extern const sys_event_map_t udisk_se_maplist[];
+extern uint8 g_reinstall_count;
+extern uint8 g_removal_flag;
+
+extern uint32 g_wait_time_before_enum;
 
 #if (SUPPORT_OUTER_CHARGE == 1)
 extern app_result_e ud_poweroff_msg_deal(void *ev_param) __FAR__;

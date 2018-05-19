@@ -134,3 +134,33 @@ void tick_ISR_uninstall(uint32 timer_id)
 {
     sys_del_irq_timer1((void *) timer_id);
 }
+
+static void sys_reboot(void)
+{       
+    DEBUG_ATT_PRINT("reboot...", 0, 0);
+    
+    sys_local_irq_save();
+    
+    ENABLE_WATCH_DOG(1);
+    
+    while(1);
+}
+
+
+int32 act_test_report_test_log(uint32 ret_val, uint32 test_id)
+{
+    if (ret_val == FALSE)
+    {
+        att_write_test_info("test fail: ", test_id, 1);
+        write_log_file(FALSE);
+        //sys_mdelay(5000);
+        //sys_reboot(); 
+        led_flash_fail();
+    }  
+    else
+    {
+        att_write_test_info("test ok: ", test_id, 1);        
+    }  
+    
+    att_write_test_info("   ", 0, 0);   
+}

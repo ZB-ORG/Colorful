@@ -110,6 +110,8 @@ typedef enum
     MMM_MP_ERR_PARSER_ERROR = 0x10012,
     /*! 输出设备支持出错 */
     MMM_MP_ERR_DEVICE_ERROR = 0x10013,
+    /*! 采样率不支持 */
+    MMM_MP_SAMPLE_RATE_NOT_SUPPORT = 0x10014,
     /*! 未知错误 */
     MMM_MP_ERR_UNKNOWN = 0x100FF
 } mmm_mp_err_t;
@@ -216,6 +218,13 @@ typedef enum
         MMM_MP_SET_OUTPUT_CHANNEL,
         /*设置SD区数据操作接口*/
         MMM_MP_SET_SDD_FILE_IO,
+        /*设置采样率固定*/
+        MMM_MP_FIX_SAMPLE_RATE,
+        
+        /*是否支持音乐文件解密*/	
+        MMM_MP_DECRYPT_STATUS = 0x90,
+        /* 解密函数指针 */	
+        MMM_MP_SET_DECRYPT_FUNC,
     } mmm_mp_cmd_t;
 
 /*!

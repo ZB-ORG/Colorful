@@ -42,6 +42,7 @@ typedef enum
     SWITCH_ERR_STOP,
     SWITCH_ERR_DISK_OUT,
     SWITCH_ERR_SWITCH,
+    SWITCH_ERR_READ_CARD_TIMEOUT,
     SWITCH_ERR_PLAY
 } switch_result_e;
 
@@ -77,7 +78,7 @@ typedef struct
 #endif
 
 #ifdef WAVES_ASET_TOOLS
-extern uint8 g_support_waves_pc_tools;
+extern waves_t  g_waves;
 #endif
 
 //globle variable
@@ -180,6 +181,7 @@ void error_handle2(void) __FAR__;
 void error_handle(void) __FAR__;
 bool mengine_check_disk_in(void)__FAR__;
 void mengine_reply_msg(void* msg_ptr, bool ret_vals) __FAR__;
+void m_decrypt_func(void *buf, int offset, int size) __FAR__;
 void me_update_share(void) __FAR__;
 app_result_e mengine_control_block(void) __FAR__;
 app_result_e mengine_message_done(private_msg_t* cur_msg) __FAR__;

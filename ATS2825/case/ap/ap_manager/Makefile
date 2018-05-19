@@ -150,7 +150,7 @@ $(IMAGE_ELF) : $(OBJ)
 	$(LD) $(LD_OPTS_1) $(LD_OPTS_2)
 #±àÒë¹ý³Ì	
 $(OBJ_C_16) : %.o : %.c
-	$(CC) $(CC_OPTS_O0_16) -o	$(OBJ_DIR)/$@ $<
+	$(CC) $(CC_OPTS_O2_16) -o	$(OBJ_DIR)/$@ $<
 	@echo
 #¶ÀÁ¢O2±àÒë
 $(OBJ_C_16_O2) : %.o : %.c

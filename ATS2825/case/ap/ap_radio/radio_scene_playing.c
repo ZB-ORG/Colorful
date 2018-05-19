@@ -227,11 +227,15 @@ app_result_e radio_scene_playing(void)
         radio_set_mute(releaseMUTE);
         g_playing_flag = TRUE;
     }
+    else 
+    {
+    	  g_playing_flag = FALSE;
+    }
 
     g_searching_flag = FALSE;
     loop_deal_ret = playing_loop_deal();
     radio_playing_exit: 
-    if(loop_deal_ret == RESULT_NEXT_FUNCTION)
+    if((loop_deal_ret >= RESULT_APP_QUIT) && (loop_deal_ret < RESULT_AUTO_SEARCH))
     {
         com_set_mute(TRUE); //¾²Òô
     }

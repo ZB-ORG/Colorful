@@ -57,8 +57,8 @@ extern void *key_op_entry(void *param1, void *param2, void *param3, key_cmd_e cm
 key_op_entry((void*)(uint32)(current_ma),(void*)(uint32)(voltage_mv),(void*)0, KEY_BATTERY_CHARGE_OPEN)
 #define key_battery_charge_stop()    \
 key_op_entry((void*)0,(void*)0,(void*)0, KEY_BATTERY_CHARGE_STOP)
-#define key_battery_get_status(p_ad_val, p_vol_limit)    \
-(battery_status_e)key_op_entry((void*)(p_ad_val),(void*)(p_vol_limit),(void*)0, KEY_BATTERY_GET_STATUS)
+#define key_battery_get_status(p_ad_val, p_vol_limit, app_id)    \
+(battery_status_e)key_op_entry((void*)(p_ad_val),(void*)(p_vol_limit),(void*)app_id, KEY_BATTERY_GET_STATUS)
 
 #if (SUPPORT_TK_DRIVER == TK_DRIVER_OUTER)
 #define key_extern_tk_op(tk_op)    \
@@ -123,7 +123,7 @@ typedef enum
 
 
 /*
- int adjust_freq_add_value(int8 freq_a,int8 freq_b)
+ int adjust_freq_add_value(int16 freq_a,int16 freq_b)
  该接口用于微调 misp 和 dsp 频率值,可调高或调低
  freq_a：叠加misp的频率，值可为负数
  freq_b：叠加dsp的频率，值可为负数
@@ -131,7 +131,7 @@ typedef enum
  !!!NOTE:bank代码，禁止在中断调用
  */
 #define adjust_freq_add_value(freq_a,freq_b)  \
-(int)key_op_entry((void*)(int)(int8)(freq_a),(void*)(int)(int8)(freq_b),(void*)ADJUST_FQ_ADD_VALUE, KEY_ADJUST_FREQ_OP)
+(int)key_op_entry((void*)(int)(int16)(freq_a),(void*)(int)(int16)(freq_b),(void*)ADJUST_FQ_ADD_VALUE, KEY_ADJUST_FREQ_OP)
 
 
 /*

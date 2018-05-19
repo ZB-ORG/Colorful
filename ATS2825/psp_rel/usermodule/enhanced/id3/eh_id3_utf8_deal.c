@@ -116,6 +116,8 @@ uint32 id3_read_utf8_deal(id3_save_t* dest_p, uint32 read_size, uint8 *src_buf)
         ret_len = UTF8_GET_SIZE;
     }
 
+    sys_os_sched_lock();
+
     if (src_buf != NULL)
     {
         libc_memcpy(temp_bank_bufB, src_buf, ret_len);
@@ -143,6 +145,8 @@ uint32 id3_read_utf8_deal(id3_save_t* dest_p, uint32 read_size, uint8 *src_buf)
         *(uint16*) (dest_p->saveaddr) = UNICODE_FLAG;
         *(uint16*) (dest_p->saveaddr + (utf16_cn & 0xFFFE) + 2) = 0x00;
     }
+
+    sys_os_sched_unlock();
 
     return ret_len;
 

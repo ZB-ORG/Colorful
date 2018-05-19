@@ -89,6 +89,7 @@ SECTIONS
     BANK_B_0    : 
     {
         key_bankb0_init.o(.text .rodata)  
+        uart_recordkey_init.o(.text .rodata)  
         key_bankb1_exit.o(.text .rodata)
         key_discrete_led_op.o(.text .rodata)
         key_bat_charge_comm.o(.bank0 .rodata_0)
@@ -115,10 +116,31 @@ SECTIONS
 	
 	 /*假设还有一个bank b，文件名为bank_b_card_xx.c*/
     . = ((. + KERNEL_BANK_SPACE) & (~(KERNEL_BANK_SPACE - 1))) + OFFSET;
-    BANK_B_2   : 
+    BANK_B_3   : 
     {
         key_waves_dae.o(.text .rodata)
 
     }=0x0
+	
+	/*假设还有一个bank b，文件名为bank_b_card_xx.c*/
+    . = ((. + KERNEL_BANK_SPACE) & (~(KERNEL_BANK_SPACE - 1))) + OFFSET;
+    BANK_B_4   : 
+    {
+        key_math_exp_fixed.o(.text .rodata)
+
+    }=0x0
+	/*假设还有一个bank b，文件名为bank_b_card_xx.c*/
+	. = ((. + KERNEL_BANK_SPACE) & (~(KERNEL_BANK_SPACE - 1))) + OFFSET;
+	BANK_B_5   : 
+    {
+        dae_print.o(.text .rodata)
+    }=0x0
+	/*假设还有一个bank b，文件名为bank_b_card_xx.c*/
+	. = ((. + KERNEL_BANK_SPACE) & (~(KERNEL_BANK_SPACE - 1))) + OFFSET;
+	 BANK_B_6   : 
+    {
+        dae_print1.o(.text .rodata)
+    }=0x0
+
     
 }

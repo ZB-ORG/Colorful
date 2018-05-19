@@ -113,7 +113,7 @@ app_result_e music_get_music_info(uint32 data1, uint32 data2)
             MIN(sizeof(p_rcp_id3_info->file_buffer),
             g_cur_id3_info.name_len));
 
-    p_rcp_id3_info->music_type = _music_ext_type(g_file_path_info.file_path.dirlocation.filename);
+    p_rcp_id3_info->music_type = _music_ext_type(g_file_path_info.file_path.dirlocation.file_info.file_extend_info.file_ext);
 
     p_rcp_id3_info->file_type = _music_info_type(p_rcp_id3_info->file_buffer);
 
@@ -267,7 +267,6 @@ __section__(".text.bank2") app_result_e music_get_music_plist(uint32 data1, uint
         vfs_cd(eh_vfs_mount, CD_ROOT, 0);       
         music_rcp_dir_first();
         music_rcp_first_get();
-		
         if (g_file_path_info.file_path.dirlocation.disk == DISK_U)
         {
             g_app_info_state.need_update_playlist &= (uint8)(~UHOST_NEED_UPLOAD);
@@ -338,8 +337,7 @@ __section__(".text.bank2") app_result_e music_get_music_plist(uint32 data1, uint
 
         //获取指定序号文件的文件名和ID3信息，使用libc_memcpy避免数据不对齐访问异常
         libc_memcpy(&(p_rcp_plist_info->file_seq), &tmp_file_seq, sizeof(uint32));
-        p_rcp_plist_info->music_type = _music_ext_type(g_file_path_info.file_path.dirlocation.filename);
-
+        p_rcp_plist_info->music_type = _music_ext_type(g_file_path_info.file_path.dirlocation.file_info.file_extend_info.file_ext);
         //发送应答命令
         if (((i + 1) % count_one_time) == 0) //空间已满，必须发送
         {
@@ -384,7 +382,7 @@ __section__(".text.bank2") void music_upload_music_plist(void)
     }
     else
     {
-         g_app_info_state.need_update_playlist |= CARD_NEED_UPLOAD;
+        g_app_info_state.need_update_playlist |= CARD_NEED_UPLOAD;
     }
     PRINT_INFO("vfs changed.");
 }

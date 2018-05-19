@@ -171,6 +171,25 @@ typedef struct
 
 /**************************************************/
 
+typedef struct
+{
+    short enable;				            //default: 200ms,step 0.01ms, set 200*100 = 20000    
+    short DownExp_attack_time;				//default: 200ms,step 0.01ms, set 200*100 = 20000
+	short DownExp_release_time;				//default: 10ms,step 1ms, set 10
+	short DownExp_set0_threshold;		    //default: 1ms, step 0.01ms, set 100;
+	short DownExp_threshold;			    //default: -80dB(min), step 0.1dB, set -800
+	short DownExp_ratio;				    //default: 3(greater than 1)  
+}noise_reduction_t;
+
+typedef struct
+{
+    /*! 默认数值 */
+    uint16 default_value;
+    /*! 有效值个数 */
+    uint16 total;
+
+    noise_reduction_t noise_reduction;
+}noise_reduction_config_t;
 
 /*!
  * \brief
@@ -234,8 +253,6 @@ typedef struct
 
     /*! 当前逻辑音量值：0~31 */
     uint8 volume_current;
-    /*! 备份当前逻辑音量值：0~31 */
-    uint8 volume_current_temp;
     /*! 当前已经设置到PA的音量值：0~31，0xff表示无效 */
     uint8 volume_current_phy;
     /*! 当前音量模式 */
@@ -276,8 +293,8 @@ typedef struct
     /*! CASE 层自定义 Graphics EQ 类型*/
     uint8 eq_enable;
     uint8 eq_type;
-    /*! DAE关闭嵌套层级 */
-    uint8 dae_off_nest;
+    /*! bypass状态备份*/
+    uint8 bypass_temp;
     /*! MDRC音量微调 */
     int8 mdrc_vol_adjust;
     /*! mdrc音量补偿，需对信号进行衰减，百分比 */
@@ -288,7 +305,7 @@ typedef struct
     bool dae_inited_flag;
     bool default_vbass_enable; //默认虚拟低音使能开关
     bool set_dae_by_app_flag;  //通过APP设置音效标志
-    
+    bool w_input_enable;
     /*! 音效增强效果开关 */
     uint8 dae_enhanced_enable;
     /*! 音效减弱效果开关 */
@@ -343,6 +360,19 @@ typedef struct
 	
     /*! test mode标志,0x01:FT mode,0x02:bqbmode */
 	uint8 api_flag;
+
+	uint16 usb_cardreader_magic;
+
+	uint16 usb_sound_magic;
+
+	uint32 usb_cardreader_low;
+
+	uint32 usb_cardreader_high;
+	
+	uint32 usb_sound_low;
+
+	uint32 usb_sound_high;
+
 } testval_t;
 
 

@@ -38,8 +38,7 @@ SECTIONS
 {
     .text1 RCODE_TEXT1_ADDR	:
     {
-    	KEEP(bt_common_manager_deal.o(.rcode))
-    	KEEP(app_timer_bank_single.o(.text .rodata))
+    	KEEP(bt_common_manager_deal.o(.rcode))    	
     	KEEP(common_rcp_dispatch.o(.rcode))
     	KEEP(common_aset_main_deal.o(.rcode))
     	KEEP(common_rcp_dispatch_block.o(.rcode))
@@ -47,15 +46,10 @@ SECTIONS
         KEEP(common_rcp_func.o(.rcode))    	
         KEEP(bt_common_sppble.o(.rcode))
     	KEEP(message_bank_send_btmanager.o(.text .rodata .xdata))    	
+    	KEEP(common_setdae.o(.rcode))  
+    	KEEP(common_discrete_led.o(.text.led_twinkle))	
     }
 	
-	.text2 RCODE_TEXT2_ADDR	:
-    {
-		KEEP(common_setdae.o(.rcode))
-		KEEP(common_func_data.o(.bss.rcode)) /*data存放在text段*/
-	
-		. = RCODE_TEXT2_SIZE;
-    }
 	
     . = APPLIB_GLOBAL_DATA_ADDR;
 	APPLIB_GLOBAL_DATA :
@@ -73,6 +67,7 @@ SECTIONS
     APPLIB_DATA	:
     {
         KEEP(applib_globe_data_com.o(.g_app_info_state))
+        KEEP(applib_globe_data_com.o(.gl_rcp_buffer))
         KEEP(applib_globe_data_com.o(.gl_com_data))
         KEEP(message_key_deal.o(.gl_key_data))
         KEEP(common_tts.o(.gl_tts_data))
@@ -93,7 +88,7 @@ SECTIONS
     {
     	KEEP(bt_common_manager.o(.bt_auto_connect))
     	KEEP(bt_common_manager.o(.bt_globe_data))
-		KEEP(bt_common_ancs.o(.bss .data))
+		KEEP(common_rcp_servs.o(.bss .data))
     	. = BTMANAGER_DATA_SIZE;
     }
     
@@ -104,16 +99,13 @@ SECTIONS
     OFFSET = . & 0x3ffff;
     BANK_UI_1_10    : 
     {
-        KEEP(sys_counter.o(.text .rodata .xdata)) 
         KEEP(common_charge.o(.text .rodata .xdata))
-        KEEP(common_discrete_led.o(.text.led_twinkle))
-        
+        KEEP(sys_counter.o(.text .rodata .xdata))         
         KEEP(bt_common_autoconnect.o(.text .rodata .xdata))
         KEEP(bt_common_sppble.o(.text .rodata .xdata))
         KEEP(bt_common_event_dispatch.o(.rcode))
-        KEEP(common_rcp_send.o(.rcode))
-        
-        . = BANK_UI_SIZE;
+        KEEP(common_rcp_send.o(.rcode))       
+        . = BANK_UI_SIZE;       
     }  
     
     . = ((. + AP_BANK_SPACE) & (~(AP_BANK_SPACE - 1))) + OFFSET;
@@ -185,7 +177,7 @@ SECTIONS
         KEEP(common_config.o(.text .rodata .xdata))  
         KEEP(common_rcp_dialog.o(.text .rodata .xdata))
         KEEP(common_share_data.o(.text .rodata .xdata))
-        KEEP(common_math_exp_fixed.o(.text .rodata .xdata))
+        KEEP(common_setdae.o(.bank))       
         . = BANK_UI_SIZE;
     }
     
@@ -193,6 +185,7 @@ SECTIONS
     BANK_UI_1_18    : 
     {
         KEEP(common_setdae.o(.text .rodata .xdata))
+        KEEP(common_math_exp_fixed.o(.text .rodata .xdata))
         . = BANK_UI_SIZE;
     }
     
@@ -216,7 +209,8 @@ SECTIONS
     {
         KEEP(common_aset_main_deal.o(.text .rodata))
         KEEP(common_aset_sub_code.o(.text .rodata .xdata))
-        . = 0x600;/*没其他特殊意思，仅为了节省点固件代码空间*/
+        /*. = 0x600;*//*没其他特殊意思，仅为了节省点固件代码空间*/
+		. = BANK_UI_SIZE;
     }
     
     . = ((. + AP_BANK_SPACE) & (~(AP_BANK_SPACE - 1)))  + OFFSET;
@@ -292,7 +286,7 @@ SECTIONS
         KEEP(common_key_deal.o(.text .rodata .xdata))
         KEEP(common_view_key_event.o(.text .rodata .xdata))
         KEEP(common_view_loop.o(.text.com_view_loop_key))
-        . = 0x600;/*没其他特殊意思，仅为了节省点固件代码空间*/
+        . = BANK_UI_SIZE;   
     }
     
     . = ((. + AP_BANK_SPACE) & (~(AP_BANK_SPACE - 1)))  + OFFSET;
@@ -326,7 +320,8 @@ SECTIONS
         KEEP(bt_common_avrcp.o(.text .rodata))
         KEEP(bt_common_hfp.o(.text .rodata))
         KEEP(bt_common_sppble.o(.text .rodata))
-	KEEP(bt_common_manager_deal.o(.call_auto_conn1))
+	    KEEP(bt_common_manager_deal.o(.call_auto_conn1))
+	    KEEP(bt_common_manager_deal.o(.bank))
         . = BANK_UI_SIZE;/*没其他特殊意思，仅为了节省点固件代码空间*/
     }
     
@@ -342,6 +337,7 @@ SECTIONS
     {
     	KEEP(app_timer_bank.o(.text .rodata .xdata))
         KEEP(sys_timer.o(.text .rodata .xdata))
+        KEEP(app_timer_bank_single.o(.text .rodata))
         . = 0x600;/*没其他特殊意思，仅为了节省点固件代码空间*/
     }
     
@@ -371,7 +367,7 @@ SECTIONS
     {
      
         KEEP(bt_common_autoconnect.o(.text.auto_connect_profile_bank))
-     	KEEP(bt_common_ancs.o(.text .rodata .xdata))
+     	  KEEP(common_rcp_servs.o(.text .rodata .xdata))
         . = BANK_UI_SIZE;
     }
     . = ((. + AP_BANK_SPACE) & (~(AP_BANK_SPACE - 1)))  + OFFSET;
@@ -414,12 +410,14 @@ SECTIONS
     BANK_UI_1_45    : 
     {
         KEEP(common_setdae_init.o(.text.bank))
+        KEEP(bt_common_manager.o(.bank_3))
         . = BANK_UI_SIZE;        
     }   	
     . = ((. + AP_BANK_SPACE) & (~(AP_BANK_SPACE - 1)))  + OFFSET;
     BANK_UI_1_46    : 
     {
          KEEP(common_phy_volume_deal.o(.BANK46))
+         KEEP(bt_common_manager.o(.bank_2))
         . = BANK_UI_SIZE;        
     }  
 	 . = ((. + AP_BANK_SPACE) & (~(AP_BANK_SPACE - 1)))  + OFFSET;
@@ -429,6 +427,27 @@ SECTIONS
 		  KEEP(common_volume.o(.text .rodata .xdata))
         . = BANK_UI_SIZE;        
     }
-	
+		 . = ((. + AP_BANK_SPACE) & (~(AP_BANK_SPACE - 1)))  + OFFSET;
+    BANK_UI_1_48    : 
+    {    	
+        KEEP(bt_common_manager_deal.o(.bank))        
+        KEEP(bt_common_autoconnect.o(.auto_connect_bank1))
+        KEEP(common_charge.o(.bank))
+        KEEP(sys_counter.o(.bank)) 
+        . = BANK_UI_SIZE;        
+    }  
+    . = ((. + AP_BANK_SPACE) & (~(AP_BANK_SPACE - 1)))  + OFFSET;
+    BANK_UI_1_49    : 
+    {             
+        KEEP(bt_common_manager.o(.bank_4))
+		
+        . = BANK_UI_SIZE;  
+    }
+	. = ((. + AP_BANK_SPACE) & (~(AP_BANK_SPACE - 1)))  + OFFSET;
+    BANK_UI_1_50    : 
+    {             
+		KEEP(common_waves_dae.o(.text))
+        . = BANK_UI_SIZE;  
+    }	
     /*请确保这里的UI_1的BANK号小于54. 如果>=54,就要改eh_id3_link.xn*/
 }       

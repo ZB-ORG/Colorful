@@ -285,25 +285,25 @@ app_result_e alarm_ring_entry(void)
         {
             if (alarm_check_status() == FALSE) //出错之后退出闹钟
             {
-                  if (TRUE == first_alarm_play_init_flag)
+                if (TRUE == first_alarm_play_init_flag)
                 {
-                      first_alarm_play_init_flag = FALSE;
+                    first_alarm_play_init_flag = FALSE;
 
-                      if (RING_TYPE_BUILTIN == g_p_alarm_ring->cur_alarm_record.alarm.ring_type)
-                      {
-                          result = RESULT_LASTPLAY;
-                          return result;
-                      }
-                      else
-                      {
-                          //卡盘不存在或者闹铃找不到，播放内置闹铃第一首
-                          g_p_alarm_ring->cur_alarm_record.alarm.ring_type= RING_TYPE_BUILTIN;
-                          g_p_alarm_ring->cur_alarm_record.alarm.sound.ring_seq= 1;
-                          time_alarm_record_list_operate(RECORD_LIST_ADD_BYINDEX, &g_p_alarm_ring->cur_alarm_record, \
+                    if (RING_TYPE_BUILTIN == g_p_alarm_ring->cur_alarm_record.alarm.ring_type)
+                    {
+                        result = RESULT_LASTPLAY;
+                        return result;
+                    }
+                    else
+                    {
+                        //卡盘不存在或者闹铃找不到，播放内置闹铃第一首
+                        g_p_alarm_ring->cur_alarm_record.alarm.ring_type= RING_TYPE_BUILTIN;
+                        g_p_alarm_ring->cur_alarm_record.alarm.sound.ring_seq= 1;
+                        time_alarm_record_list_operate(RECORD_LIST_ADD_BYINDEX, &g_p_alarm_ring->cur_alarm_record, \
                                                         (void *) (uint32) alarm_idx);
 
-                          goto alarm_play_init_again;
-                      }
+                        goto alarm_play_init_again;
+                    }
                 }
                 else
                 {

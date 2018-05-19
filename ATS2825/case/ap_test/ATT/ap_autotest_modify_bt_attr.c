@@ -17,6 +17,21 @@
  *******************************************************************************/
 #include "ap_manager_test.h"
 
+static void act_test_modify_bt_vram(void)
+{
+    #define ATT_MAGIC  0xABCD
+
+    bt_addr_vram_t*  p = (void*)STUB_ATT_RETURN_DATA_BUFFER;
+
+    if(g_support_norflash_wp == TRUE)
+    {
+        /* 标记蓝牙参数已通过 ATT 修改 */
+        p->magic = ATT_MAGIC;
+        
+        sys_vm_write(p, VM_BTSTACK, 4);
+    }
+}
+
 #define BT_ADDR_LOG_FILE_LEN   (512)
 
 #define BT_ADDR_LOG_MAGIC_L    (0x44434241)
@@ -57,6 +72,21 @@ static uint32 cal_att_file_checksum(btaddr_log_file_t *btaddr_log_file)
     return checksum;
 }
 
+static int32 write_param_data(nvram_param_rw_t *param_rw)
+{
+    int32 ret_val;
+
+    ret_val = base_param_write(param_rw);
+
+    if(ret_val != 0)
+    {
+        base_param_merge_deal();
+
+        ret_val = base_param_write(param_rw);
+    }
+
+    return ret_val;
+}
 int act_test_report_modify_bt_addr_result(bt_addr_arg_t *bt_addr_arg)
 {
     uint8 cmd_data[16];
@@ -140,6 +170,8 @@ int act_test_report_modify_bt_addr_result(bt_addr_arg_t *bt_addr_arg)
         {
             act_test_write_att_record_file(&(bt_addr_arg->bt_addr[0]), 0, 0);
         }
+        
+        act_test_report_test_log(ret_val, TESTID_MODIFY_BTADDR);
     }
 
     return ret_val;
@@ -150,6 +182,11 @@ test_result_e act_test_modify_bt_addr(void *arg_buffer)
     int ret_val;
 
     nvram_param_rw_t param_rw;
+    
+    if(g_support_norflash_wp == TRUE)
+    {
+        base_set_disable_write_protect();        
+    }
 
     bt_addr_arg_t *bt_addr_arg = (bt_addr_arg_t *) arg_buffer;
 
@@ -157,13 +194,12 @@ test_result_e act_test_modify_bt_addr(void *arg_buffer)
     param_rw.rw_len = PARAM_BT_ADDR_LEN;
     param_rw.rw_buffer = bt_addr_arg->bt_addr;
 
-    ret_val = base_param_write(&param_rw);
+    ret_val = write_param_data(&param_rw);
 
-    if (ret_val == 0)
-    {
-        act_test_report_modify_bt_addr_result(bt_addr_arg);
-    }
+    act_test_report_modify_bt_addr_result(bt_addr_arg);
 
+    act_test_modify_bt_vram();
+    
     return ret_val;
 }
 
@@ -234,9 +270,13 @@ int32 act_open_att_record_file(void)
                 ;
         }
 
+        libc_memset(btaddr_log, 0, sizeof(btaddr_log_file_t));
+        
         btaddr_log->magicl = BT_ADDR_LOG_MAGIC_L;
         btaddr_log->magich = BT_ADDR_LOG_MAGIC_H;
         btaddr_log->record_cnt = 0;
+        btaddr_log->succeed_cnt = 0;
+        btaddr_log->failed_cnt = 0;
         btaddr_log->checksum = cal_att_file_checksum(btaddr_log);
 
         vfs_file_write(g_file_sys_id, file_buffer, BT_ADDR_LOG_FILE_LEN, file_handle);
@@ -261,7 +301,7 @@ int32 act_test_read_bt_addr_from_log(uint8 *byte_buffer)
     }
 }
 
-int32 act_test_write_att_record_file(uint8 *byte_buffer, uint32 record_cnt, uint32 mode)
+int32 act_test_write_att_record_file(uint8 *byte_buffer, log_test_info_t *test_info, uint32 mode)
 {
     uint32 i;
     int32 file_handle;
@@ -309,9 +349,14 @@ int32 act_test_write_att_record_file(uint8 *byte_buffer, uint32 record_cnt, uint
         btaddr_log->addr[1] = byte_buffer[1];
         btaddr_log->addr[2] = byte_buffer[0];
     }
-    else
+    else if(mode == 1)
     {
-        btaddr_log->record_cnt = record_cnt;
+        libc_memcpy(&(btaddr_log->record_cnt), test_info, sizeof(log_test_info_t));
+    }
+    else
+    {        
+        libc_memcpy(&(btaddr_log->bt_paired_dev_info), byte_buffer, sizeof(bt_paired_dev_info2_t));
+        ;//nothing 已更新配对列表信息，直接计算校验和
     }
 
     btaddr_log->checksum = cal_att_file_checksum(btaddr_log);
@@ -501,6 +546,10 @@ int act_test_report_modify_bt_name_result(bt_name_arg_t *bt_name_arg, uint16 wri
 
         act_test_report_result(return_data, trans_bytes + 4);
     }
+    else
+    {
+        act_test_report_test_log(ret_val, TESTID_MODIFY_BTNAME);    
+    }
 
     return ret_val;
 }
@@ -510,6 +559,11 @@ test_result_e act_test_modify_bt_name(void *arg_buffer)
     int ret_val;
 
     nvram_param_rw_t param_rw;
+    
+    if(g_support_norflash_wp == TRUE)
+    {
+        base_set_disable_write_protect();        
+    }    
 
     bt_name_arg_t *bt_name_arg = (bt_name_arg_t *) arg_buffer;
 
@@ -522,13 +576,12 @@ test_result_e act_test_modify_bt_name(void *arg_buffer)
 
     param_rw.rw_buffer = bt_name_arg->bt_name;
 
-    ret_val = base_param_write(&param_rw);
+    ret_val = write_param_data(&param_rw);
 
-    if (ret_val == 0)
-    {
-        act_test_report_modify_bt_name_result(bt_name_arg, param_rw.rw_len);
-    }
+    act_test_report_modify_bt_name_result(bt_name_arg, param_rw.rw_len);
 
+    act_test_modify_bt_vram();
+    
     return ret_val;
 }
 
@@ -582,6 +635,10 @@ void act_test_report_modify_ble_name_result(ble_name_arg_t *ble_name_arg, uint16
         //按照实际字节数上报结果，比如虽然有30字节数据，但只上报12个有效字节的数据
         act_test_report_result(return_data, trans_bytes + 4);
     }
+    else
+    {
+        act_test_report_test_log(ret_val, TESTID_MODIFY_BLENAME);    
+    }    
 }
 
 test_result_e act_test_modify_bt_ble_name(void *arg_buffer)
@@ -589,6 +646,11 @@ test_result_e act_test_modify_bt_ble_name(void *arg_buffer)
     int ret_val;
 
     nvram_param_rw_t param_rw;
+    
+    if(g_support_norflash_wp == TRUE)
+    {
+        base_set_disable_write_protect();        
+    }    
 
     ble_name_arg_t *ble_name_arg = (ble_name_arg_t *) arg_buffer;
 
@@ -598,11 +660,10 @@ test_result_e act_test_modify_bt_ble_name(void *arg_buffer)
 
     ret_val = base_param_write(&param_rw);
 
-    if (ret_val == 0)
-    {
-        act_test_report_modify_ble_name_result(ble_name_arg, param_rw.rw_len);
-    }
+    act_test_report_modify_ble_name_result(ble_name_arg, param_rw.rw_len);
 
+    act_test_modify_bt_vram();
+    
     return ret_val;
 }
 

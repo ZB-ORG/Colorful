@@ -7,7 +7,7 @@
  ********************************************************************************/
 #ifndef _COMMON_OTA_H
 #define _COMMON_OTA_H
-	 
+
 #include "psp_includes.h"
 #include "enhanced.h"
 #include "common_func.h"
@@ -22,7 +22,7 @@
 
 #define BYTE_PER_SECTION   (512)
 
-#define RCP_BUFF_ADDR      (0x9fc26000)
+#define RCP_BUFF_ADDR      (g_rcp_long_buffer)
 
 
 //查询命令回复的结构体
@@ -33,18 +33,20 @@ typedef struct
     uint8  part_id;       //分区ID
     uint8  rec_data_state;   //数据是否正常接受 0异常；1正常； 2已经收到发送完成的命令(可以重启升级)
                                //    3 分区校验不通过，请求重启。
+    uint8 tws_connect_sta;//用于提示用户当前的TWS连接状态，
+    uint8 reserved;
 } enquiry_message_t;
 
 typedef struct
 {
-	uint8 connect_state;
-	uint8 reserved[15];
+    uint8 connect_state;
+    uint8 reserved[15];
 }connect_reply_t;
 
 
 typedef struct
 {
-    uint8  connect_state; 	
+    uint8  connect_state;
     uint8  reservd;
     uint16 cru_pack_count;// 当前收到的是第几个包
     uint32 random_upg_key; //升级记录的随机值 
@@ -57,7 +59,7 @@ typedef struct
 typedef struct
 {
     Fw_Ver_t cru_updata;    //当前下载的版本号 8bytes
-    uint32 random_upg_val; //apk/app在每次升级过程中生成的随机值
+    uint32 random_upg_val; //保留
     uint16 complete_send_num; //已经发了多少个分区
     uint8  part_id;       //需要升级的分区ID
     uint8  reserved[1];      //保留字节
@@ -66,22 +68,24 @@ typedef struct
 
 typedef struct
 {
-	uint32 part_id;			//分区ID
-	uint32 part_size;		//分区大小，字节为单位
-	uint32 part_offset;		//分区偏移，字节为单位
-	uint32 check_sum;		//分区校验和，32位数据的累加和
+    uint32 part_id;            //分区ID
+    uint32 part_size;        //分区大小，字节为单位
+    uint32 part_offset;        //分区偏移，字节为单位
+    uint16 check_sum;        //分区校验和，16位数据的累加和
+    uint16 part_max_size;   //分区最大大小
 }part_item_t;
 
 typedef struct
 {
-	uint8 magic[4]; 		//'OTA'
-	uint8 sdk_version[4];	//SDK版本号
-	uint8 case_version[4];  //case版本号
-	uint8 date[4];			//固件生成日期
-	uint8 part_total;		//分区总大小，最多16个分区
-	uint8 reserved0[15];
-	part_item_t part_item[16]; //最多16个系统分区
-	uint8 reserved[224];
+    uint8 magic[4];         //'OTA'
+    uint8 sdk_version[4];    //SDK版本号
+    uint8 case_version[4];  //case版本号
+    uint8 date[4];            //固件生成日期
+    uint8 part_total;        //分区总大小，最多16个分区
+    uint8 reserved0[7];
+    uint8 module_num[8];
+    part_item_t part_item[16]; //最多16个系统分区
+    uint8 reserved[224];
 }part_head_t;
    
 typedef struct

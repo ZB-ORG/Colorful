@@ -49,7 +49,7 @@ app_result_e open_stub(void)
             i++;
         }
     }
-	g_config_esd_restart = FALSE;
+    g_config_esd_restart = FALSE;
     //等待PA OK后再进行测试
     config_wait_pa_ok();
     

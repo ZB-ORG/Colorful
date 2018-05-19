@@ -49,19 +49,34 @@ app_result_e uengine_message_deal(private_msg_t* cur_msg)
         case MSG_UENGINE_GET_STATUS_SYNC:
         uengine_reply_msg(cur_msg, TRUE);
         break;
-
+        
+        /* ²¥·ÅÔÝÍ£*/
         case MSG_UENGINE_PLAY_PAUSE_SYNC:
         uengine_play_pause();
         uengine_reply_msg(cur_msg, TRUE);
         break;
 
+        /* ÇÐ»»ÏÂÒ»Çú*/
         case MSG_UENGINE_NEXT_SONG_SYNC:
         uengine_next_song();
         uengine_reply_msg(cur_msg, TRUE);
         break;
-
+        
+        /* ÇÐ»»ÉÏÒ»Çú*/
         case MSG_UENGINE_PREV_SONG_SYNC:
         uengine_prev_song();
+        uengine_reply_msg(cur_msg, TRUE);
+        break;
+        
+        /* ÒôÁ¿¼Ó*/
+        case MSG_UENGINE_VOL_ADD_SYNC:
+        uengine_vol_add();
+        uengine_reply_msg(cur_msg, TRUE);
+        break;
+        
+        /* ÒôÁ¿¼õ*/
+        case MSG_UENGINE_VOL_SUB_SYNC:
+        uengine_vol_sub();
         uengine_reply_msg(cur_msg, TRUE);
         break;
 
@@ -77,6 +92,12 @@ app_result_e uengine_message_deal(private_msg_t* cur_msg)
         case MSG_TTS_STOP_SYNC:
         case MSG_SWITCH_AOUT_STOP_SYNC: //Íê³ÉÇÐ»»ÒôÆµÊä³ö
         uengine_tts_stop();
+        uengine_reply_msg(cur_msg, TRUE);
+        break;
+
+        case MSG_UENGINE_VOL_SEND_SYNC:
+        g_current_vol = *((uint8 *)cur_msg->msg.content.addr);
+        uengine_vol_sync((uint8)g_current_vol);
         uengine_reply_msg(cur_msg, TRUE);
         break;
 

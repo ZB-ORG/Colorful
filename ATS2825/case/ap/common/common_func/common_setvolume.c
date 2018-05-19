@@ -74,23 +74,9 @@ void com_volume_add(bool tts_flag)
 {
     uint8 cur_volume;
 
-    if(SMART_MODE == sys_comval->dae_cfg.audiopp_type)
-    {
-        if (sys_comval->volume_current < VOLUME_VALUE_MAX)
-        {   
-           cur_volume = sys_comval->volume_current + 1;  
-           com_set_sound_volume(cur_volume, SET_VOLUME_SYNC_TO_REMOTE);
-        }
-    }
-    else if(STANDARD_MODE == sys_comval->dae_cfg.audiopp_type)
-    {
-        cur_volume = sys_comval->volume_current + 2;
-
-        if (cur_volume > VOLUME_VALUE_MAX)
-        {
-            cur_volume = VOLUME_VALUE_MAX;
-        } 
-
+    if (sys_comval->volume_current < VOLUME_VALUE_MAX)
+    {   
+        cur_volume = sys_comval->volume_current + 1;  
         com_set_sound_volume(cur_volume, SET_VOLUME_SYNC_TO_REMOTE);
     }
     
@@ -127,35 +113,12 @@ void com_volume_sub(bool tts_flag)
 {
     uint8 cur_volume;
 
-    if(SMART_MODE == sys_comval->dae_cfg.audiopp_type)
+    if (sys_comval->volume_current > 0)
     {
-       if (sys_comval->volume_current > 0)
-       {
-          cur_volume = sys_comval->volume_current - 1; 
-          com_set_sound_volume(cur_volume, SET_VOLUME_SYNC_TO_REMOTE);   
-       }
+        cur_volume = sys_comval->volume_current - 1; 
+        com_set_sound_volume(cur_volume, SET_VOLUME_SYNC_TO_REMOTE);   
     }
-    else if(STANDARD_MODE == sys_comval->dae_cfg.audiopp_type) 
-    {
-        if (sys_comval->volume_current > 2)
-        {
-           if (VOLUME_VALUE_MAX == sys_comval->volume_current)
-           {
-               cur_volume = VOLUME_VALUE_MAX -1;     
-           }
-           else
-           {
-               cur_volume = sys_comval->volume_current - 2;
-           }
-        }
-        else
-        {
-            cur_volume = 0;
-        }
-         com_set_sound_volume(cur_volume, SET_VOLUME_SYNC_TO_REMOTE);   
-    }
- 
- 
+
     if (tts_flag == FALSE)
     {
         com_create_volume_view();

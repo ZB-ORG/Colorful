@@ -75,6 +75,8 @@ typedef enum
     MMM_HFP_AOUT_CLOSE,
     /*! 关闭音乐中间件 */
     MMM_HFP_CLOSE,
+    /*! 固定采样率 */
+    MMM_HFP_FIX_SAMPLE_RATE,
    
     
     /*单线程测试*/

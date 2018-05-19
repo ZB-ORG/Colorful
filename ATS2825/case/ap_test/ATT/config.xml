@@ -33,151 +33,6 @@
   <!-- 量产测试: 14 -->
   <test tid = "14" name = "S1600" desc = "S1601"/>
   
-  <!--GPIO TEST ATS2825-->
-  <test tid = "6" name = "S600">
-    <!-- GPIOA Configure value-->
-    <param name = "S601" value = "ffe2" operate = "edit" range = "0:ffffffff" desc = "S602" type = "hex"/>
-    <!--GPIOB Configure value -->
-    <param name = "S603" value = "b80" operate = "edit" range = "0:ffffffff" desc = "S604" type = "hex"/>
-    <!--SIO Configure value -->
-    <param name = "S605" value = "280" operate = "edit" range = "0:ffffffff" desc = "S606" type = "hex"/>
-  </test>
-  
-  <!--GPIO TEST ATS2823-->
-  <test tid = "21" name = "S650">
-    <!-- GPIOA Configure value-->
-    <param name = "S651" value = "200000" operate = "edit" range = "0:ffffffff" desc = "S652" type = "hex"/>
-    <!--GPIOB Configure value -->
-    <param name = "S653" value = "0" operate = "edit" range = "0:ffffffff" desc = "S654" type = "hex"/>
-    <!--SIO Configure value -->
-    <param name = "S655" value = "200" operate = "edit" range = "0:ffffffff" desc = "S656" type = "hex"/>
-  </test>  
-
-  <!--LINEIN CHANNEL TEST -->
-  <test tid = "7" name = "S700"/>
-
-  <!--MIC CHANNEL TEST -->
-  <test tid = "8" name = "S800"/>
-
-  <!-- FM CHANNEL TEST-->
-  <test tid = "9" name = "S900"/>
- 
-  <!--BTT TEST-->
-  <test tid = "194" name = "S1300">    
-    <!-- FreqPoint0 valid or not-->
-    <param name = "S1301" operate = "single" desc = "S1302">
-      <sub range="0:26" select="0"/>
-      <sub name="S1307" value="255" />
-    </param>
-
-    <!-- FreqPoint1 valid or not-->
-    <param name = "S1303" operate = "single" desc = "S1304">
-      <sub range="26:54"/>
-      <sub name="S1307" value="255" select="true"/>
-    </param>
-    
-    <!-- FreqPoint2 valid or not-->
-    <param name = "S1305" operate = "single" desc = "S1306">
-      <sub range="55:78"/> 
-      <sub name="S1307" value="255" select="true"/>
-    </param>
-    
-    <!-- CFO Test or not-->
-    <param name = "S1387" operate = "checkbox" checked="true" desc = "S1387"/>
-    
-    <!-- StartIndexLow-->
-    <param name = "S1389" value = "0" operate = "edit" range = "0:160" desc = "S1390" type = "dec"/>
-    <!-- StartIndexHigh-->
-    <param name = "S1391" value = "160" operate = "edit" range = "0:160" desc = "S1392" type = "dec"/>    
-    <!--Change StartIndex or not -->
-    <param name = "S1393" operate = "checkbox" checked="true" desc = "S1394"/>
-     
-    <!-- CFO ThreadHoldLow-->
-    <param name = "S1397" value = "-10" operate = "edit" range = "-100:100" desc = "S1398" type = "dec"/>
-    <!-- CFO ThreadHoldHigh-->
-    <param name = "S1399" value = "10" operate = "edit" range = "-100:100" desc = "S1400" type = "dec"/>       
-    <!-- Efuse Write Mode-->
-    <param name = "S1401" operate = "single" desc = "S1402">
-      <sub name="S1403" value="0" />
-      <sub name="S1404" value="1" select="true"/>
-      <sub name="S1405" value="2" />
-    </param>    
-    <!--UPT CFO OFFSET  HZ -->
-    <param name = "S1406" value = "7000" operate = "edit" range = "-10000:10000" desc = "S1407" type = "dec"/>  
-                
-    <!-- TX Power Test or not-->
-    <param name = "S1436" operate = "checkbox" checked="false" desc = "S1437"/>
-    <!-- TX Power ThreadHoldLow-->
-    <param name = "S1438" value = "-6" operate = "edit" range = "-10:10" desc = "S1439" type = "dec"/>
-    <!-- TX Power ThreadHoldHigh-->
-    <param name = "S1440" value = "4" operate = "edit" range = "-10:10" desc = "S1441" type = "dec"/>
-    
-    <!-- BER Test or not-->
-    <param name = "S1442" operate = "checkbox" checked="false" desc = "S1443"/>
-    <!-- BER ThreadHoldLow-->
-    <param name = "S1444" value = "-90" operate = "edit" range = "-100:0" desc = "S1445" type = "dec"/>
-    <!-- BER ThreadHoldHigh-->
-    <param name = "S1446" value = "-70" operate = "edit" range = "-100:0" desc = "S1447" type = "dec"/>    
-  </test>
-  
-  <!--BTT READ TEST-->
-  <test tid = "195" name = "S1700">    
-    <!-- FreqPoint0 valid or not-->
-    <param name = "S1301" operate = "single" desc = "S1302">
-      <sub range="0:26" select="0"/>
-      <sub name="S1307" value="255" />
-    </param>
-
-    <!-- FreqPoint1 valid or not-->
-    <param name = "S1303" operate = "single" desc = "S1304">
-      <sub range="26:54"/>
-      <sub name="S1307" value="255" select="true"/>
-    </param>
-    
-    <!-- FreqPoint2 valid or not-->
-    <param name = "S1305" operate = "single" desc = "S1306">
-      <sub range="55:78"/> 
-      <sub name="S1307" value="255" select="true"/>
-    </param>
-    
-    <!-- CFO Test or not-->
-    <param name = "S1387" operate = "checkbox" checked="true" desc = "S1387"/>
-    
-    <!-- StartIndexLow-->
-    <param name = "S1389" value = "0" operate = "edit" range = "0:160" desc = "S1390" type = "dec"/>
-    <!-- StartIndexHigh-->
-    <param name = "S1391" value = "160" operate = "edit" range = "0:160" desc = "S1392" type = "dec"/>    
-    <!--Change StartIndex or not -->
-    <param name = "S1393" operate = "checkbox" checked="true" desc = "S1394"/>
-     
-    <!-- CFO ThreadHoldLow-->
-    <param name = "S1397" value = "-20" operate = "edit" range = "-100:100" desc = "S1398" type = "dec"/>
-    <!-- CFO ThreadHoldHigh-->
-    <param name = "S1399" value = "20" operate = "edit" range = "-100:100" desc = "S1400" type = "dec"/>       
-    <!-- Efuse Write Mode-->
-    <param name = "S1401" operate = "single" desc = "S1402">
-      <sub name="S1403" value="0" select="true"/>
-      <sub name="S1404" value="1" />
-      <sub name="S1405" value="2" />
-    </param>         
-    <!--UPT CFO OFFSET  HZ -->
-    <param name = "S1406" value = "7000" operate = "edit" range = "-10000:10000" desc = "S1407" type = "dec"/>  
-                
-    <!-- TX Power Test or not-->
-    <param name = "S1436" operate = "checkbox" checked="false" desc = "S1437"/>
-    <!-- TX Power ThreadHoldLow-->
-    <param name = "S1438" value = "-6" operate = "edit" range = "-10:10" desc = "S1439" type = "dec"/>
-    <!-- TX Power ThreadHoldHigh-->
-    <param name = "S1440" value = "4" operate = "edit" range = "-10:10" desc = "S1441" type = "dec"/>
-    
-    <!-- BER Test or not-->
-    <param name = "S1442" operate = "checkbox" checked="false" desc = "S1443"/>
-    <!-- BER ThreadHoldLow-->
-    <param name = "S1444" value = "-90" operate = "edit" range = "-100:0" desc = "S1445" type = "dec"/>
-    <!-- BER ThreadHoldHigh-->
-    <param name = "S1446" value = "-70" operate = "edit" range = "-100:0" desc = "S1447" type = "dec"/>    
-  </test>  
-     
   <!-- modify BT NAME -->
   <test tid = "1" name = "S100" desc = "S101">
     <!-- modify BT classic name -->
@@ -207,7 +62,7 @@
       <sub name="S321" value="4"/>
     </param>
     <!-- enable BT ADDR multiple changes -->
-    <param name = "S310" operate = "checkbox" checked="true" desc = "S311" />
+    <param name = "S310" operate = "checkbox" checked="true" desc = "S311" show = "false" />
     <!-- print BT ADDR  -->
     <param name = "S323" operate = "checkbox" checked="false" desc = "S324" />
   </test>
@@ -232,8 +87,265 @@
     <param name = "S2206" operate = "checkbox" checked="false" desc = "S2207" />
     <!-- input BT NAME -->
     <param name = "S2208" value = "us282a_btbox_ble" operate = "edit" range = "1:29" desc = "S2209" type = "string"/>
+  </test>   
+  
+  <!--GPIO TEST ATS2825-->
+  <test tid = "6" name = "S600">
+    <!-- GPIOA Configure value-->
+    <param name = "S601" value = "20ffe2" operate = "edit" range = "0:ffffffff" desc = "S602" type = "hex"/>
+    <!--GPIOB Configure value -->
+    <param name = "S603" value = "b80" operate = "edit" range = "0:ffffffff" desc = "S604" type = "hex"/>
+    <!--SIO Configure value -->
+    <param name = "S605" value = "280" operate = "edit" range = "0:ffffffff" desc = "S606" type = "hex"/>
+  </test>
+  
+  <!--GPIO TEST ATS2823-->
+  <test tid = "21" name = "S650">
+    <!-- GPIOA Configure value-->
+    <param name = "S651" value = "200000" operate = "edit" range = "0:ffffffff" desc = "S652" type = "hex"/>
+    <!--GPIOB Configure value -->
+    <param name = "S653" value = "0" operate = "edit" range = "0:ffffffff" desc = "S654" type = "hex"/>
+    <!--SIO Configure value -->
+    <param name = "S655" value = "200" operate = "edit" range = "0:ffffffff" desc = "S656" type = "hex"/>
+  </test>  
+
+  <!--ATS2825 LINEIN CHANNEL TEST -->
+  <test tid = "7" name = "S700" desc = "S701">
+    <!-- LINEIN Left CH Test or not-->
+    <param name = "S702" operate = "checkbox" checked="true" desc = "S703" />    
+    <!-- LINEIN Left CH Power ThreadHold-->
+    <param name = "S704" value = "4096" operate = "edit" range = "0:65536" desc = "S705" type = "dec" />
+    <!-- LINEIN Left CH SNR Test or not-->
+    <param name = "S706" operate = "checkbox" checked="true" desc = "S707" />    
+    <!-- LINEIN Left CH SNR ThreadHold-->
+    <param name = "S708" value = "30" operate = "edit" range = "0:100" desc = "S709" type = "dec" />
+    <!-- LINEIN Left CH SigMaxPoint -->
+    <param name = "S710" value = "8" operate = "edit" range = "0:1024" desc = "S711" type = "dec" />
+            
+    <!-- LINEIN Right CH Test or not-->
+    <param name = "S720" operate = "checkbox" checked="true" desc = "S721" />    
+    <!-- LINEIN Right CH Power ThreadHold-->
+    <param name = "S704" value = "4096" operate = "edit" range = "0:65536" desc = "S705" type = "dec" />
+    <!-- LINEIN Right CH SNR Test or not-->
+    <param name = "S706" operate = "checkbox" checked="true" desc = "S707" />    
+    <!-- LINEIN Right CH SNR ThreadHold-->
+    <param name = "S708" value = "30" operate = "edit" range = "0:100" desc = "S709" type = "dec" />
+    <!-- LINEIN Right CH SigMaxPoint -->
+    <param name = "S710" value = "8" operate = "edit" range = "0:1024" desc = "S711" type = "dec" />    
   </test> 
   
+  <!--ATS2823 LINEIN CHANNEL TEST -->
+  <test tid = "28" name = "S730" desc = "S701">
+    <!-- LINEIN Left CH Test or not-->
+    <param name = "S702" operate = "checkbox" checked="true" desc = "S703" />    
+    <!-- LINEIN Left CH Power ThreadHold-->
+    <param name = "S704" value = "4096" operate = "edit" range = "0:65536" desc = "S705" type = "dec" />
+    <!-- LINEIN Left CH SNR Test or not-->
+    <param name = "S706" operate = "checkbox" checked="true" desc = "S707" />    
+    <!-- LINEIN Left CH SNR ThreadHold-->
+    <param name = "S708" value = "30" operate = "edit" range = "0:100" desc = "S709" type = "dec" />
+    <!-- LINEIN Left CH SigMaxPoint -->
+    <param name = "S710" value = "8" operate = "edit" range = "0:1024" desc = "S711" type = "dec" />
+            
+    <!-- LINEIN Right CH Test or not-->
+    <param name = "S720" operate = "checkbox" checked="true" desc = "S721" />    
+    <!-- LINEIN Right CH Power ThreadHold-->
+    <param name = "S704" value = "4096" operate = "edit" range = "0:65536" desc = "S705" type = "dec" />
+    <!-- LINEIN Right CH SNR Test or not-->
+    <param name = "S706" operate = "checkbox" checked="true" desc = "S707" />    
+    <!-- LINEIN Right CH SNR ThreadHold-->
+    <param name = "S708" value = "30" operate = "edit" range = "0:100" desc = "S709" type = "dec" />
+    <!-- LINEIN Right CH SigMaxPoint -->
+    <param name = "S710" value = "8" operate = "edit" range = "0:1024" desc = "S711" type = "dec" />    
+  </test>   
+      
+  <!--MIC CHANNEL TEST -->
+  <test tid = "8" name = "S800" desc = "S801">
+    <!-- MIC Left CH Test or not-->
+    <param name = "S702" operate = "checkbox" checked="true" desc = "S703" />    
+    <!-- MIC Left CH Power ThreadHold-->
+    <param name = "S704" value = "4096" operate = "edit" range = "0:65536" desc = "S705" type = "dec" />
+    <!-- MIC Left CH SNR Test or not-->
+    <param name = "S706" operate = "checkbox" checked="true" desc = "S707" />    
+    <!-- MIC Left CH SNR ThreadHold-->
+    <param name = "S708" value = "30" operate = "edit" range = "0:100" desc = "S709" type = "dec" />
+    <!-- MIC Left CH SigMaxPoint -->
+    <param name = "S710" value = "8" operate = "edit" range = "0:1024" desc = "S711" type = "dec" />
+            
+    <!-- MIC Right CH Test or not-->
+    <param name = "S720" operate = "checkbox" checked="true" desc = "S721" />    
+    <!-- MIC Right CH Power ThreadHold-->
+    <param name = "S704" value = "4096" operate = "edit" range = "0:65536" desc = "S705" type = "dec" />
+    <!-- MIC Right CH SNR Test or not-->
+    <param name = "S706" operate = "checkbox" checked="true" desc = "S707" />    
+    <!-- MIC Right CH SNR ThreadHold-->
+    <param name = "S708" value = "30" operate = "edit" range = "0:100" desc = "S709" type = "dec" />
+    <!-- MIC Right CH SigMaxPoint -->
+    <param name = "S710" value = "8" operate = "edit" range = "0:1024" desc = "S711" type = "dec" />  
+  </test> 
+      
+  <!-- FM CHANNEL TEST-->
+  <!--test tid = "9" name = "S900"/-->
+  
+  <!--LRADC  TEST -->
+  <test tid = "27" name = "S2600" desc = "S2601">  
+    <!-- LRADC1 Test or not-->
+    <param name = "S2602" operate = "checkbox" checked="true" desc = "S2603" />
+    <!-- LRADC1 ThreadHoldLow-->
+    <param name = "S2608" value = "110" operate = "edit" range = "0:255" desc = "S2610" type = "dec" />
+    <!-- LRADC1 ThreadHoldHigh-->
+    <param name = "S2609" value = "120" operate = "edit" range = "0:255" desc = "S2611" type = "dec"/>   
+
+    <!-- LRADC2 Test or not-->
+    <param name = "S2604" operate = "checkbox" checked="true" desc = "S2605" />
+    <!-- LRADC2 ThreadHoldLow-->
+    <param name = "S2608" value = "50" operate = "edit" range = "0:255" desc = "S2612" type = "dec" />
+    <!-- LRADC2 ThreadHoldHigh-->
+    <param name = "S2609" value = "80" operate = "edit" range = "0:255" desc = "S2613" type = "dec"/>  
+    
+    <!-- LRADC4 Test or not-->
+    <param name = "S2606" operate = "checkbox" checked="true" desc = "S2607" />
+    <!-- LRADC4 ThreadHoldLow-->
+    <param name = "S2608" value = "42" operate = "edit" range = "0:255" desc = "S2614" type = "dec" />
+    <!-- LRADC4 ThreadHoldHigh-->
+    <param name = "S2609" value = "50" operate = "edit" range = "0:255" desc = "S2615" type = "dec"/>  
+  </test>
+                    
+  <!-- SDCard driver TEST-->
+  <test tid = "10" name = "S1000" desc = "S1001"/>
+
+  <!--Udisk driver TEST -->
+  <test tid = "11" name = "S1100" desc = "S1101"/>  
+ 
+  <!--BTT TEST-->
+  <test tid = "194" name = "S1300">    
+    <!-- FreqPoint0 valid or not-->
+    <param name = "S1301" operate = "single" desc = "S1302" show = "false">
+      <sub range="0:26" select="0"/>
+      <sub name="S1307" value="255" />
+    </param>
+
+    <!-- FreqPoint1 valid or not-->
+    <param name = "S1303" operate = "single" desc = "S1304" show = "false">
+      <sub range="27:54"/>
+      <sub name="S1307" value="255" select="true"/>
+    </param>
+    
+    <!-- FreqPoint2 valid or not-->
+    <param name = "S1305" operate = "single" desc = "S1306" show = "false">
+      <sub range="55:78"/> 
+      <sub name="S1307" value="255" select="true"/>
+    </param>
+    
+    <!-- CFO Test or not-->
+    <param name = "S1387" operate = "checkbox" checked="true" desc = "S1387"/>
+    
+    <!-- StartIndexLow-->
+    <param name = "S1389" value = "0" operate = "edit" range = "0:160" desc = "S1390" type = "dec"/>
+    <!-- StartIndexHigh-->
+    <param name = "S1391" value = "160" operate = "edit" range = "0:160" desc = "S1392" type = "dec"/>    
+    <!--Change StartIndex or not -->
+    <param name = "S1393" operate = "checkbox" checked="true" desc = "S1394"/>
+     
+    <!-- CFO ThreadHoldLow-->
+    <param name = "S1397" value = "-10" operate = "edit" range = "-100:100" desc = "S1398" type = "dec"/>
+    <!-- CFO ThreadHoldHigh-->
+    <param name = "S1399" value = "10" operate = "edit" range = "-100:100" desc = "S1400" type = "dec"/>       
+    <!-- Efuse Write Mode-->
+    <param name = "S1401" operate = "single" desc = "S1402">
+      <sub name="S1403" value="0" />
+      <sub name="S1404" value="1" select="true"/>
+      <sub name="S1405" value="2" />
+    </param>    
+    <!--UPT CFO OFFSET  HZ -->
+    <param name = "S1406" value = "7000" operate = "edit" range = "-10000:10000" desc = "S1407" type = "dec" show = "false"/>  
+                
+    <!-- TX Power Test or not-->
+    <param name = "S1436" operate = "checkbox" checked="false" desc = "S1437" />
+    <!-- TX Power ThreadHoldLow-->
+    <param name = "S1438" value = "-70" operate = "edit" range = "-70:10" desc = "S1439" type = "dec" />
+    <!-- TX Power ThreadHoldHigh-->
+    <param name = "S1440" value = "20" operate = "edit" range = "-10:20" desc = "S1441" type = "dec" />   
+  </test>
+  
+  <!--BTT READ TEST-->
+  <test tid = "195" name = "S1700">    
+    <!-- FreqPoint0 valid or not-->
+    <param name = "S1301" operate = "single" desc = "S1302" show = "false">
+      <sub range="0:26" select="0"/>
+      <sub name="S1307" value="255" />
+    </param>
+
+    <!-- FreqPoint1 valid or not-->
+    <param name = "S1303" operate = "single" desc = "S1304" show = "false">
+      <sub range="27:54"/>
+      <sub name="S1307" value="255" select="true"/>
+    </param>
+    
+    <!-- FreqPoint2 valid or not-->
+    <param name = "S1305" operate = "single" desc = "S1306" show = "false">
+      <sub range="55:78"/> 
+      <sub name="S1307" value="255" select="true"/>
+    </param>
+    
+    <!-- CFO Test or not-->
+    <param name = "S1387" operate = "checkbox" checked="true" desc = "S1387"/>
+    
+    <!-- StartIndexLow-->
+    <param name = "S1389" value = "0" operate = "edit" range = "0:160" desc = "S1390" type = "dec"/>
+    <!-- StartIndexHigh-->
+    <param name = "S1391" value = "160" operate = "edit" range = "0:160" desc = "S1392" type = "dec"/>    
+    <!--Change StartIndex or not -->
+    <param name = "S1393" operate = "checkbox" checked="true" desc = "S1394"/>
+     
+    <!-- CFO ThreadHoldLow-->
+    <param name = "S1397" value = "-20" operate = "edit" range = "-100:100" desc = "S1398" type = "dec"/>
+    <!-- CFO ThreadHoldHigh-->
+    <param name = "S1399" value = "20" operate = "edit" range = "-100:100" desc = "S1400" type = "dec"/>       
+    <!-- Efuse Write Mode-->
+    <param name = "S1401" operate = "single" desc = "S1402">
+      <sub name="S1403" value="0" select="true"/>
+      <sub name="S1404" value="1" />
+      <sub name="S1405" value="2" />
+    </param>         
+    <!--UPT CFO OFFSET  HZ -->
+    <param name = "S1406" value = "7000" operate = "edit" range = "-10000:10000" desc = "S1407" type = "dec" show = "false"/>  
+                
+    <!-- TX Power Test or not-->
+    <param name = "S1436" operate = "checkbox" checked="false" desc = "S1437" />
+    <!-- TX Power ThreadHoldLow-->
+    <param name = "S1438" value = "-70" operate = "edit" range = "-70:10" desc = "S1439" type = "dec" />
+    <!-- TX Power ThreadHoldHigh-->
+    <param name = "S1440" value = "20" operate = "edit" range = "-10:20" desc = "S1441" type = "dec" />
+  </test>  
+  
+  <!-- BER TEST -->
+  <test tid = "197" name = "S1705">  
+    <!-- FreqPoint0 valid or not-->
+    <param name = "S1301" operate = "single" desc = "S1302" show = "false">
+      <sub range="0:26" select="0"/>
+      <sub name="S1307" value="255" />
+    </param>
+
+    <!-- FreqPoint1 valid or not-->
+    <param name = "S1303" operate = "single" desc = "S1304" show = "false">
+      <sub range="26:54"/>
+      <sub name="S1307" value="255" select="true"/>
+    </param>
+    
+    <!-- FreqPoint2 valid or not-->
+    <param name = "S1305" operate = "single" desc = "S1306" show = "false">
+      <sub range="55:78"/> 
+      <sub name="S1307" value="255" select="true"/>
+    </param>
+
+    <!-- BER Thr low-->
+    <param name = "S1703" value = "30" operate = "edit" range = "0:90" desc = "S1704" type = "dec"/> 
+    
+    <!-- BER Thr high-->
+    <param name = "S1706" value = "70" operate = "edit" range = "0:90" desc = "S1707" type = "dec"/>     
+  </test>  
+      
   <!--BT TEST -->
   <test tid = "193" name = "S400" desc = "S408">
     <!-- BT Transmitter ADDR, 6 MAX -->
@@ -259,58 +371,80 @@
   <!--BQB mode test -->
   <test tid = "25" name = "S2400" desc = "S2401"/>
   
-  <!--FT mode test -->
+  <!--FCC mode test -->
   <test tid = "24" name = "S2300" desc = "S2301"/>  
   
-  <!--FM PLAY TEST -->
+  <!--FM PLAY TEST 
   <test tid = "5" name = "S500">
-    <!-- fm play freq-->
+    <!-- fm play freq
     <param name = "S501" value = "1071" operate = "edit" range = "0:9999" desc = "S502" type = "dec"/>
   </test>  
+  -->
   
-  <!-- SDCard Play TEST-->
-  <test tid = "10" name = "S1000"/>
-
-  <!--Udisk Play TEST -->
-  <test tid = "11" name = "S1100"/>
-
-  <!--linein Play TEST-->
+  <!--linein Play TEST
   <test tid = "12" name = "S1200"/>  
-  
-  <!--FLASHDUMP -->
+	-->  
+	
+  <!--FLASHDUMP 
   <test tid = "15" name = "S1900">
-    <!-- decrypt mode -->
+    <!-- decrypt mode 
     <param name = "S1901" operate = "checkbox" checked="true" desc = "S1902" />
-    <!-- upload flash start addr(sector unit) -->
+    <!-- upload flash start addr(sector unit) 
     <param name = "S1903" value = "0" operate = "edit" range = "0:32768" desc = "S1904" type = "hex" />
-    <!-- upload flash end addr(sector unit) -->
+    <!-- upload flash end addr(sector unit) 
     <param name = "S1905" value = "4096" operate = "edit" range = "0:32768" desc = "S1906" type = "hex" />
   </test>  
-
-  <!--FLASHDOWNLOAD -->
+	-->
+	
+  <!--FLASHDOWNLOAD 
   <test tid = "18" name = "S2000">
-    <!-- decrypt mode -->
+    <!-- decrypt mode 
     <param name = "S2001" operate = "checkbox" checked="true" desc = "S2002" />
-    <!-- download flash start addr(sector unit) -->
+    <!-- download flash start addr(sector unit) 
     <param name = "S2003" value = "0" operate = "edit" range = "0:32768" desc = "S2004" type = "hex" />
-    <!-- download flash end addr(sector unit) -->
+    <!-- download flash end addr(sector unit) 
     <param name = "S2005" value = "4096" operate = "edit" range = "0:32768" desc = "S2006" type = "hex" />
   </test>  
+  -->
   
-  <!--BURN IC -->
+  <!--BURN IC 
   <test tid = "16" name = "S2100" desc = "S2101"/>
-
-  <!--CHECK IC -->
-  <test tid = "17" name = "S2102" desc = "S2103"/>  
-      
+	-->
+	
+  <!--CHECK IC 
+  <test tid = "17" name = "S2102" desc = "S2103"/> 
+  -->
+     
+  <!--FLASHTEST -->
+  <test tid = "26" name = "S2500" desc = "S2501"> 
+    <!-- flash size -->
+    <param name = "S2502" operate = "single" desc = "S2503">
+      <sub name="S2504" value="0" />
+      <sub name="S2505" value="1" select="true"/>
+      <sub name="S2506" value="2"/>
+      <sub name="S2507" value="3"/>
+      <sub name="S2508" value="4"/>
+      </param>
+    <!-- wp test -->
+    <param name = "S2509" operate = "checkbox" checked="true" desc = "S2510" />
+    <!-- erase mode -->
+    <param name = "S2511"  operate = "single" desc = "S2512">
+      <sub name="S2513" value="0" select="true"/>
+      <sub name="S2514" value="1" />
+      <sub name="S2515" value="2"/>
+      <sub name="S2516" value="3"/>   
+      <sub name="S2517" value="4"/>
+      </param>      
+  </test> 
+       
   <L804 desc="Chinese">
     <S100 value="修改蓝牙名称" />
     <S101 value="包含一个参数，蓝牙名称" />
     <S102 value="修改经典蓝牙名称"/>
-    <S103 value="修改经典蓝牙名称，最多29个字符" />
+    <S103 value="修改经典蓝牙名称，最多29个字节,中文一般3个字节，英文一个字节" />
     
     <S200 value="修改BLE蓝牙名称" />
-    <S201 value="修改蓝牙BLE名称，最多29个字符" />
+    <S201 value="修改蓝牙BLE名称，最多29个字节,中文一般3个字节，英文一个字节" />
     
     <S300 value="修改蓝牙地址" />
     <S301 value="蓝牙地址高3字节" />
@@ -320,7 +454,7 @@
     <S305 value="蓝牙地址生成方式" />
     <S306 value="0:累加 1:随机 2:固定 3:人工输入(含扫描枪) 4:用户自定义(用户DLL返回蓝牙地址) 卡模式只支持累加形式" />
     <S307 value="累加" />
-    <S308 value="随机"/>
+    <S308 value="随机(卡测试不支持)"/>
     <S309 value="固定"/>
     <S310 value="允许蓝牙地址多次修改" />
     <S311 value="允许蓝牙地址多次修改 0:不允许 1:允许" />
@@ -330,7 +464,7 @@
     <S321 value="用户自定义"/>
     <S322 value="蓝牙地址低3字节-结束值" />
     <S323 value="修改成功后打印蓝牙地址" />
-    <S324 value="用户提供命令行程序Printer.exe并将之拷贝到测试工具目录下。Printer.exe bd_addr=A1B2C3D4E5F6" />
+    <S324 value="ATT工具目录必须存在Printer.exe，如果不存在，ATT工具测试会失败。Printer.exe bd_addr=A1B2C3D4E5F6" />
     <S325 value="蓝牙地址检查" />
     <S326 value="用户输入一个蓝牙地址并与小机中的蓝牙地址进行一致性检查" />
     <S327 value="蓝牙地址打印" />
@@ -367,19 +501,37 @@
     <S655 value="SIO配置值" />
     <S656 value="SIO配置值，必须是十六进制数值，每个IO占一个bit" />  
       
-    <S700 value="LINEIN通道测试" />
-    
+    <S700 value="ATS2825 LINEIN通道测试" />
+    <S701 value="用于测试linein通道工作是否正常" />
+    <S702 value="是否测试左通道" />
+    <S703 value="用于配置是否测试左通路" />
+    <S704 value="   通道能量阈值" />
+    <S705 value="统计得到的允许输出的通道能量最小值" />
+    <S706 value="   是否测试信噪比(SNR)" />  
+    <S707 value="是否对linein通路信噪比做分析" />
+    <S708 value="       信噪比阈值" />
+    <S709 value="分析得到的信噪比阈值，该值为db值,30db代表信噪比值为1000" />           
+    <S710 value="       幅值最大点" />
+    <S711 value="分析得到的信号幅值最大点,16K采样率，128个样本点,则频谱分辨率为125HZ，1KHZ对应第八个点" /> 
+    <S730 value="ATS2823 LINEIN通道测试" />
+
+    <S720 value="是否测试右通道" />
+    <S721 value="用于配置是否测试右通路" />
+                                      
     <S800 value="MIC通道测试" />
-    
+    <S801 value="用于测试MIC通道工作是否正常" />
+        
     <S900 value="FM通道测试" />
     
-    <S1000 value="SD卡播放测试" />
-    
-    <S1100 value="U盘播放测试" />
-    
+    <S1000 value="SD卡驱动测试" />
+    <S1001 value="测试SD卡驱动工作是否正常，需要测试架插入一张SD卡" />
+        
+    <S1100 value="Uhost驱动测试" />
+    <S1101 value="测试u盘驱动工作是否正常，需要测试架插入一个u盘" />
+        
     <S1200 value="LINEIN播放测试" />
 
-    <S1300 value="蓝牙频偏测试" />
+    <S1300 value="蓝牙频偏测试(卡测试不支持)" />
     <S1301 value="低信道频点"/>
     <S1302 value="0-26信道可选,可选择测试或不测试"/>
     <S1303 value="中信道频点"/>
@@ -412,7 +564,7 @@
     <S1407 value="UPT初始固有频率偏移，范围为HZ"/> 
               
     <S1436 value="是否测试发射功率"/>
-    <S1437 value="若选择测试发射功率，则需要配置发射功率阈值"/>    
+    <S1437 value="若选择测试发射功率，则需要配置发射功率阈值，勾选此项，则频偏测试过程中会同时测试发射功率"/>    
     <S1438 value="  发射功率最小值"/>
     <S1439 value="范围以db为单位，如-6代表-6db"/>
     <S1440 value="  发射功率最大值"/>
@@ -425,16 +577,22 @@
     <S1446 value="  灵敏度最大值"/>
     <S1447 value="范围以db为单位，如-70代表-70db"/>   
      
-    <S1500 value="固件升级准备"/> 
+    <S1500 value="固件升级准备(卡测试不支持)"/> 
     <S1501 value="该测试项为空测试项，防止量产重启后重新量产，该测试项必须和固件升级测试项放在一起，且在其前面"/>  
     
-    <S1600 value="固件升级测试"/>  
+    <S1600 value="固件升级测试(卡测试不支持)"/>  
     <S1601 value="该测试项为固件升级测试，在该测试项之前必须是准备测试的测试项"/>   
      
-    <S1700 value="蓝牙频偏读取测试"/>
-    
+    <S1700 value="蓝牙频偏读取测试(卡测试不支持)"/>   
+    <S1701 value="是否测试灵敏度"/>  
+    <S1702 value="若测试灵敏度，需配置灵敏度的阈值"/>        
+    <S1703 value="  灵敏度阈值最小值"/>
+    <S1704 value="阈值范围0到90，值越小越好，该值为批量统计值，表示合法的最小值"/>    
+    <S1705 value="灵敏度测试(卡测试不支持)"/>
+    <S1706 value="  灵敏度阈值最大值"/>
+    <S1707 value="阈值范围0到90，值越小越好，该值为批量统计值，表示合法的最大值"/>   
+        
     <S1800 value="蓝牙地址读取测试"/>
-    
     <S1900 value="FLASHDUMP测试"/>
     <S1901 value="导出数据是否解密"/>
     <S1902 value="配置导出数据是否解密，默认上传解密数据"/>
@@ -462,16 +620,52 @@
     <S2202 value="是否校验经典蓝牙名称"/> 
     <S2203 value="如果打开该配置，则程序会比较读取的名称和期望的名称是否一致"/>   
     <S2204 value="    待比较经典蓝牙名称"/>  
-    <S2205 value="待比较经典蓝牙名称，最多29个字符" /> 
+    <S2205 value="待比较经典蓝牙名称，最多29个字节,中文一般3个字节，英文一个字节" /> 
     <S2206 value="是否校验蓝牙BLE名称"/> 
     <S2207 value="如果打开该配置，则程序会比较读取的名称和期望的名称是否一致"/>   
     <S2208 value="    待比较蓝牙BLE名称"/>  
-    <S2209 value="待比较蓝牙BLE名称，最多29个字符" />  
+    <S2209 value="待比较蓝牙BLE名称，最多29个字节,中文一般3个字节，英文一个字节" />  
     
-    <S2300 value="FT模式测试" />   
-    <S2301 value="进入FT测试模式后，ATT工具会结束测试，因此该测试项必须是最后一个测试项,FT模式需要PC工具配合" />  
+    <S2300 value="FCC模式测试" />   
+    <S2301 value="进入FCC测试模式后，ATT工具会结束测试，因此该测试项必须是最后一个测试项,FCC模式需要FCC工具配合" />  
     
     <S2400 value="BQB模式测试" />   
-    <S2401 value="进入BQB测试模式后，ATT工具会结束测试，因此该测试项必须是最后一个测试项,BQB测试模式进入后小机由CBT控制" />                   
+    <S2401 value="进入BQB测试模式后，ATT工具会结束测试，因此该测试项必须是最后一个测试项,BQB测试模式进入后小机由CBT控制" />   
+    
+    <S2500 value="NORFLASH测试" />   
+    <S2501 value="该测试用于校验相关norflash的写保护功能是否正常" />  
+    <S2502 value="设置flash固件大小" />
+    <S2503 value="固件大小最小1M,只支持普通固件，不支持OTA固件" />
+    <S2504 value="1M" />
+    <S2505 value="2M" /> 
+    <S2506 value="4M" /> 
+    <S2507 value="8M" /> 
+    <S2508 value="16M" /> 
+    <S2509 value="是否进行写保护测试" /> 
+    <S2510 value="该选项用于对flash写保护进行测试，以确认flash是否支持写保护" /> 
+    <S2511 value="flash擦除模式" /> 
+    <S2512 value="用于设置flash数据写模式" />
+    <S2513 value="不擦除" />  
+    <S2514 value="擦除整片flash" />  
+    <S2515 value="擦除VRAM" />   
+    <S2516 value="擦除VRAM和参数区" />   
+    <S2517 value="写入随机数据" />    
+
+    <S2600 value="LRADC测试" />   
+    <S2601 value="用于测试LRADC硬件是否OK，需要测试架支持" />    
+    <S2602 value="是否测试LRADC1" />   
+    <S2603 value="用于配置是否读取LRADC1数值，并与阈值进行比较" /> 
+    <S2604 value="是否测试LRADC2" />   
+    <S2605 value="用于配置是否读取LRADC2数值，并与阈值进行比较" /> 
+    <S2606 value="是否测试LRADC4" />   
+    <S2607 value="用于配置是否读取LRADC4数值，并与阈值进行比较" />         
+    <S2608 value="  最小值" /> 
+    <S2609 value="  最大值" />      
+    <S2610 value="LRADC1读取数值最小值，电压范围2.80~2.85V" />           
+    <S2611 value="LRADC1读取数值最大值，电压范围2.80~2.85V" />  
+    <S2612 value="LRADC2读取数值最小值，电压范围1.55~1.65V" />           
+    <S2613 value="LRADC2读取数值最大值，电压范围1.55~1.65V" />  
+    <S2614 value="LRADC4读取数值最小值，电压范围1.15~1.25V" />           
+    <S2615 value="LRADC4读取数值最大值，电压范围1.15~1.25V" />                                          
   </L804>
 </config>

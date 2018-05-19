@@ -116,31 +116,10 @@ bool music_test_fs_exit(uint8 disk_type, int32 file_sys_id)
     return TRUE;
 }
 
-test_result_e act_test_sdcard_play_test(void *arg_buffer)
+void act_test_report_music_test_result(uint16 test_id, uint32 ret_val)
 {
-    test_result_e result = TEST_PASS;
-
-    return result;
-}
-
-void act_test_report_uhost_result(uint16 test_id, test_result_e result)
-{
-    int ret_val;
     return_result_t *return_data;
     uint16 trans_bytes = 0;
-
-    DEBUG_ATT_PRINT("uhost test result: ", result, 2);
-
-    if (result == TEST_PASS)
-    {
-        ret_val = 1;
-        att_write_test_info("uhost test ok", 0, 0);
-    }
-    else
-    {
-        ret_val = 0;
-        att_write_test_info("uhost test failed", 0, 0);
-    }
 
     if (g_test_mode != TEST_MODE_CARD)
     {
@@ -152,45 +131,96 @@ void act_test_report_uhost_result(uint16 test_id, test_result_e result)
     }
     else
     {
-        if (ret_val == FALSE)
-        {
-            led_flash_fail();
-        }
+        act_test_report_test_log(ret_val, test_id);
     }
-    DEBUG_ATT_PRINT("uhost test report done ", 0, 0);
 }
 
 test_result_e act_test_uhost_play_test(void *arg_buffer)
 {
     // uint32 ra = (uint32)test_dispatch;
-    test_result_e result;
+    uint32  ret_val;
     int32 fs;
 
     DEBUG_ATT_PRINT("start uhost test", 0, 0);
 
-    fs = music_test_fs_exit(DISK_H, 0);
-
-    fs = music_test_fs_init(DISK_U, 0);
-    DEBUG_ATT_PRINT("uhost test FS:", fs, 2);
-    if (fs != -1)
+    if (g_test_mode == TEST_MODE_CARD)
     {
-        result = TEST_PASS;
+        fs = music_test_fs_exit(DISK_H, 0);
+    }
+    
+    fs = music_test_fs_init(DISK_U, 0);
+
+    if (g_test_mode == TEST_MODE_CARD)
+    {
+        DEBUG_ATT_PRINT("uhost test FS:", fs, 2);
     }
     else
     {
-        result = TEST_UHOST_FAIL;
+        print_log("uhost test FS: %d", fs);
     }
-    music_test_fs_exit(DISK_U, fs);
-    act_test_report_uhost_result(TESTID_UHOST_TEST, result);
+    
+    if (fs != -1)
+    {
+        ret_val = 1;
+        att_write_test_info("uhost test ok", 0, 0);
+    }
+    else
+    {
+        ret_val = 0;
+        att_write_test_info("uhost test failed", 0, 0);
+    }
+    
+    music_test_fs_exit(DISK_U, fs);  
+    
+    if (g_test_mode == TEST_MODE_CARD)
+    {
+        music_test_fs_init(DISK_H, 0);
+        g_test_file_handle = vfs_file_open(g_file_sys_id, g_ap_name, R_NORMAL_SEEK);
+    }
 
-    g_file_sys_id = music_test_fs_init(DISK_H, 0);
-    g_test_file_handle = vfs_file_open(g_file_sys_id, g_ap_name, R_NORMAL_SEEK);
+    act_test_report_music_test_result(TESTID_UHOST_TEST, ret_val);    
 
+    return TEST_PASS;
+}
+
+test_result_e act_test_sdcard_play_test(void *arg_buffer)
+{
+    uint32  ret_val;
+    int32 fs;
+
+    DEBUG_ATT_PRINT("start sdcard test", 0, 0);
+
+    if (g_test_mode == TEST_MODE_CARD)
+    {
+        act_test_report_music_test_result(TESTID_SDCARD_TEST, 1); 
+
+        return TEST_PASS;
+    }
+    
+    fs = music_test_fs_init(DISK_H, 0);
+
+    print_log("sdcard test FS: %d", fs);
+    
+    if (fs != -1)
+    {
+        ret_val = 1;
+        print_log("sdcard test ok");
+    }
+    else
+    {
+        ret_val = 0;
+        print_log("sdcard test failed");
+    }
+    
+    music_test_fs_exit(DISK_H, fs);  
+    
+    act_test_report_music_test_result(TESTID_SDCARD_TEST, ret_val);
+    
     DEBUG_ATT_PRINT("uhost test end ", 0, 0);
 
-    // sys_bank_flush(ra >> 24);
-    return result;
+    return TEST_PASS;
 }
+
 
 test_result_e act_test_linein_play_test(void *arg_buffer)
 {

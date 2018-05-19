@@ -330,7 +330,7 @@ uint32 check_upgrade_file(int32 file_sys_id)
         return 1;
     }
 
-    /*if(vfs_file_dir_exist(file_sys_id, ota_file_name_1, 1) > 0&&vfs_file_dir_exist(file_sys_id, ota_file_name_2, 1) > 0)
+    /*if(vfs_file_dir_exist(file_sys_id, ota_file_name_1, 1) > 0&&vfs_file_dir_exist(file_sys_id, ota_file_name_2,1)>0)
     {
         libc_print("ota find", 0, 0);
 

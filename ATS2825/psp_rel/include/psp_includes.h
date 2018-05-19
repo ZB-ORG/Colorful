@@ -57,10 +57,12 @@
 #include <bat_adc_def.h>
 #include <temp_adc_def.h>
 #include <sys_ota_interface.h>
+#include <mem_manager.h>
 
 #include <dae_info_def.h>
 #include <dae_standard_mode_info_def.h>
 
 #include <waves_dae_def.h>
 #include <sys_mpu_def.h>
+#include <waves_dae_logic_def.h>
 #endif

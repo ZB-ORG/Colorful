@@ -1,5 +1,7 @@
 #include "app_mengine.h"
 
+bool __section__(".BANK_CONTROL_1_8")get_music_decrypt_status(mmm_mp_fs_para_t* p_fs_para);
+
 //如果为卡盘播放文件，检测卡是否存在,如果播放u盘检测u盘是否存在
 bool mengine_check_disk_in(void)
 {
@@ -55,9 +57,9 @@ static void _print_file_name(void)
 bool set_file(void)
 {
     int result, m_type, level_a;
-
     mmm_mp_fs_para_t set_file_param;
-
+    bool music_decrypt_status  = FALSE;
+    
     if (g_fsel_type != FSEL_TYPE_SDFILE)
     {
         //首先检测磁盘是否存在
@@ -94,7 +96,16 @@ bool set_file(void)
 #if(_DEBUG == 1)
     _print_file_name();
 #endif
-
+    if(g_fsel_type != FSEL_TYPE_SDFILE)
+    {
+        music_decrypt_status = get_music_decrypt_status(&set_file_param);
+    }
+    
+    //是否支持音乐文件加密 支持为TRUE 不支持为FALSE
+    mmm_mp_cmd(g_mp_handle, MMM_MP_DECRYPT_STATUS, music_decrypt_status);
+    //将解密函数的地址传递到中间件
+    mmm_mp_cmd(g_mp_handle, MMM_MP_SET_DECRYPT_FUNC, m_decrypt_func);
+    
     //发送set file命令
     result = mmm_mp_cmd(g_mp_handle, MMM_MP_SET_FILE, (unsigned int) &set_file_param);
 
@@ -173,6 +184,11 @@ bool play(play_mode_e play_mode)
     {
         return bret;
     }
+    
+#ifdef WAVES_ASET_TOOLS
+    g_waves.bin_number = g_app_info_state_all.bin_number;
+#endif
+
     //set sound open
     com_set_sound_out(SOUND_OUT_RESUME);
 
@@ -195,7 +211,7 @@ bool play(play_mode_e play_mode)
         result = mmm_mp_cmd(g_mp_handle, MMM_MP_SET_FFB, (unsigned int) 4);
         //快进播放
 #ifdef WAVES_ASET_TOOLS
-        result = mmm_mp_cmd(g_mp_handle, MMM_MP_PLAY, g_support_waves_pc_tools);
+        result = mmm_mp_cmd(g_mp_handle, MMM_MP_PLAY, (unsigned int) &g_waves);
 #else
         result = mmm_mp_cmd(g_mp_handle, MMM_MP_PLAY, (unsigned int) NULL);
 #endif
@@ -221,9 +237,9 @@ bool play(play_mode_e play_mode)
 
         result = mmm_mp_cmd(g_mp_handle, MMM_MP_SET_FFB, (unsigned int) -4);
 #ifdef WAVES_ASET_TOOLS
-                result = mmm_mp_cmd(g_mp_handle, MMM_MP_PLAY, g_support_waves_pc_tools);
+        result = mmm_mp_cmd(g_mp_handle, MMM_MP_PLAY, (unsigned int) &g_waves);
 #else
-                result = mmm_mp_cmd(g_mp_handle, MMM_MP_PLAY, (unsigned int) NULL);
+        result = mmm_mp_cmd(g_mp_handle, MMM_MP_PLAY, (unsigned int) NULL);
 #endif
 
         g_eg_status_p->play_status = PlayFast; //设置播放状态
@@ -237,9 +253,9 @@ bool play(play_mode_e play_mode)
             mmm_mp_cmd(g_mp_handle, MMM_MP_SET_BREAK_POINT, (unsigned int) &g_eg_cfg_p->bk_infor);
         }
 #ifdef WAVES_ASET_TOOLS
-                result = mmm_mp_cmd(g_mp_handle, MMM_MP_PLAY, g_support_waves_pc_tools);
+            result = mmm_mp_cmd(g_mp_handle, MMM_MP_PLAY, (unsigned int) &g_waves);
 #else
-                result = mmm_mp_cmd(g_mp_handle, MMM_MP_PLAY, (unsigned int) NULL);
+            result = mmm_mp_cmd(g_mp_handle, MMM_MP_PLAY, (unsigned int) NULL);
 #endif
 
         g_eg_status_p->play_status = PlaySta; //设置播放状态
@@ -248,9 +264,9 @@ bool play(play_mode_e play_mode)
     {
         g_eg_status_p->play_status = PlaySta; //设置播放状态
 #ifdef WAVES_ASET_TOOLS
-                result = mmm_mp_cmd(g_mp_handle, MMM_MP_PLAY, g_support_waves_pc_tools);
+            result = mmm_mp_cmd(g_mp_handle, MMM_MP_PLAY, (unsigned int) &g_waves);
 #else
-                result = mmm_mp_cmd(g_mp_handle, MMM_MP_PLAY, (unsigned int) NULL);
+            result = mmm_mp_cmd(g_mp_handle, MMM_MP_PLAY, (unsigned int) NULL);
 #endif
 
     }
@@ -322,7 +338,7 @@ bool stop(stop_mode_e stop_mode)
         //}
         //停止播放
 #ifdef WAVES_ASET_TOOLS
-        result = mmm_mp_cmd(g_mp_handle, MMM_MP_STOP, g_support_waves_pc_tools);
+        result = mmm_mp_cmd(g_mp_handle, MMM_MP_STOP, (unsigned int) &g_waves);
 #else      
         result = mmm_mp_cmd(g_mp_handle, MMM_MP_STOP, (unsigned int) NULL);
 #endif
@@ -410,12 +426,12 @@ bool next_or_prev(switch_mode_e switch_mode)
     if (direct == NORMAL_SWITCH_NEXT)
     {
         //获取下一曲
-        bret = fsel_get_nextfile((void*) g_eg_cfg_p->location.dirlocation.filename);
+        bret = fsel_get_nextfile((void*) g_eg_cfg_p->location.dirlocation.file_info.file_extend_info.file_ext);
     }
     else
     {
         //获取上一曲
-        bret = fsel_get_prevfile((void*) g_eg_cfg_p->location.dirlocation.filename);
+        bret = fsel_get_prevfile((void*) g_eg_cfg_p->location.dirlocation.file_info.file_extend_info.file_ext);
     }
 
     //获取当前歌曲的location
@@ -496,6 +512,14 @@ switch_result_e mengine_file_switch(stop_mode_e stop_mode, switch_mode_e switch_
             ret = next_or_prev(FORCE_SWITCH_NEXT);
         }
     }
+
+    if (FALSE == ret)
+    {
+         //快速插拔卡的时候，next_or_prev歌曲切换需要调用文件系统再次读卡的时候，因为读卡超时会读不到数据而返回错误
+        switch_result = SWITCH_ERR_READ_CARD_TIMEOUT;
+        goto switch_end;
+    }
+    
     if (g_mengine_enter_mode != ENTER_RECOD_PLAY)
     {
         vfs_get_name(g_file_sys_id, g_eg_cfg_p->name_buf, sizeof(g_eg_cfg_p->name_buf) / 2 - 2);
@@ -523,3 +547,31 @@ switch_result_e mengine_file_switch(stop_mode_e stop_mode, switch_mode_e switch_
     return switch_result;
 }
 
+//判断音乐文件加密demo函数，方案中根据音乐文件尾部4个字节数据是否为0x7f来判断的
+//客户如果想自己判断音乐文件是否加密，可以修改该函数即可
+//返回值为TRUE表示音乐文件是加密的;FALSE表示音乐文件是非加密的
+bool __section__(".BANK_CONTROL_1_8")get_music_decrypt_status(mmm_mp_fs_para_t* p_fs_para)
+{
+    uint32 cur_file_handle;
+    uint8 encryption_data[4];
+    uint32 file_len = 0;
+    bool music_decrypt_status  = FALSE;
+    
+    cur_file_handle = (void *) vfs_file_open(g_file_sys_id, p_fs_para->file_name, R_NORMAL_SEEK);
+    vfs_file_get_size(g_file_sys_id, &file_len,p_fs_para->file_name,1);
+    
+    vfs_file_seek(g_file_sys_id,  file_len - 4,SEEK_SET, cur_file_handle);
+    vfs_file_read(g_file_sys_id,encryption_data,4,cur_file_handle);
+
+    vfs_file_close(g_file_sys_id, cur_file_handle);
+
+    if ((0x7f == encryption_data[0])\
+        &&(0x7f == encryption_data[1])\
+        &&(0x7f == encryption_data[2])\
+        &&(0x7f == encryption_data[3]))
+    {
+        music_decrypt_status = TRUE;
+    }
+     
+    return music_decrypt_status;
+}

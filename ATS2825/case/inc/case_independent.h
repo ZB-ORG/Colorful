@@ -57,15 +57,26 @@
 #define SUPPORT_PLIST_GENRE     0 //是否支持风格列表
 #define SUPPORT_DETECT_ENERGY   1 //是否支持能量检测
 #define SUPPORT_RCP_FUNC        1 //是否支持RCP协议
-#define SUPPORT_MULTI_FREQ_MULTI_BAND   0//是否支持多频点多频段 !!!这个宏打开的时候要注意同步到PSP头文件mmm_dae_def.h SUPPORT_MULTI_FREQ_MULTI_BAND_SETTING
+#define SUPPORT_MULTI_FREQ_MULTI_BAND   1//是否支持多频点多频段 !!!这个宏打开的时候要注意同步到PSP头文件mmm_dae_def.h SUPPORT_MULTI_FREQ_MULTI_BAND_SETTING
 
-
+//是否是ESD固件，在config.sh中配置
+//ESD模式不响应热插拔消息
+//#define __ESD_MODE_
 
 //#define __SUPPORT_HID_
 
-//#define __SUPPORT_3_WAY_CALL_      //是否支持3方通话
+//是否支持3方通话
+#define __SUPPORT_3_WAY_CALL_      
 
-#define __SUPPORT_SIRI_         0   //是否支持siri
+//是否支持siri
+#define __SUPPORT_SIRI_         1   
+
+//是否支持linein tws，在config.sh中配置
+//case/cfg根据这个宏决定编译linein的目录
+#define __SUPPORT_LINEIN_TWS
+
+//是否进入BQB测试模式
+//#define __BQB_TEST_PROFILE_
 
 
 #if (CASE_BOARD_TYPE == CASE_BOARD_DEMO)
@@ -278,6 +289,7 @@ typedef enum
 	STUB_PC_TOOL_TK_PMODE = 5,
     STUB_PC_TOOL_WAVES_ASET_MODE = 7,
     STUB_PC_TOOL_BTT_MODE = 0x42,
+    STUB_PC_TOOL_UNKOWN = 0x7f
 } PC_stub_mode_e;
 
 //需要注册到按键驱动，在I2C TK驱动中调用

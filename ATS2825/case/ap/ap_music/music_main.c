@@ -32,6 +32,9 @@ comval_t g_comval;
 //保存扫描线程句柄
 void *g_scan_handle = NULL;
 
+//扫描标记
+uint8 g_scan_flag = 0;
+
 #ifdef PRINT_BANK_INFO
 //打印标志位
 int print_label;
@@ -41,6 +44,8 @@ int print_label;
 #define APP_TIMER_COUNT     (3)
 //应用软定时器数组指针，指向应用空间的软定时器数组
 app_timer_t music_app_timer_vector[COMMON_TIMER_COUNT + APP_TIMER_COUNT];
+
+bool g_music_restore_from_s3bt;
 
 MUS_STATIC void _load_cfg(void)
 {
@@ -104,18 +109,27 @@ bool _app_init(void)
     com_view_manager_init();
 
 #ifdef SUPPORT_ASET_TEST
-     if ((g_app_info_state.stub_tools_type == STUB_PC_TOOL_WAVES_ASET_MODE) || (g_app_info_state.stub_tools_type == STUB_PC_TOOL_ASET_EQ_MODE))
+    if ((g_app_info_state.stub_tools_type == STUB_PC_TOOL_WAVES_ASET_MODE) 
+        || (g_app_info_state.stub_tools_type == STUB_PC_TOOL_ASET_EQ_MODE))
     {
         aset_test_init();
     }
 #endif
-
+    com_set_dae_chan(FALSE, FALSE);
     return TRUE;
 }
 
 //保存配置信息
 bool _app_deinit(void)
 {
+#ifdef SUPPORT_ASET_TEST
+    if ((g_app_info_state.stub_tools_type == STUB_PC_TOOL_WAVES_ASET_MODE) 
+        || (g_app_info_state.stub_tools_type == STUB_PC_TOOL_ASET_EQ_MODE))
+    {
+        aset_test_exit();
+    }
+#endif
+
     //注销RCP回调函数
     music_rcp_var_exit();
 
@@ -145,6 +159,7 @@ int main(int argc, const char *argv[])
     app_result_e retval = RESULT_NEXT_FUNCTION;
 
     g_standby_exit_flag = (bool) ((argc & PARAM_S3_EXIT) != 0);
+    g_music_restore_from_s3bt = g_standby_exit_flag;
     argc = argc & (~PARAM_S3_EXIT);
 
     g_esd_restart_flag = (bool) ((act_readl(RTC_BAK0) & (1 << MY_RTC_ESD_FLAG)) != 0);

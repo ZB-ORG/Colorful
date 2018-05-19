@@ -42,6 +42,12 @@ uint32 g_pop_up_time_out;
 //系统变量
 comval_t g_comval;
 
+uint8 g_reinstall_count;
+
+uint8 g_removal_flag;
+
+uint32 g_wait_time_before_enum = 0;
+
 /******************************************************************************/
 /*!
  * \par  Description:
@@ -133,7 +139,7 @@ void _app_exit(void)
 void _rise_vdd_and_freq(void)
 {
     adjust_freq_set_level(AP_FRONT_LOW_PRIO, FREQ_LEVEL11, FREQ_NULL);//max frequency
-    sys_enter_high_powered(3);
+    //sys_enter_high_powered(3);
 }
 
 /******************************************************************************/
@@ -148,8 +154,95 @@ void _rise_vdd_and_freq(void)
  *******************************************************************************/
 void _back_vdd_and_freq(void)
 {
-    sys_exit_high_powered();
+    //sys_exit_high_powered();
     adjust_freq_set_level(AP_FRONT_LOW_PRIO, FREQ_LEVEL7, FREQ_NULL);
+}
+
+/******************************************************************************/
+/*!
+ * \par  Description:
+ * \0x00-0x0f转ASCII码
+ * \param[in]    none
+ * \param[out]   none
+ * \return       none
+ * \ingroup      udisk_main.c
+ * \note
+ *******************************************************************************/
+void rd_itoa(uint8 data, uint8 pos, uint8 *str)
+{
+    //uint8 data_low,data_high;
+    uint8 data_cur = 0;
+    
+    if(pos != 0)
+    {
+        data_cur = (uint8)((data & 0xf0) >> 4);
+    }
+    else
+    {
+        data_cur = (data & 0x0f);
+    }
+    
+    if(data_cur > 9)
+    {
+        data_cur += 55;
+    }
+    else
+    {
+        data_cur += 48;
+    }
+    *str = data_cur;
+}
+/******************************************************************************/
+/*!
+ * \par  Description:
+ * \生成随机的SN并写VM。如果VM里面有SN，则直接使用VM中记录的SN
+ * \param[in]    none
+ * \param[out]   none
+ * \return       none
+ * \ingroup      udisk_main.c
+ * \note
+ *******************************************************************************/
+
+void sn_random(uint8 *buf)
+{
+    uint8 i = 0;
+    
+    uint32 num1,num2 = 0;
+    
+    testval_t usb_sn = {0};
+	
+    sys_vm_read(&usb_sn,VM_API_FLAG,sizeof(testval_t)); 
+	
+    if(usb_sn.usb_cardreader_magic == 0x5A5A)
+    {
+        num1 = usb_sn.usb_cardreader_low;
+        
+        num2 = usb_sn.usb_cardreader_high;
+    }
+    else
+    {
+        num1 = sys_random();
+
+        num2 = sys_random();
+
+        usb_sn.usb_cardreader_low = num1;
+        
+        usb_sn.usb_cardreader_high = num2;
+        
+        usb_sn.usb_cardreader_magic = 0x5A5A;
+        
+        sys_vm_write(&usb_sn,VM_API_FLAG,sizeof(testval_t));
+    }
+
+    for(i=0;i<8;i++)
+    {
+        rd_itoa((uint8)(num1>>i),0,&buf[i]);
+    }
+
+    for(i=0;i<8;i++)
+    {
+        rd_itoa((uint8)(num2>>i),0,&buf[i+8]);
+    }
 }
 
 /******************************************************************************/
@@ -165,6 +258,7 @@ void _back_vdd_and_freq(void)
 void _set_usb_info(void)
 {
     //uint8 info_str[16];
+    bool sn_default = 0;
 
     //vid
     com_get_config_struct(USB_VID, g_info_str, 6);
@@ -190,6 +284,23 @@ void _set_usb_info(void)
     com_get_config_struct(INF_INQUIRY_INFORMATION_FOB, g_info_str, 52);
 
     ud_set_config(4, g_info_str, 52);
+    
+    com_get_config_struct(USB_CARDREADER_BCD_DEVICE, g_info_str, 6);
+    
+    ud_set_config(5, g_info_str, 6);
+
+    sn_default = (bool)com_get_config_default(USB_SN_TYPE);
+    
+    if(sn_default == 1)
+    {
+        com_get_config_struct(USB_CARDREADER_SN, g_info_str, 16);
+    }
+    else
+    {
+        sn_random(&g_info_str);
+    }
+    
+    ud_set_config(6, g_info_str, 16);
 
 }
 
@@ -254,8 +365,8 @@ void _switch_to_adfu(void)
     //select hosc
     adjust_freq_set_level(AP_FRONT_LOW_PRIO, FREQ_LEVEL7, FREQ_NULL);
 
-    //rise vcc 3.3v and vdd 1.3v, improve usb signal.xiaomaky.2012-9-11 11:55.
-    act_writel(((act_readl(VOUT_CTL) & 0xFFFFFF80) | 0x6A), VOUT_CTL);
+    //set vcc to 3.2 and vdd to 1.2
+    act_writel(((act_readl(VOUT_CTL) & 0xFFFFFF80) | 0x58), VOUT_CTL);
     sys_mdelay(3);
 #if (SUPPORT_LED_DRIVER == 1)
     if (g_comval.support_led_display == 1)
@@ -404,6 +515,25 @@ int main(int argc, const char *argv[])
 
         sys_drv_uninstall(DRV_GROUP_UD);
 
+    }
+    else        //正常流程不进入，除非ESD
+    {
+        libc_print("reader esd restart",0,0);
+        //del act_writel((act_readl(RTC_BAK0) & (~(0xff << MY_RTC_FUNC_INDEX)))|(0x07 <<MY_RTC_FUNC_INDEX), RTC_BAK0);
+        //del act_writel(0xA596, RTC_REGUPDATA);
+        //del while (act_readl(RTC_REGUPDATA) != 0x5A69)
+        {
+            ;//nothing for QAC
+        }
+
+        g_config_var.ap_id = APP_FUNC_UDISK;
+        sys_vm_write(&g_config_var,VM_AP_CONFIG,sizeof(g_config_var_t));
+        
+        act_writel((0 << WD_CTL_CLKSEL_SHIFT) | (1 << WD_CTL_WDEN) | (1 << WD_CTL_CLR), WD_CTL);
+        while (1)
+        {
+            ;//等待重启
+        }
     }
 
     //switch to adfu and upgrade

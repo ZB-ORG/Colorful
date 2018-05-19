@@ -99,8 +99,7 @@ SECTIONS
 
     . = ((. + AP_BANK_SPACE) & (~(AP_BANK_SPACE - 1))) + OFFSET;
      BANK_CONTROL_1_4 :
-    {
-       mengine_play_deal.o(.text .rodata .xdata)  
+    { 
        mengine_tts_deal.o(.text .rodata) 
     }
 
@@ -122,5 +121,11 @@ SECTIONS
      BANK_CONTROL_1_7 :
     {
         mengine_file_init.o(.text .rodata .xdata)
+    }
+	
+	 . = ((. + AP_BANK_SPACE) & (~(AP_BANK_SPACE - 1))) + OFFSET;
+     BANK_CONTROL_1_8 :
+    {
+		mengine_play_deal.o(.text .rodata .xdata .BANK_CONTROL_1_8) 		
     }
 }

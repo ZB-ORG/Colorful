@@ -60,6 +60,9 @@ ID号:0x00310000 - 0x003e0000
 #define UDISK_VM                0x003f0000//0x38
 //#define UDISK_VM_LEN           0x200
 
+//VRAM长记录数据标记
+#define VM_LARGE_DATA_TAG      0x5AA5
+
 //内存中保存的逻辑到物理地址映射表
 typedef struct
 {

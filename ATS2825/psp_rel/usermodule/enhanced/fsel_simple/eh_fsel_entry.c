@@ -186,9 +186,10 @@ bool fsel_dir_get_location(file_location_t *location)
 {
     vfs_get_name(eh_vfs_mount, &eh_cur_ext_name, 0);
 
-    *(uint32*) &location->filename = eh_cur_ext_name;
+    *(uint32*) &location->file_info.file_extend_info.file_ext = eh_cur_ext_name;
     //获取当前文件的路径信息
-    if (FALSE == vfs_file_dir_offset(eh_vfs_mount, &location->dir_layer_info, &location->cluster_no, 0))
+    if (FALSE == vfs_file_dir_offset(eh_vfs_mount, &location->dir_layer_info, \
+        &location->file_info.file_extend_info.cluster_no, 0))
     {
         return FALSE;
     }

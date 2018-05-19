@@ -9,6 +9,7 @@
 #include "common_aset_new_func.h"
 #include "common_aset_interface.h"
 
+#define ASET_WORK_BUFFER_SIZE  (256)
 
 dae_config_t * __section__(".gl_stub_data") g_p_dae_cfg;
 
@@ -21,11 +22,11 @@ bool __section__(".gl_stub_data") g_aset_neednot_take_effect;
 uint8 __section__(".gl_stub_data") g_aset_main_gain_value;
 uint8 __section__(".gl_stub_data") g_aset_equivalent_gain;
 bool __section__(".gl_stub_data") g_aset_main_switch_flag;
-
+uint8 * __section__(".gl_stub_data") g_aset_rw_buffer; 
 
 #ifdef SUPPORT_ASET_TEST
 
-static void aset_tools_open_ack(uint16 cmd)
+static  int8 aset_tools_open_ack(uint16 cmd)
 {
     int ret_val;
     stub_ext_param_t stub_ext_param;
@@ -36,15 +37,14 @@ static void aset_tools_open_ack(uint16 cmd)
     stub_ext_param.payload_len = 0;
     stub_ext_param.rw_buffer = cmd_data;
 
-    while(1)
-    {
-        ret_val = stub_ext_write(&stub_ext_param);
+    ret_val = stub_ext_write(&stub_ext_param);
 
-        if(ret_val == 0)
-        {
-            break;
-        }
+    if (ret_val != 0)
+    {
+        PRINT_INFO("aset and small machine handshake failure");
     }
+
+    return ret_val;
 }
 
 uint8 get_audiopp_type(void)
@@ -52,7 +52,7 @@ uint8 get_audiopp_type(void)
     uint32 audiopp_type;
     int ret_val;
     uint8 ret_audiopp_type; 
-    static uint8 recv_err_cnt = 0;
+    uint8 recv_err_cnt = 0;
         
     retry:
         
@@ -64,7 +64,7 @@ uint8 get_audiopp_type(void)
     }
     else
     {
-        PRINT_INFO_INT("get audiopp type fail!!",audiopp_type);
+        PRINT_INFO("get audiopp type fail!!");
             
         recv_err_cnt++;
         if (recv_err_cnt < 10)
@@ -77,12 +77,52 @@ uint8 get_audiopp_type(void)
             recv_err_cnt = 0;
         }
     }
-
+    
+    PRINT_INFO_INT("audiopp_type",ret_audiopp_type);
     return ret_audiopp_type;
+}
+
+//更新应用的属性相关信息给工具
+static void write_application_properties(void)
+{
+    int ret_val = 0;
+    uint8 err_cnt = 0;
+    
+    application_properties_t* p_application_properties  = (application_properties_t *) ASET_RW_DATA_BUF;
+    
+    libc_memset(p_application_properties, 0x00, sizeof(application_properties_t));
+    if ((APP_FUNC_PLAYLINEIN == g_app_info_state.cur_func_id) || (APP_FUNC_RADIO == g_app_info_state.cur_func_id))
+    {
+        p_application_properties->aux_mode = AUX_MODE;
+    }
+    else
+    {
+        p_application_properties->aux_mode = UNAUX_MODE;
+    }
+
+    retry:
+    ret_val = aset_write_data(STUB_CMD_ASET_WRITE_APPLICATION_PROPERTIES, \
+        p_application_properties, sizeof(application_properties_t));  
+
+    //PC数据收不到STUB_CMD_ASET_WRITE_APPLICATION_PROPERTIES，最多try10次
+    if (ret_val != 0)
+    {
+        err_cnt++;
+        PRINT_INFO_INT("aset_write_app_pro_fail_cnt",err_cnt);
+        if (err_cnt < 10)
+        {
+            goto retry;
+        }
+    }
+    
+    PRINT_INFO_INT("aux_mode",p_application_properties->aux_mode);
+    PRINT_INFO_INT("cur_func_id",g_app_info_state.cur_func_id);
 }
 
 void aset_reconnect_deal(void)
 {
+    int8 ret_val = 0;
+    
     if((g_aset_run_state.run_state == ASET_TOOLS_NOT_WORK)
             || (g_aset_run_state.run_state == ASET_TOOLS_WORK))
     {
@@ -97,25 +137,43 @@ void aset_reconnect_deal(void)
         }
 
         stub_ioctrl_set(SET_TIMEOUT, 50, 0);
-
+        PRINT_INFO_INT("run_state",g_aset_run_state.run_state);
+           
         if(g_aset_run_state.run_state == ASET_TOOLS_NOT_WORK)
         {
 #ifdef WAVES_ASET_TOOLS
-            aset_tools_open_ack(STUB_CMD_WAVES_ASET_ACK);
+            ret_val = aset_tools_open_ack(STUB_CMD_WAVES_ASET_ACK);
 #else 
-            aset_tools_open_ack(STUB_CMD_ASET_ACK);
-#endif
+            ret_val = aset_tools_open_ack(STUB_CMD_ASET_ACK);  
             g_p_dae_cfg->audiopp_type = get_audiopp_type();
-            
-            aset_write_case_info();
+#endif        
+            if (0 == ret_val)
+            {
+                aset_write_case_info();
 
-            g_aset_run_state.run_state = ASET_TOOLS_WORK;
+                g_aset_run_state.run_state = ASET_TOOLS_WORK;
+            }
         }
+        else
+        {
+                g_p_dae_cfg->audiopp_type = get_audiopp_type();
+        }
+        
+#ifndef WAVES_ASET_TOOLS
+        write_application_properties();
+#endif
+
     }
     else
     {
         ;//nothing for QAC
     }
+}
+
+void aset_global_para_init(void)
+{
+    g_aset_run_state.err_cnt = 0;
+    g_aset_run_state.run_state = 0; 
 }
 
 bool aset_test_init(void)
@@ -125,7 +183,16 @@ bool aset_test_init(void)
 
     g_p_dae_cfg->peq_enable = 1;
     g_p_dae_cfg->spk_compensation_enable = 0;
+    
+#ifdef WAVES_ASET_TOOLS    
+    g_p_dae_cfg->bypass = 1;
+#else
     g_p_dae_cfg->bypass = 0;
+#endif
+ 
+    g_aset_rw_buffer = sys_malloc(ASET_WORK_BUFFER_SIZE);
+
+    libc_print("aset malloc", g_aset_rw_buffer, 2);
 
     aset_reconnect_deal();
 
@@ -134,7 +201,8 @@ bool aset_test_init(void)
 
 void aset_test_exit(void)
 {
-
+    libc_print("aset free", g_aset_rw_buffer, 2);
+    sys_free(g_aset_rw_buffer);
 }
 
 void aset_test_set_dae_init(void)
@@ -174,7 +242,7 @@ uint8 reinstall_stub(void)
 
 void aset_loop_deal(void)
 {
-    int ret_val;
+    int ret_val = 0;
 
     aset_status_t aset_status;
     aset_waves_coeff_property_t    coeff_property;
@@ -211,11 +279,13 @@ void aset_loop_deal(void)
    if (1 == coeff_property.update_flag)
    {
       coeff_property.update_flag = 0;
-       
+      //0x9fc3afe0之后0x1020数据用于缓存 WAVES工具和小机交互时，传输的数据信息 
+      sys_disable_mem_use(0x3afe0,0x3afe0 + 0x1020);
+      
       waves_set_effect_param(SET_WAVES_COEFF_PROPERTY,&coeff_property);   
 
       //类型改成void*
-      ret_val = aset_read_data(STUB_CMD_WAVES_ASET_WRITE_COEFF_CONTENT, (void*)ASET_READ_DATA_BUF,coeff_property.length);       
+      ret_val = aset_read_data(STUB_CMD_WAVES_ASET_READ_COEFF_CONTENT, (void*)ASET_READ_DATA_BUF,coeff_property.length);       
         
       if (0 != ret_val)
       {
@@ -225,6 +295,8 @@ void aset_loop_deal(void)
       { 
          waves_set_effect_param(SET_WAVES_EFFECT_PARAM,(uint8*)ASET_READ_DATA_BUF);  
       }
+      
+      //sys_enable_mem_use(0x3afe0,0x3afe0 + 0x1020); 
    }
   
  #else  
@@ -240,8 +312,12 @@ void aset_loop_deal(void)
             g_aset_run_state.err_cnt = 0;
         }
         else if(g_aset_run_state.run_state == ASET_TOOLS_NOT_WORK)
-        {
+        {          
+#ifndef WAVES_ASET_TOOLS
+            write_application_properties();//工具断开后，再重新连接，更新应用的属性相关信息给工具
+            aset_update_audiopp();         //重新连接时要从工具端重新读取音效模型
             aset_write_case_info();
+#endif            
             g_aset_run_state.run_state = ASET_TOOLS_WORK;
         }
         else

@@ -29,6 +29,49 @@ const char cfg_file[] = "config.bin";
 /* 串口 stub 程序库需要在启动时加载并常驻 */
 static const char stub_name[] = { "UartStub.al" };
 
+int manager_create_mem_pool(uint32 addr, uint32 size, uint32 data_feature, uint32 mem_global)
+{
+    mem_pool_param_t mem_pool_param;
+    
+    mem_pool_param.addr = addr;
+
+    mem_pool_param.size = size;
+    
+    //2^8 = 256为一个分配块
+    mem_pool_param.block_size_mask = 8;
+
+    //允许存放代码段
+    mem_pool_param.data_feature = (uint8)data_feature;
+    
+    mem_pool_param.mem_map = 0;
+
+    mem_pool_param.insert_mode = INSERT_MEM_POOL_TAIL;   
+
+    mem_pool_param.mem_global = (uint8)mem_global;
+    
+    sys_mem_pool_create(&mem_pool_param); 
+
+    return 0;
+}
+
+void manager_cache_memory_init(void)
+{
+    //0x27000-0x3c000 84k
+    manager_create_mem_pool(DSP_CACHE_MEM_ADDR, DSP_CACHE_MEM_SIZE, MEM_TEXT, FALSE);
+
+    manager_create_mem_pool(DSP_CACHE_MEM_ADDR_H, DSP_CACHE_MEM_SIZE_H, MEM_TEXT, FALSE);
+
+    act_writel(0xffffffff,CMU_MEMCLKEN);    //enable MEMCLK
+    
+    act_writel(0x00000000,CMU_MEMCLKSEL);   //URAMCLK/JRAM5CLK=USBCLK
+
+    //0x3d000-0x40000 12k
+    manager_create_mem_pool(0x3d000, 12*1024, MEM_TEXT, TRUE); 
+   
+    //create_mem_pool(0x16400, 12*1024, MEM_TEXT); 
+}
+
+
 bool globe_data_init_applib(void)
 {
     uint8 config_file[12];
@@ -68,12 +111,27 @@ bool globe_data_init_applib(void)
     }
 
     g_app_info_state.stub_phy_type = com_get_config_default(SETTING_STUB_PHY_INTERFACE);
-    if(g_app_info_state.stub_phy_type == STUB_PHY_UART)
+    
+    /* 加载 UART stub 程序库 */
+    sys_load_mmm(stub_name, FALSE);
+    
+    /* 检测连接状态 */
+    if(stub_get_connect_state(1) > 0)
     {
-        /* 加载 UART stub 程序库 */
-        sys_load_mmm(stub_name, FALSE);
-        /* 检测连接状态 */
-        stub_get_connect_state(1);	
+        if(g_app_info_state.stub_phy_type != STUB_PHY_UART)
+        {
+            g_app_info_state.stub_phy_type = STUB_PHY_UART;
+
+            //设置stub tools type为未识别的tools type
+            g_app_info_state.stub_tools_type = STUB_PC_TOOL_UNKOWN;
+        }        
+    }
+    else
+    {
+        if(g_app_info_state.stub_phy_type != STUB_PHY_UART)
+        {
+            sys_free_mmm(FALSE);
+        }
     }
 
     //使用内部电容，需要配置
@@ -81,6 +139,20 @@ bool globe_data_init_applib(void)
     {
         manager_config_hosc_freq();
     }
+   
+    prev_back_ap_id = APP_ID_MAX;
+
+    prev_front_ap_id = APP_ID_CONFIG;
+
+    pa_thread_task_addr = 0;
+
+    g_rcp_default_long_buffer = sys_malloc(RCP_LONG_COMMAND_BUFFER_LEN);
+
+    manager_cache_memory_init();
+    
+    g_mem_use_info = (mem_use_info_t *)sys_read_mem_use_info();   
+
+    support_dev_num = (uint8)com_get_config_default(BTMANAGER_SUPPORT_DEVICE_NUM);
 
     return ret;
 }

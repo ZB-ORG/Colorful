@@ -67,10 +67,10 @@
 
 #define APP_FUNC_CLOCK       8
 
-//播放udisk录音文件
-#define APP_FUNC_PLAYCRECORD 9
-//播放录音文件
-#define APP_FUNC_PLAYURECORD 10
+//播放udisk录音文件 APP_FUNC_PLAYURECORD
+#define APP_FUNC_PLAYURECORD 9
+//播放卡录音文件
+#define APP_FUNC_PLAYCRECORD 10
 
 #define APP_FUNC_LINREC_TOC  11
 
@@ -398,6 +398,8 @@ typedef struct
     uint16 light_counter;
     /*! 充电满每分钟播报一次充电已满 */
     uint16 charge_full_cnt;
+    /*! 每3s允许UI电量改变一次 */
+    uint16 bat_change_cnt;
     /*! 电量低每分钟播报一次电量不足请充电 */
     uint16 bat_low_cnt;
     /*! 等待APK/APP验证计时器 */

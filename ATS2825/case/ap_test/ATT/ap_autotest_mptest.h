@@ -56,10 +56,26 @@ typedef struct
     uint8 *read_buffer;
 } ringbuf_rw_t;
 
+/** 分析接收包的状态
+*/
+typedef enum
+{
+    UART_HCI_STATUS_RX_NULL = 0,
+    UART_HCI_STATUS_RX_TYPE, 
+    UART_HCI_STATUS_RX_HEADER, 
+    UART_HCI_STATUS_RX_DATA
+}rev_pkt_state_e;
+
+
 typedef struct
 {
     uint16 (*get_data_len)(void);
     void (*read_data)(uint32 buf_addr, uint32 data_len);
+    uint16 minReqLen;
+    uint16 pktHdrLen;
+    uint8 pktType;
+    rev_pkt_state_e reqRxParseStatus;
+    uint8 headerBuffer[32];    
 } btt_hci_deal_t;
 
 typedef struct
@@ -132,7 +148,8 @@ typedef uint32 (*modify_cb_func_t)(uint8 *hci_data, mp_test_arg_t *mp_arg);
 
 #define MP_ICTYPE                           0
 #define MP_TX_GAIN_IDX                      7
-#define MP_TX_GAIN_VAL                      0xcc
+//#define MP_TX_GAIN_VAL                      0xcc
+#define MP_TX_GAIN_VAL                      0xce
 #define MP_TX_DAC                           0x13
 #define HIT_ADDRESS_SET_L                   0x009e8b33
 #define HIT_ADDRESS_SET_H                   0
@@ -145,6 +162,10 @@ typedef uint32 (*modify_cb_func_t)(uint8 *hci_data, mp_test_arg_t *mp_arg);
 #define MP_ONCE_REPORT_MIN_PKT_NUM          8
 #define MP_RETURN_RESULT_NUM                10
 #define MP_REPORT_TIMEOUT                   2
+#define BER_TX_PKT_CNT                      4000
+#define BER_TX_REPORT_INTERVAL              1
+#define BER_TX_REPORT_TIMEOUT               4
+
 typedef enum
 {
     CAP_INDEX_0 = 0, //电容值范围0pf-3.0pf

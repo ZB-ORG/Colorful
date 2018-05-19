@@ -38,7 +38,7 @@ rcp_get_func __section__(".gl_rcp_data") g_app_get_global_info; //应用获取全局状
 
 rcp_ext_serv_func __section__(".gl_rcp_data") g_app_ext_serv_cb[RCP_SERVICE_MAX]; //扩展服务响应函数
 
-uint8 __section__(".bss.rcp_default_buffer") g_rcp_default_long_buffer[RCP_LONG_COMMAND_BUFFER_LEN];
+//uint8 __section__(".bss.rcp_default_buffer") g_rcp_default_long_buffer[RCP_LONG_COMMAND_BUFFER_LEN];
 
 app_result_e com_rcp_dispatch_bank(rmt_ctrl_pkg_t *p_rcp) __FAR__;
 //void com_rcp_dispatch_invalid(uint8 *rcp_data, uint16 rcp_len) __FAR__;
@@ -164,8 +164,15 @@ app_result_e com_rcp_dispatch_bank(rmt_ctrl_pkg_t *p_rcp)
     }
     else
     {
-        if (((g_bt_stack_cur_info.rmt_dev[0].serv_conn & SPP_CONNECTED) != 0)
-            && ((uint8) com_get_config_default(BTMANAGER_VERIFICATION_APK_ENABLE) == 0))
+        //#if 1
+        //if ((g_bt_stack_cur_info.spp_con_flag != 0)
+           // && ((uint8) com_get_config_default(BTMANAGER_VERIFICATION_APK_ENABLE) == 0))   
+        if (((g_bt_stack_cur_info.spp_con_flag !=0)||(g_bt_stack_cur_info.ble_con_flag !=0))
+            && ((uint8) com_get_config_default(BTMANAGER_VERIFICATION_APK_ENABLE) == 0))    
+        //#else
+        //if (((g_bt_stack_cur_info.rmt_dev[0].serv_conn & SPP_CONNECTED) != 0)
+            //&& ((uint8) com_get_config_default(BTMANAGER_VERIFICATION_APK_ENABLE) == 0))                 
+        //#endif
         {
             g_app_info_state.verification_status = VERIFICATION_PASS;
             PRINT_INFO("RCP VERIFICATION NEEDN'T");

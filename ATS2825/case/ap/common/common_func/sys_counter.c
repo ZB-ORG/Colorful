@@ -13,6 +13,27 @@
 
 static sys_status_e get_cur_sys_status(void);
 
+void __section__(".bank") enter_lower_mode(void)
+{
+    msg_apps_t msg;
+
+    //调试模式不响应进入S2,S3状态
+    if (g_app_info_state.stub_tools_type == 0)
+    {
+        //广播进入低功耗消息
+        if (sys_comval->lowpower_mode == LOW_POWER_MODE_S2)
+        {
+            msg.type = MSG_SYSTEM_ENTER_S2;
+        }
+        else
+        {
+            msg.type = MSG_SYSTEM_ENTER_S3;
+            act_writel(act_readl(WAKE_PD), WAKE_PD); //清pending
+            sys_mdelay(5);
+        }
+        broadcast_msg(&msg, TRUE);    
+    }
+}
 /******************************************************************************/
 /*!
  * \par  Description:
@@ -38,7 +59,7 @@ static sys_status_e get_cur_sys_status(void);
  *******************************************************************************/
 void sys_counter_handle(void)
 {
-    msg_apps_t msg;
+
     bool usb_cable_adapter = FALSE;
     sys_status_e cur_sys_status;
     bool enter_lp_flag = FALSE;
@@ -124,18 +145,15 @@ void sys_counter_handle(void)
 
             if (enter_lp_flag == TRUE)
             {
-                //广播进入低功耗消息
-                if (sys_comval->lowpower_mode == LOW_POWER_MODE_S2)
+#ifdef ENABLE_TRUE_WIRELESS_STEREO
+                if(g_bt_stack_cur_info.dev_role==NORMAL_DEV)
                 {
-                    msg.type = MSG_SYSTEM_ENTER_S2;
+                    enter_lower_mode();
                 }
-                else
-                {
-                    msg.type = MSG_SYSTEM_ENTER_S3;
-                    act_writel(act_readl(WAKE_PD), WAKE_PD); //清pending
-                    sys_mdelay(5);
-                }
-                broadcast_msg(&msg, TRUE);
+#else
+                enter_lower_mode();                
+#endif      
+
             }
         }
 #if 0
@@ -221,7 +239,8 @@ static sys_status_e get_cur_sys_status(void)
 void peripheral_detect_handle(void)
 {
     uint32 detect_mode = 0;
-
+    
+#if (SUPPORT_CARD_DETECT != 0)
     if (sys_comval->hard_support_card == 1)
     {
         detect_mode |= PER_DETECT_CARD;
@@ -235,6 +254,7 @@ void peripheral_detect_handle(void)
             detect_mode |= PER_DETECT_CARD_FORCE;
         }
     }
+#endif
 
     if (sys_comval->support_linein == 1)
     {
@@ -256,11 +276,13 @@ void peripheral_detect_handle(void)
     }
 #endif
 
+#if ((CASE_BOARD_TYPE != CASE_BOARD_ATS2823) && (CASE_BOARD_TYPE != CASE_BOARD_DVB_ATS2823))
     //只有支持U盘播放功能才动态检测usb和u盘插入；否则只检测usb插入
     if ((sys_comval->hard_support_uhost == 1) && (sys_comval->support_uhostplay == 1))
     {
         detect_mode |= PER_DETECT_USBUHOST_SWITCH;
     }
+#endif
 
     if (detect_mode != 0)
     {

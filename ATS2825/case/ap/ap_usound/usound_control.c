@@ -55,6 +55,52 @@ bool usound_send_msg(void *input_param, void *output_param, uint32 msg_type)
 /******************************************************************************/
 /*!
  * \par  Description:
+ * \bool usound_volume_add(void)
+ * \加大音量
+ * \param[in]    void  para1
+ * \param[out]   none
+ * \return       bool the result
+ * \retval           1 sucess
+ * \retval           0 failed
+ * \ingroup      usound_control.c
+ * \note
+ */
+/*******************************************************************************/
+bool usound_volume_add(void)
+{
+    bool bret;
+
+    //发送同步消息
+    bret = usound_send_msg(NULL, NULL, MSG_UENGINE_VOL_ADD_SYNC);
+    return bret;
+}
+
+/******************************************************************************/
+/*!
+ * \par  Description:
+ * \bool usound_volume_sub(void)
+ * \减小音量
+ * \param[in]    void  para1
+ * \param[out]   none
+ * \return       bool the result
+ * \retval           1 sucess
+ * \retval           0 failed
+ * \ingroup      usound_control.c
+ * \note
+ */
+/*******************************************************************************/
+bool usound_volume_sub(void)
+{
+    bool bret;
+
+    //发送同步消息
+    bret = usound_send_msg(NULL, NULL, MSG_UENGINE_VOL_SUB_SYNC);
+    return bret;
+}
+
+/******************************************************************************/
+/*!
+ * \par  Description:
  * \bool usound_play_pause(void)
  * \播放暂停音乐
  * \param[in]    void  para1

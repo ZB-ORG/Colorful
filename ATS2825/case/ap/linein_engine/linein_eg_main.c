@@ -5,7 +5,7 @@
 #define APP_TIMER_COUNT         (1)
 
 #ifdef WAVES_ASET_TOOLS
-    uint8 g_support_waves_pc_tools;
+    waves_t g_waves;;
 #endif
 
 //globle variable
@@ -40,19 +40,8 @@ bool g_stop_by_tts_flag;
 //for dae adjust freq
 dae_config_t *g_dae_cfg_shm;
 
-//for chage current save
-uint32 g_cha_current;
-
-uint8 g_cha_sta;
-
-//for chage current save
-uint32 g_cha_need_restore;
-
 //if need open play
 uint32 g_need_play;
-
-//for count 
-uint32 g_check_count;
 
 //读取配置信息
 void _load_cfg(void)
@@ -79,6 +68,22 @@ static void _set_ainout_param(void)
     g_ainout_param.adc_gain = (uint8) com_get_config_default(LINEIN_GAIN_ADC);
 }
 
+#ifdef WAVES_ASET_TOOLS
+void waves_init(void)
+{
+    if (STUB_PC_TOOL_WAVES_ASET_MODE == g_app_info_state_all.stub_pc_tools_type)
+    {
+        g_waves.tuning_status = TUNING;
+    }
+    else if (STUB_PC_TOOL_UNKOWN == g_app_info_state_all.stub_pc_tools_type)
+    {
+        g_waves.tuning_status = NO_TUNING;
+    }
+    g_waves.bin_number = g_app_info_state_all.bin_number;
+    g_waves.input_para_enable = (uint8) com_get_config_default(SETTING_APP_SUPPORT_WAVES_INPUT_PARAM); 
+}
+#endif
+
 int _app_init(void)
 {
     uint8 init_fsel_ret = TRUE;
@@ -86,33 +91,11 @@ int _app_init(void)
     { "mmm_pp.al" };
     
 #ifdef WAVES_ASET_TOOLS
-    g_support_waves_pc_tools =  (uint8) com_get_config_default(SETTING_APP_SUPPORT_WAVES_PC_TOOLS); 
+    waves_init();
 #endif
 
     //初始化applib库，后台AP
     applib_init(APP_ID_LINEIN_EG, APP_TYPE_CONSOLE);
-
-    //avoid noise  set dc5v sys vol to 3.3
-    act_writel(act_readl(SPD_CTL) & (~SPD_CTL_DC5V_SYS_VOL_MASK), SPD_CTL);
-
-    g_cha_current = (act_readl(CHG_CTL) & CHG_CTL_CHG_CURRENT_MASK);
-    
-    g_cha_sta = (act_readl(CHG_CTL) & (1 << CHG_CTL_CHGEN));
-
-    //if vbat is higher than 3.90 we need to stop charging
-    if (act_readb(BATADC_DATA) > BAT_HIGH_VAL)
-    {
-        act_writel(act_readl(CHG_CTL) & (~CHG_CTL_CHG_CURRENT_MASK), CHG_CTL);
-        
-        act_writel(act_readl(CHG_CTL) & (~(1 << CHG_CTL_CHGEN)), CHG_CTL);
-
-        g_cha_need_restore = 1;
-
-    }
-    else
-    {
-        g_cha_need_restore = 0;
-    }
 
     //升频
     adjust_freq_set_level(AP_BACK_LOW_PRIO, FREQ_LEVEL8, FREQ_NULL);
@@ -183,19 +166,6 @@ bool _app_deinit(void)
     //降频
     adjust_freq_set_level(AP_BACK_LOW_PRIO, FREQ_LEVEL2, FREQ_NULL);
 
-    //avoid noise  set dc5v sys vol to 3.3
-    act_writel(act_readl(SPD_CTL) & (~SPD_CTL_DC5V_SYS_VOL_MASK), SPD_CTL);
-    //recover default value
-    act_writel(act_readl(SPD_CTL) | (2 << SPD_CTL_DC5V_SYS_VOL_SHIFT), SPD_CTL);
-
-    if (g_cha_need_restore == 1)
-    {
-        //recover charge current
-        act_writel((act_readl(CHG_CTL) & (~CHG_CTL_CHG_CURRENT_MASK)) | g_cha_current, CHG_CTL);  
-        
-        act_writel((act_readl(CHG_CTL) & (~(1 << CHG_CTL_CHGEN))) | g_cha_sta, CHG_CTL);
-
-    }
     //执行applib库的注销操作
     applib_quit();
 

@@ -135,7 +135,7 @@ int time_alarm_record_list_operate(uint8 op, void *param1, void *param2)
             uint8 alarm_id;
 
             alarm_id = time_alarm_update_alarm(UPDATE_ALARM_GET_NEXT);
-            if (alarm_id == 0xff)
+            if ((alarm_id == 0xff) || (alarm_id >= RCP_ALARM_MAX))
             {
                 ret = -1;
             }

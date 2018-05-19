@@ -57,7 +57,7 @@ void PAinit(void)
 //    Set_Device_sfr(MUTE_LOC, &val, 1, (DEVICE_ADDR1|W_MODE));
 //    Set_Device_sfr(MUTE_LOC, &val, 1, (DEVICE_ADDR2|W_MODE));
 
-    val = 0x00;
+    val = 0x50;
     Set_Device_sfr(MUTE_LOC, &val, 1, (DEVICE_ADDR1|W_MODE));
 //    Set_Device_sfr(MUTE_LOC, &val, 1, (DEVICE_ADDR2|W_MODE));
 
@@ -94,7 +94,7 @@ void PAinit(void)
 //    Set_Device_sfr(CHN1_VOL, &val, (DEVICE_ADDR1|W_MODE));
 //    Set_Device_sfr(CHN2_VOL, &val, (DEVICE_ADDR1|W_MODE));
 
-    val = 0x78;
+    val = 0x14;
     Set_Device_sfr(CHN1_VOL, &val, 1, (DEVICE_ADDR1|W_MODE));
 //    Set_Device_sfr(CHN2_VOL, &val, 1, (DEVICE_ADDR2|W_MODE));
     Set_Device_sfr(CHN2_VOL, &val, 1, (DEVICE_ADDR1|W_MODE));

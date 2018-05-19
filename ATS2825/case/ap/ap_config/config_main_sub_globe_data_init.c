@@ -125,7 +125,10 @@ void config_globe_data_init(void)
     if(g_OTA_var==NULL)
     {
         libc_print("malloc g_OTA_var fail",0,0);
-        while(1);
+        while(1)
+        {
+            ;//nothing
+        }
     }
     g_OTA_var->g_connect_repy.connect_state = 0;//开机重启OTA握手标志
     p_part_info = base_ota_read_part_info();

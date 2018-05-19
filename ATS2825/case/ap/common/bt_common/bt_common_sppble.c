@@ -85,8 +85,14 @@ int __section__(".rcode") com_btmanager_sppble_read(uint8 *rcp_buf, uint16 data_
 //启动APK/APP验证
 void __section__(".bank") com_btmanater_start_apk_app_verification(void)
 {
+#if 1
+    if (((g_bt_stack_cur_info.spp_con_flag !=0)||(g_bt_stack_cur_info.ble_con_flag !=0))
+            && ((uint8) com_get_config_default(BTMANAGER_VERIFICATION_APK_ENABLE) == 0))
+#else
     if (((g_bt_stack_cur_info.rmt_dev[0].serv_conn & (SPP_CONNECTED | BLE_CONNECTED)) != 0)
             && ((uint8) com_get_config_default(BTMANAGER_VERIFICATION_APK_ENABLE) == 0))
+
+#endif            
     {
         g_app_info_state.verification_status = VERIFICATION_PASS;
         PRINT_INFO("RCP VERIFICATION NEEDN'T");
@@ -99,12 +105,16 @@ void __section__(".bank") com_btmanater_start_apk_app_verification(void)
     g_sys_counter.apk_app_counter = 0;
 }
 
-//断开SPP/BLE连接
-void __section__(".bank") com_btmanager_unlink_spp_ble_profile(void)
+//断开SPP/BLE连接 mode ==1 disconect ble others disconect current link
+void __section__(".bank") com_btmanager_unlink_spp_ble_profile(uint8 disc_mode)
 {
     msg_apps_t msg;
 
+#if 1
+    if(g_bt_stack_cur_info.spp_con_flag !=0)
+#else
     if ((g_bt_stack_cur_info.rmt_dev[0].serv_conn & SPP_CONNECTED) != 0)
+#endif
     {
         msg.type = MSG_BTSTACK_SPP_DISCONNECT_SYNC;
     }
@@ -112,11 +122,22 @@ void __section__(".bank") com_btmanager_unlink_spp_ble_profile(void)
     {
         msg.type = MSG_BTSTACK_BLE_DISCONNECT_SYNC;
     }
+    
+    if(disc_mode == 1)   	
+    {
+    	  msg.type = MSG_BTSTACK_BLE_DISCONNECT_SYNC; 
+    }
+    
     msg.content.data[0] = 0;
 
+#if 1
+    send_sync_msg_btmanager(NULL, &msg, NULL, 0);
+#else
     send_sync_msg_btmanager(g_bt_stack_cur_info.rmt_dev[0].addr.bytes, &msg, NULL, 0);
+#endif
 
-    g_app_info_state.verification_status = VERIFICATION_FAIL;
+    //g_app_info_state.verification_status = VERIFICATION_FAIL;
+    g_app_info_state.verification_status = VERIFICATION_NULL;
 
     PRINT_INFO("RCP VERIFICATION OVERTIME, UNLINK");
 }
@@ -125,15 +146,28 @@ void __section__(".bank") com_btmanager_unlink_spp_ble_profile(void)
 void com_btmanager_apk_app_verification_handle(void)
 {
 #if (SUPPORT_RCP_FUNC == 1)
+#if 1
+    if ((g_btmanager_gl_var.last_spp_ble_status== 0)
+            && ((g_bt_stack_cur_info.spp_con_flag !=0)||(g_bt_stack_cur_info.ble_con_flag !=0))
+            && (g_app_info_state.verification_status == VERIFICATION_NULL))
+#else
     if (((g_btmanager_gl_var.last_spp_ble_status & (SPP_CONNECTED | BLE_CONNECTED)) == 0)
             && ((g_bt_stack_cur_info.rmt_dev[0].serv_conn & (SPP_CONNECTED | BLE_CONNECTED)) != 0)
             && (g_app_info_state.verification_status == VERIFICATION_NULL))
+
+#endif
     {
         com_btmanater_start_apk_app_verification();
     }
 
+#if 1
+    if ((g_btmanager_gl_var.last_spp_ble_status != 0)
+            && ((g_bt_stack_cur_info.spp_con_flag==0)&&(g_bt_stack_cur_info.ble_con_flag==0)))
+#else
     if (((g_btmanager_gl_var.last_spp_ble_status & (SPP_CONNECTED | BLE_CONNECTED)) != 0)
             && ((g_bt_stack_cur_info.rmt_dev[0].serv_conn & (SPP_CONNECTED | BLE_CONNECTED)) == 0))
+
+#endif
     {
         com_rcp_state_init();
         g_app_info_state.verification_status = VERIFICATION_NULL;
@@ -149,6 +183,14 @@ void com_btmanager_apk_app_verification_handle(void)
 //        }
 //    }
 
+#if 1
+    g_btmanager_gl_var.last_spp_ble_status = (g_bt_stack_cur_info.spp_con_flag<<4) |(g_bt_stack_cur_info.ble_con_flag);
+#else
     g_btmanager_gl_var.last_spp_ble_status = g_bt_stack_cur_info.rmt_dev[0].serv_conn;
+#endif
+
+
+
+
 #endif
 }

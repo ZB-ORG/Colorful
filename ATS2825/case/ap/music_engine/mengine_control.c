@@ -65,6 +65,11 @@ void mengine_status_deal(void)
             }
             //正常播放到尾
             switch_retval = mengine_file_switch(STOP_NORMAL, END_SWITCH, PLAY_NORMAL);
+
+            if (switch_retval == SWITCH_ERR_READ_CARD_TIMEOUT)
+            {
+                g_eg_status_p->err_status = EG_ERR_RAED_CARD_TIMEOUT;
+            }
         }
         else if (g_eg_status_p->play_status == PlayFast)
         {
@@ -122,8 +127,8 @@ void save_bk_info_to_rtc_ram(void)
 {
     mmm_mp_bp_info_t bk_info;
     mmm_mp_cmd(g_mp_handle, MMM_MP_GET_BREAK_POINT, (unsigned int)&bk_info);
-    act_writel(bk_info.bp_file_offset, RTC_BAK1);
-    act_writel(bk_info.bp_time_offset, RTC_BAK2);
+    act_writel((uint32)bk_info.bp_file_offset, RTC_BAK1);
+    act_writel((uint32)bk_info.bp_time_offset, RTC_BAK2);
     act_writel(0xA596, RTC_REGUPDATA);
     while (act_readl(RTC_REGUPDATA) != 0x5A69)
     {
@@ -199,5 +204,16 @@ void mengine_reply_msg(void* msg_ptr, bool ret_vals)
 
     //回复同步消息(发送信号量)
     libc_sem_post(data_ptr->sem);
+}
+
+void m_decrypt_func(void *buf, int offset, int size)
+{
+    int i;
+    uint8 *p = buf;
+    
+    for (i = 0; i<size; i++)
+    {
+        p[i] ^= 0x5a;
+    }
 }
 

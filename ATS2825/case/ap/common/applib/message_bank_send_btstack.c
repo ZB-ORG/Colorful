@@ -31,15 +31,15 @@ int send_async_event(uint8 app_id, btstack_event_t *ev)
 
     PRINT_DBG_INT("btstack event:", ev->msg.type);
 
-    if (app_id != APP_ID_BT_MANAGER)
-    {
-        return ERR_TARGET_NOEXIST;
-    }
+    //if (app_id != APP_ID_BT_MANAGER)
+    //{
+    //    return ERR_TARGET_NOEXIST;
+    //}
 
     //发送消息到队列中
     if (sys_mq_send((uint32) (mq_id), (void *) ev) < 0)
     {
-        PRINT_ERR("btstack event ERR_MSGQUEUE_FULL!!");
+        //PRINT_ERR("bt evt MSG FULL!!");
         return ERR_MSGQUEUE_FULL;
     }
 

@@ -30,6 +30,7 @@ static const uint8 brec_name[] =
 { "NORBREC BIN" };
 static const uint8 mbrec_name[] =
 { "NORMBRECBIN" };
+static const uint8 nor_drv_name[] = "nor_upg.drv";
 
 /*!
  * \brief
@@ -96,7 +97,7 @@ void parse_firmware(void)
     {
         _para.fw_mode = 0;
 
-        _para.lfi_start_addr = ((_para.brec_length + 511) / 512) + 2 + 2;
+        _para.lfi_start_addr = ((_para.brec_length + 511) / 512) + 2;
     }
 
     return;
@@ -125,14 +126,14 @@ int search_content(void)
 
     _read_file(MIN_ONCE_READ_LEN);
 
-#if 1
+
     if (base_upg_init(BUFFER_ADDR) != 0)
     {
         print_log("decrypt file err");
 
         return -1;
     }
-#endif
+
 
     g_firmware_offset = (uint32)(DECRYPT_USR_BUF_LEN - g_decrypt.InOutLen);
     dir_p = check_key_offset_exist(BUFFER_ADDR, (uint32) g_decrypt.InOutLen, lfi_name, 11, 0);
@@ -194,9 +195,57 @@ int search_content(void)
 
     //擦除VRAM
     base_clear_vram();
+	
+    //解除写保护
+    base_set_disable_write_protect();
+
+    sys_drv_uninstall(DRV_GROUP_STG_BASE);
+    
+    if (sys_drv_install(DRV_GROUP_STG_BASE, 0, nor_drv_name) != 0)
+    {
+        return -1;
+    }     
+
+    return 0;
+	
 
     return 0;
 }
+
+static void sys_reboot(void)
+{    
+    DEBUG_ATT_PRINT("reboot...", 0, 0);
+    
+    sys_local_irq_save();
+    
+    ENABLE_WATCH_DOG(1);
+    
+    while(1);
+}
+
+
+int32 att_fw_swtch_deal(void)
+{
+    int32 ret_val;
+    att_swtich_fw_arg_t *att_switch_fw_arg;
+
+    libc_memset((uint8 *)STUB_ATT_RW_TEMP_BUFFER, 0, 40);
+
+    att_switch_fw_arg = (att_swtich_fw_arg_t *)STUB_ATT_RW_TEMP_BUFFER;
+    
+	//小机重启到ATT工具枚举的超时时间
+    att_switch_fw_arg->reboot_timeout = 60;
+
+    ret_val = att_write_data(STUB_CMD_ATT_REBOOT_TIMEOUT, 32, STUB_ATT_RW_TEMP_BUFFER);
+
+    if(ret_val == 0)
+    {
+        ret_val = att_read_data(STUB_CMD_ATT_ACK, 0, STUB_ATT_RW_TEMP_BUFFER);
+
+        return TRUE;
+    }    
+}
+
 
 void reboot_to_card_product(void)
 {
@@ -226,13 +275,34 @@ void reboot_to_card_product(void)
         ;
 }
 
+int32 check_upg_drv(void)
+{
+    sd_handle upg_handle;
+
+    upg_handle = sys_sd_fopen(nor_drv_name);
+
+    if (upg_handle != 0)
+    {
+        sys_sd_fclose(upg_handle);
+        return TRUE;    
+    }
+
+    return FALSE;
+}
+
 int32 upgrade_deal(void)
 {
     int retry_count = 0;
     int irq_flag;
+    int fp;
 
-    if (g_att_version == 1)
+    if ((g_att_version == 1) && (g_support_norflash_wp == TRUE))
     {
+        if (check_upg_drv() == FALSE)
+        {
+            reboot_to_card_product();    
+        }
+        
         if (g_test_ap_info->stub_phy_type == STUB_PHY_USB)
         {
             irq_flag = act_readl(INTC_MSK);
@@ -286,7 +356,7 @@ test_result_e act_test_product_test(void *arg_buffer)
     //对于ATS2825可能重启之后要再次发START命令，需要区分之前有没有
     //量产过，如果已经量产过，直接上报结果并返回就OK了
     if (g_skip_product_test == FALSE)
-    {
+    {    
         ret_val = upgrade_deal();
     }
     else
@@ -297,6 +367,8 @@ test_result_e act_test_product_test(void *arg_buffer)
     if (ret_val == TRUE)
     {
         att_fw_swtch_deal();
+       
+        stub_close();
 
         sys_reboot();
     }
@@ -319,6 +391,12 @@ test_result_e act_test_product_test(void *arg_buffer)
 test_result_e act_test_prepare_product(void *arg_buffer)
 {
     return_result_t *return_data;
+
+    //该测试项必须卡中量产固件才可以测试成功
+    if (sys_detect_disk(DRV_GROUP_STG_CARD) != -1)
+    {
+        reboot_to_card_product(); 
+    }      
 
     return_data = (return_result_t *) (STUB_ATT_RETURN_DATA_BUFFER);
 

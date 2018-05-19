@@ -58,7 +58,7 @@ extern btplay_info_t g_btplay_info[2];
 extern btplay_info_t *g_p_btplay_info;
 
 #ifdef WAVES_ASET_TOOLS
-extern uint8 support_waves_pc_tools_bt;
+extern waves_t g_waves;
 #endif
 
 //for dae adjust freq
@@ -78,6 +78,7 @@ extern uint8 send_once_cmd;
 extern uint8 second_empty_flag;
 extern uint8 second_empty_flag2;
 extern int8 clear_filter_timer_id;
+extern int8 clear_tts_filter_timer_id;
 #endif
 
 extern app_result_e app_message_deal(private_msg_t *pri_msg) __FAR__;

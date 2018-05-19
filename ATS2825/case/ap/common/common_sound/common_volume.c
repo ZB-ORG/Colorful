@@ -55,6 +55,12 @@ bool com_reset_sound_volume(uint8 set_mode)
 bool com_set_sound_volume(uint8 set_vol, uint8 set_mode)
 {
     bool bret = TRUE;
+    
+    if(set_vol > VOLUME_VALUE_MAX)
+    {
+        libc_print("vol err:",set_vol,2);
+        set_vol = (uint8) com_get_config_default(SETTING_SOUND_DEFAULT_MAIN_VOLUME);
+    }
 
     sys_comval->volume_current = set_vol;
 #pragma __PRQA_IGNORE_START__
@@ -75,7 +81,12 @@ bool com_set_sound_volume(uint8 set_vol, uint8 set_mode)
         if ((g_app_info_vector[APP_TYPE_BTSTACK].used == 1)
                 && ((set_mode & SET_VOLUME_SYNC_TO_REMOTE) != 0))
         {
+#ifndef ENABLE_TRUE_WIRELESS_STEREO
             if (g_this_app_info->app_id == APP_ID_BTPLAY)
+#else
+            if ((g_this_app_info->app_id == APP_ID_BTPLAY)
+                ||(g_this_app_info->app_id == APP_ID_LINEIN))
+#endif                
             {
                 com_btmanager_avrcp_update_volume_to_phone(set_vol);
             }
@@ -163,17 +174,54 @@ bool com_set_mute(bool mute)
     return TRUE;
 }
 
-//静音状态转换
-bool com_switch_mute(void)
-{
-    if (get_mute_enable() == TRUE) //当前为静音状态
+#ifdef ENABLE_TRUE_WIRELESS_STEREO
+    //静音状态转换
+    bool com_switch_mute(uint8 op1,uint8 op2,bool op3)
     {
-        com_set_mute(FALSE);
-    }
-    else //当前为非静音状态
-    {
-        com_set_mute(TRUE);
+        bool cur_mute_state=0;
+        cur_mute_state=get_mute_enable();
+        //tws mod:need to notify the other
+        if(op1==1)
+        {
+            if(g_bt_stack_cur_info.dev_role!=0)
+            {
+                com_btmanager_tws_send(MUTE_STATE_FLAG,(uint8)(1- cur_mute_state)\
+                    ,NULL,NULL,MSG_BTSTACK_TWS_SEND_MSG_SYNC);
+            }
+        }
+        if(op2==2)
+        {
+            //tws accept set mute cmd
+            com_set_mute(op3);
+        }
+        else
+        {
+            if (cur_mute_state == TRUE) //当前为静音状态
+            {
+                com_set_mute(FALSE);
+            }
+            else //当前为非静音状态
+            {
+                com_set_mute(TRUE);
+            }
+        }
+        return TRUE;
     }
 
-    return TRUE;
-}
+#else
+    //静音状态转换
+    bool com_switch_mute(void)
+    {
+        if (get_mute_enable() == TRUE) //当前为静音状态
+        {
+            com_set_mute(FALSE);
+        }
+        else //当前为非静音状态
+        {
+            com_set_mute(TRUE);
+        }
+
+        return TRUE;
+    }
+#endif
+

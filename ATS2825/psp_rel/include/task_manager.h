@@ -30,8 +30,8 @@
 #define AP_BACK_LOW_STK_POS         (AP_BACK_HIGH_STK_POS + AP_BACK_LOW_STK_SIZE)//1bdf0 - 1c3d0
 
 #define AP_BT_HIGH_PRIO             0x7
-#define AP_BT_HIGH_STK_SIZE         (0x550)
-#define AP_BT_HIGH_STK_POS          (AP_BACK_LOW_STK_POS + AP_BT_HIGH_STK_SIZE)//1c3d0 - 1c920
+#define AP_BT_HIGH_STK_SIZE         (0x650)
+#define AP_BT_HIGH_STK_POS          (AP_BACK_LOW_STK_POS + AP_BT_HIGH_STK_SIZE)//1c3d0 - 1ca20
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 #define AP_BT_LOW_PRIO              0x8	
@@ -39,17 +39,17 @@
 //#define AP_BT_LOW_STK_POS           (AP_BT_HIGH_STK_POS + AP_BT_LOW_STK_SIZE)//1c920 - 1cba0
 
 #define KEYTONE_PLAY_PRIO           0x4
-#define KEYTONE_PLAY_STK_SIZE       (0x280)
-#define KEYTONE_PLAY_STK_POS        (AP_BT_HIGH_STK_POS + KEYTONE_PLAY_STK_SIZE)//1c920 - 1cba0
+#define KEYTONE_PLAY_STK_SIZE       (0x300)
+//#define KEYTONE_PLAY_STK_POS        (AP_BT_HIGH_STK_POS + KEYTONE_PLAY_STK_SIZE)//1c920 - 1cba0
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 #define AP_FRONT_HIGH_PRIO          0x9
-#define AP_FRONT_HIGH_STK_SIZE      (0x460)
-#define AP_FRONT_HIGH_STK_POS       (KEYTONE_PLAY_STK_POS + AP_FRONT_HIGH_STK_SIZE)//1cba0 - 1d000
+#define AP_FRONT_HIGH_STK_SIZE      (0x500)
+//#define AP_FRONT_HIGH_STK_POS       (KEYTONE_PLAY_STK_POS + AP_FRONT_HIGH_STK_SIZE)//1cba0 - 1d000
 
 #define AP_FRONT_LOW_PRIO           0xA
-#define AP_FRONT_LOW_STK_SIZE       (0x500)
-#define AP_FRONT_LOW_STK_POS        (AP_FRONT_HIGH_STK_POS + AP_FRONT_LOW_STK_SIZE)//1d000 - 1d500
+#define AP_FRONT_LOW_STK_SIZE       (0x6e0)
+#define AP_FRONT_LOW_STK_POS        (AP_BT_HIGH_STK_POS + AP_FRONT_LOW_STK_SIZE)//1ca20 - 1d100
 
 
 //#define AP_FRONT_SCANFILE_PRIO      0xB

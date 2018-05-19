@@ -66,7 +66,7 @@ MUS_STATIC const id3_type_e support_id3_type[] =
     ID3_TYPE_OGG, //ogg
 };
 
-MUS_STATIC id3_type_e _check_id3_type(uint8 *extname)
+ id3_type_e _check_id3_type(uint8 *extname)
 {
     uint8 cnt;
     id3_type_e ret;
@@ -90,12 +90,11 @@ MUS_STATIC id3_type_e _check_id3_type(uint8 *extname)
     return ret;
 }
 
-MUS_STATIC bool _rcp_get_id3_info(id3_info_t *id3_info_ptr, uint32 file_ext_name)
+ bool _rcp_get_id3_info(id3_info_t *id3_info_ptr, uint32 file_ext_name)
 {
     //file id3 check
     id3_type_e cur_id3_type;
     cur_id3_type = _check_id3_type((uint8 *) &file_ext_name);
-
     if (cur_id3_type != ID3_TYPE_END)
     {
         //存在id3_info_t
@@ -104,7 +103,7 @@ MUS_STATIC bool _rcp_get_id3_info(id3_info_t *id3_info_ptr, uint32 file_ext_name
     return TRUE;
 }
 
-bool music_get_name_info(music_id3_info_t *rcp_id3_info)
+ bool music_get_name_info(music_id3_info_t *rcp_id3_info)
 {
     //save current path
     //vfs_file_dir_offset(eh_vfs_mount, &g_temp_pdir_layer, &g_temp_pfile_offset, 0);
@@ -112,14 +111,13 @@ bool music_get_name_info(music_id3_info_t *rcp_id3_info)
     //获取文件名
     vfs_get_name(eh_vfs_mount, rcp_id3_info->pfile_buf, rcp_id3_info->name_len / 2 - 2);
 
-    if (rcp_id3_info->p_id3_info.tit2_buffer[0] == 0)
+    if(rcp_id3_info->p_id3_info.tit2_buffer[0] == 0)
     {
         libc_memcpy(rcp_id3_info->p_id3_info.tit2_buffer,
                 rcp_id3_info->pfile_buf,
                 (uint32)MIN(rcp_id3_info->p_id3_info.tit2_length,
                 rcp_id3_info->name_len));
     }
-
     //restore saveed path
     //vfs_file_dir_offset(eh_vfs_mount, &g_temp_pdir_layer, &g_temp_pfile_offset, 1);
     return TRUE;
@@ -128,7 +126,7 @@ bool music_get_name_info(music_id3_info_t *rcp_id3_info)
 //根据目录的序号找到目录项
 //dir_no从1开始编号
 //如果没有找到(到底了)，返回FALSE
-MUS_STATIC bool _get_dir_by_dirno(uint16 dir_no, list_dir_info_t *p_dir)
+ bool _get_dir_by_dirno(uint16 dir_no, list_dir_info_t *p_dir)
 {
     uint8 sector_index;
     uint32 pos;
@@ -168,9 +166,13 @@ MUS_STATIC bool _get_dir_by_dirno(uint16 dir_no, list_dir_info_t *p_dir)
     libc_memcpy(p_dir, &g_sector_buf[offset], byte_count);
 
     //再读剩下的部分
+    if (g_sector_no >= (sizeof(vram_addr)/sizeof(uint32)))
+    {
+        g_sector_no = 0;
+    }
     sys_vm_read(g_sector_buf, vram_addr[g_sector_no], sizeof(g_sector_buf));
     g_sector_no++;
-
+    
     libc_memcpy((uint8 * )p_dir + byte_count, g_sector_buf,
             sizeof(list_dir_info_t) - byte_count);
 
@@ -181,7 +183,7 @@ MUS_STATIC bool _get_dir_by_dirno(uint16 dir_no, list_dir_info_t *p_dir)
 //file_no: 文件序号(从1开始编号)
 //找到了，结果装到g_cur_dir，返回TRUE
 //如果没找到，返回FALSE
-MUS_STATIC bool _get_dir_by_fileno(uint16 file_no)
+bool _get_dir_by_fileno(uint16 file_no)
 {
     list_dir_info_t next_dir;
 
@@ -221,7 +223,7 @@ MUS_STATIC bool _get_dir_by_fileno(uint16 file_no)
 bool music_rcp_get_list_id3(music_id3_info_t *rcp_id3_info, uint16 file_index)
 {
     uint32 cur_ext_name = 0;
-    uint16 gap_num;
+    uint16 gap_num = 0;
     list_dir_info_t entry;
     bool prev_flag = FALSE;
 
@@ -300,7 +302,7 @@ bool __section__(".text.bank2") music_rcp_get_cur_info(music_id3_info_t *rcp_id3
     vfs_file_dir_offset(eh_vfs_mount, &g_temp_pdir_layer, &g_temp_pfile_offset, 0);
     //set to cur file path
     get_ret = vfs_file_dir_offset(eh_vfs_mount, &g_file_path_info.file_path.dirlocation.dir_layer_info,
-            &g_file_path_info.file_path.dirlocation.cluster_no, 1);
+            &g_file_path_info.file_path.dirlocation.file_info.file_extend_info.cluster_no, 1);
     if (get_ret == TRUE)
     {
         vfs_get_name(eh_vfs_mount, &now_ext_name, 0);
@@ -311,4 +313,10 @@ bool __section__(".text.bank2") music_rcp_get_cur_info(music_id3_info_t *rcp_id3
     //restore saveed path
     vfs_file_dir_offset(eh_vfs_mount, &g_temp_pdir_layer, &g_temp_pfile_offset, 1);
     return get_ret;
+}
+
+
+bool get_dir_by_dirno(uint16 dir_no, list_dir_info_t *p_dir)
+{
+    return _get_dir_by_dirno(dir_no,p_dir);
 }

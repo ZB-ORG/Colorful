@@ -58,7 +58,8 @@ typedef enum
 {
     OTA_DOWNLOAD_STATE_NULL = 0,
     OTA_DOWNLOAD_STATE_START,
-    OTA_DOWNLOAD_STATE_END
+    OTA_DOWNLOAD_STATE_END,
+    OTA_DOWNLOAD_STATE_CLEAR
 }ota_download_state_e;
 
 typedef enum
@@ -133,8 +134,6 @@ typedef struct
 	uint8  updata_statue; //更新的状态       0  : 未更新	1:已完成复制，但没清除 
 	uint16 pack_count;	//每N个block记录一次下载的包数
 	uint16 complete_send_num; //已经发了多少个分区
-	uint32 random_code; //APK生成的随机码
-	uint32 part_checksum; //分区校验和
     uint8  part_id ;//当前下载的分区
     uint8  ud_att;//本次升级的属性 0:不含系统分区1:含系统分区  如果只更新数据区，重启后不擦VRAM
     uint8  reboot_flg;//重启升级确认0:brec不需要OTA 出来，1:需要OTA处理
@@ -142,6 +141,7 @@ typedef struct
 	Fw_Ver_t cru_updata;	//当前下载的版本信息
 
 } restore_breakpoint_t;
+
 
 typedef struct
 {
