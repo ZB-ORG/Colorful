@@ -1,0 +1,11 @@
+1.打包路径绝对不能包含中文
+2.同一个文件不能被多个关键字引用
+3.打包统一使用make 进行：
+make clean;make DVB_ATS2825    --可以编译并生成DVB_ATS2825的普通固件
+make clean;make DVB_ATS2825_TWS--可以编译并生成DVB_ATS2825_TWS版本的固件
+make clean;make DVB_ATS2823_TWS--可以编译并生成DVB_ATS2823_TWS版本的固件
+make clean;make DVB_ATS2825_OTA--可以编译并生成DVB_ATS2825_OTA版本的固件
+make build_DVB_ATS2825    --可以打包生成DVB_ATS2825的普通固件，但不会编译源码
+make build_DVB_ATS2825_TWS--可以打包生成DVB_ATS2825_TWS版本的固件，但不会编译源码
+make build_DVB_ATS2823_TWS--可以打包生成DVB_ATS2823_TWS版本的固件，但不会编译源码
+make build_DVB_ATS2825_OTA--可以打包生成DVB_ATS2825_OTA版本的固件，但不会编译源码	

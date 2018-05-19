@@ -1,0 +1,86 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+    part        : 结点名, 定义一个分区描述项
+    desc        : 分区描述
+    ID          : 分区ID
+    size        : 分区允许大小(十六进制表示，字节为单位)
+    needbackup  : 是否需要先备份再写
+    name        : 分区包含的文件集合
+-->
+
+<firmwareupdate name = "/">
+
+  <!-- 第一个分区ID -->
+  <part id = "1" desc = "brec是第一分区，允许最大大小64KB">
+    <param size = '0x10000' needbackup = "1"/>   
+  </part>  
+  
+  <!-- 第二个分区ID -->  
+  <part id = "2" desc = "lfi是第二个分区，允许最大大小2M">
+    <param size = '0x200000' needbackup = "1"/>
+  </part> 
+  
+  <!-- 第三个分区ID -->    
+  <part id = "16" desc = "第一个数据分区，允许最大大小1M">
+    <param size = '0x100000' needbackup = "1"/>
+    <sub name="zen.mp3"/> 
+  </part> 
+  
+  <!-- 第四个分区ID -->    
+  <part id = "17" desc = "第二个数据分区，允许最大大小1M">
+    <param size = '0x100000' needbackup = "1"/>
+    <sub name="tones.mp3"/>               
+  </part> 
+
+  <!-- 第5个分区ID -->    
+  <part id = "18" desc = "第一个数据分区，允许最大大小1M">
+    <param size = '0x100000' needbackup = "1"/>
+    <sub name="ocean.mp3"/> 
+  </part> 
+  
+  <!-- 第6个分区ID -->    
+  <part id = "19" desc = "第二个数据分区，允许最大大小1M">
+    <param size = '0x100000' needbackup = "1"/>
+    <sub name="storm.mp3"/>               
+  </part> 
+
+  <!-- 第7个分区ID -->    
+  <part id = "20" desc = "第一个数据分区，允许最大大小1M">
+    <param size = '0x100000' needbackup = "1"/>
+    <sub name="nature.mp3"/> 
+  </part> 
+  
+  <!-- 第8个分区ID -->    
+  <part id = "21" desc = "第二个数据分区，允许最大大小1M">
+    <param size = '0x100000' needbackup = "1"/>
+    <sub name="air.mp3"/>               
+  </part> 
+
+  <!-- 第9个分区ID -->    
+  <part id = "22" desc = "第一个数据分区，允许最大大小1M">
+    <param size = '0x100000' needbackup = "1"/>
+    <sub name="focus.mp3"/> 
+  </part> 
+  
+  <!-- 第10个分区ID -->    
+  <part id = "23" desc = "第二个数据分区，允许最大大小1M">
+    <param size = '0x100000' needbackup = "1"/>
+    <sub name="quiet.mp3"/>               
+  </part> 
+
+  <!-- 第11个分区ID -->    
+  <part id = "24" desc = "第一个数据分区，允许最大大小1M">
+    <param size = '0x100000' needbackup = "1"/>
+    <sub name="peace.mp3"/> 
+  </part> 
+  
+  <!-- 第12个分区ID -->    
+  <part id = "25" desc = "第二个数据分区，允许最大大小1M">
+    <param size = '0x100000' needbackup = "1"/>
+    <sub name="heart.mp3"/>               
+  </part> 
+</firmwareupdate>
+
+
+
+
